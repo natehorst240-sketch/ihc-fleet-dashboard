@@ -13,11 +13,11 @@ FLEETS = {
     "aw109sp": {
         "csv_folder": r"C:\Users\nateh\OneDrive - Intermountain Health\VeryonExports\Veryon Exports",
         "csv_files": ["Due-List_Latest.csv", "Due-List_BIG_WEEKLY.csv"]
-    },
-    "fleet2": {
-        "csv_folder": r"C:\path\to\fleet2\data",
-        "csv_files": ["Due-List_Latest.csv", "Due-List_BIG_WEEKLY.csv"]
-    }
+   # },
+   # "fleet2": {
+   #     "csv_folder": r"C:\path\to\fleet2\data",
+    #    "csv_files": ["Due-List_Latest.csv", "Due-List_BIG_WEEKLY.csv"]
+   # }
 }
 
 def upload_file(local_path, github_path):
