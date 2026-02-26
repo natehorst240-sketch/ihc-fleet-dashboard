@@ -9,6 +9,10 @@ on:
 permissions:
   contents: write
 
+concurrency: 
+  group: dashboard-update
+  cancel-in-progress: false
+
 jobs:
   update-dashboard:
     runs-on: ubuntu-latest
