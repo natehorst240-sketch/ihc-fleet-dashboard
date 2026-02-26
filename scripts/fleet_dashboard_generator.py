@@ -1192,6 +1192,7 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, skyro
   <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('maintenance', this)">Maintenance Due List</button>
     <button class="tab-btn" onclick="switchTab('flight-hours', this)">Flight Hours Tracking</button>
+    <button class="tab-btn" onclick="switchTab(calendar', this)">Calendar</button>
     <button class="tab-btn" onclick="switchTab('bases', this)">Bases</button>
   </div>
 
@@ -1262,6 +1263,12 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, skyro
 {flight_hours_tab_html}
   </div>
   <!-- END FLIGHT HOURS TAB -->
+  
+  <!-- CALENDAR TAB -->
+  <div id="tab-calendar" class="tab-content">
+    {calendar_tab_html}
+  </div>
+  <!--END CALENDAR TAB -->
 
   <!-- BASES TAB -->
   <div id="tab-bases" class="tab-content">
