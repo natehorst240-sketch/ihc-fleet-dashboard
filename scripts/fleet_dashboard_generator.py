@@ -1316,10 +1316,10 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, skyro
 # ── MAIN ──────────────────────────────────────────────────────────────────────
 
 def main():
-    input_path  = Path(ONEDRIVE_FOLDER) / INPUT_FILENAME
-    output_path = Path(ONEDRIVE_FOLDER) / OUTPUT_FILENAME
-    history_path = Path(ONEDRIVE_FOLDER) / HISTORY_FILENAME
-    skyrouter_path = Path(ONEDRIVE_FOLDER) / SKYROUTER_FILENAME
+    input_path  = Path(OUTPUT_FOLDER) / INPUT_FILENAME
+    output_path = Path(OUTPUT_FOLDER) / OUTPUT_FILENAME
+    history_path = Path(OUTPUT_FOLDER) / HISTORY_FILENAME
+    skyrouter_path = Path(OUTPUT_FOLDER) / SKYROUTER_FILENAME
     log_path = Path(__file__).with_name("dashboard_log.txt")
 
     def log(msg):
