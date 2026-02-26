@@ -17,7 +17,7 @@ from pathlib import Path
 
 # ── CONFIGURATION ─────────────────────────────────────────────────────────────
 
-ONEDRIVE_FOLDER = r"C:\Users\nateh\OneDrive - Intermountain Health\VeryonExports\Veryon Exports"
+OUTPUT_FOLDER = "data"
 
 INPUT_FILENAME  = "Due-List_Latest.csv"
 WEEKLY_FILENAME = "Due-List_BIG_WEEKLY.csv"  
