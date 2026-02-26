@@ -1345,7 +1345,7 @@ def main():
 
     try:
         log(f"Parsing {input_path} ...")
-        weekly_path = Path(ONEDRIVE_FOLDER) / WEEKLY_FILENAME
+        weekly_path = Path(OUTPUT_FOLDER) / WEEKLY_FILENAME
         
         if not weekly_path.exists():
             log(f"WARNING: Weekly big file not found: {weekly_path} (missing long-range inspections will stay blank)")
@@ -1382,7 +1382,7 @@ def main():
 
         # Load base assignments
         log("Loading base assignments...")
-        assignments_path = Path(ONEDRIVE_FOLDER) / BASE_ASSIGNMENTS_FILENAME
+        assignments_path = Path(OUTPUT_FOLDER) / BASE_ASSIGNMENTS_FILENAME
         base_assignments = load_base_assignments(assignments_path)
         if base_assignments:
             log(f"Loaded base assignments (last updated: {base_assignments.get('last_updated', 'unknown')})")
