@@ -1,313 +1,286 @@
 """
 SkyRouter API Data Fetcher
-===========================
-Uses SkyRouter Data Exchange API to get aircraft position data.
-Much more reliable than web scraping!
+==========================
+Fetches aircraft position data using the SkyRouter Data Exchange API and saves
+a status JSON file used by the dashboard.
 
-Based on SkyRouter DataExchange API documentation.
+Environment variables required:
+  - SKYROUTER_USER
+  - SKYROUTER_PASS
 """
 
-import os
+from __future__ import annotations
+
 import json
-import requests
+import math
+import os
 from datetime import datetime, timedelta
 from pathlib import Path
-import math
+from typing import Any, Dict, Optional
 
-# ── CONFIGURATION ─────────────────────────────────────────────────────────────
+import requests
 
-SKYROUTER_USERNAME = os.getenv("SKYROUTER_USER")
-SKYROUTER_PASSWORD = os.getenv("SKYROUTER_PASS")
 
-# Base API URL (from your screenshot)
+# ── CONFIG ──────────────────────────────────────────────────────────────────
+
+# Credentials (from GitHub Actions env)
+SKYROUTER_USER = os.getenv("SKYROUTER_USER")
+SKYROUTER_PASS = os.getenv("SKYROUTER_PASS")
+
+if not SKYROUTER_USER or not SKYROUTER_PASS:
+    raise RuntimeError("Missing SKYROUTER_USER or SKYROUTER_PASS env vars")
+
+# Base API URL (confirm your endpoint; some installations may require a more specific path)
 SKYROUTER_API_BASE = "https://new.skyrouter.com/Bsn.Skyrouter.DataExchange/"
 
-OUTPUT_FOLDER = "data"
+# Output
+OUTPUT_FOLDER = Path("data")
 OUTPUT_FILENAME = "skyrouter_status.json"
 
-# Your base location (Provo Airport example)
+# Base location (update for your real base)
 BASE_LAT = 40.7884
 BASE_LON = -111.7233
-BASE_RADIUS_MILES = 5  # Consider "at base" if within this radius
+BASE_RADIUS_MILES = 5.0  # "at base" if within this radius
 
-# How far back to look for position data (in hours)
+# How far back to consider positions (only used if you switch to SinceUTC option)
 LOOKBACK_HOURS = 6
 
-# ── HELPERS ───────────────────────────────────────────────────────────────────
+# Request config
+HTTP_TIMEOUT_SECS = 30
 
-def haversine_distance(lat1, lon1, lat2, lon2):
-    """Calculate distance in miles between two lat/lon points."""
-    R = 3959  # Earth radius in miles
-    
+
+# ── HELPERS ────────────────────────────────────────────────────────────────
+
+def log(msg: str) -> None:
+    """Print and append to scripts/skyrouter_api_log.txt."""
+    ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    line = f"[{ts}] {msg}"
+    print(line)
+
+    try:
+        log_path = Path(__file__).with_name("skyrouter_api_log.txt")
+        with open(log_path, "a", encoding="utf-8") as f:
+            f.write(line + "\n")
+    except Exception:
+        # Logging should never crash the run
+        pass
+
+
+def haversine_distance_miles(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Distance in miles between two lat/lon points."""
+    r = 3959.0  # Earth radius in miles
     lat1_rad = math.radians(lat1)
     lat2_rad = math.radians(lat2)
-    delta_lat = math.radians(lat2 - lat1)
-    delta_lon = math.radians(lon2 - lon1)
-    
-    a = math.sin(delta_lat/2)**2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(delta_lon/2)**2
+    dlat = math.radians(lat2 - lat1)
+    dlon = math.radians(lon2 - lon1)
+
+    a = (math.sin(dlat / 2) ** 2) + math.cos(lat1_rad) * math.cos(lat2_rad) * (math.sin(dlon / 2) ** 2)
     c = 2 * math.asin(math.sqrt(a))
-    
-    return R * c
+    return r * c
 
 
-def parse_skyrouter_position(pos_data):
+def parse_skyrouter_csv_record(record: str) -> Optional[Dict[str, Any]]:
     """
-    Parse position data from SkyRouter API response.
-    
-    Based on API format from documentation:
-    - Latitude: Field 10
-    - Longitude: Field 11
-    - Altitude: Field 12
-    - Report Type: Field 3 (POS, TOF, LAN, etc.)
+    Parse one CSV record line from SkyRouter FlightTracking.
+
+    Expected fields (0-based indexing shown):
+      2  -> report type
+      6  -> registration (tail)
+      7  -> date (YYYYMMDD)
+      8  -> time (HHMMSS)
+      9  -> latitude (decimal)
+      10 -> longitude (decimal)
+      11 -> altitude
+      12 -> velocity
+      13 -> heading
     """
-    # Split by commas (CSV format from API)
-    fields = pos_data.split(',')
-    
-    if len(fields) < 18:
+    fields = [f.strip() for f in record.split(",")]
+    if len(fields) < 14:
         return None
-    
+
     try:
-        # Extract key fields based on API documentation
-        report_type = fields[2].strip()  # Field 3: Report Type
-        registration = fields[6].strip()  # Field 7: Registration (tail number)
-        
-        # Parse latitude/longitude (Fields 10, 11)
-        lat_str = fields[9].strip()  # Field 10: Latitude
-        lon_str = fields[10].strip()  # Field 11: Longitude
-        
-        # Convert lat/lon from degrees-minutes-seconds format if needed
-        # Format from docs: [+/-]NNN.NNNNNNNNNNNNN
-        latitude = float(lat_str) if lat_str else None
-        longitude = float(lon_str) if lon_str else None
-        
-        # Parse other useful fields
-        altitude = fields[11].strip() if len(fields) > 11 else ""  # Field 12
-        velocity = fields[12].strip() if len(fields) > 12 else ""  # Field 13
-        heading = fields[13].strip() if len(fields) > 13 else ""   # Field 14
-        
-        # Date and time
-        date_str = fields[7].strip()  # Field 8: Date acquisition
-        time_str = fields[8].strip()  # Field 9: Time acquisition
-        
+        report_type = fields[2]
+        registration = fields[6]
+
+        lat_str = fields[9]
+        lon_str = fields[10]
+        if not registration or not lat_str or not lon_str:
+            return None
+
+        latitude = float(lat_str)
+        longitude = float(lon_str)
+
+        date_str = fields[7]  # YYYYMMDD
+        time_str = fields[8]  # HHMMSS
+
         return {
-            'registration': registration,
-            'report_type': report_type,
-            'latitude': latitude,
-            'longitude': longitude,
-            'altitude': altitude,
-            'velocity': velocity,
-            'heading': heading,
-            'date': date_str,
-            'time': time_str
+            "registration": registration,
+            "report_type": report_type,
+            "latitude": latitude,
+            "longitude": longitude,
+            "altitude": fields[11] if len(fields) > 11 else "",
+            "velocity": fields[12] if len(fields) > 12 else "",
+            "heading": fields[13] if len(fields) > 13 else "",
+            "date": date_str,
+            "time": time_str,
         }
-    except (ValueError, IndexError) as e:
-        print(f"Error parsing position data: {e}")
+    except Exception as e:
+        log(f"Parse error: {e} (record={record[:120]!r})")
         return None
 
 
-def fetch_flight_tracking_data():
-    """
-    Fetch flight tracking data from SkyRouter API.
-    
-    Returns raw text response from API.
-    """
-    # Calculate time range (last N hours)
+def build_api_url_everything_since_last_request() -> str:
+    # Example per your current approach
+    return (
+        f"{SKYROUTER_API_BASE}"
+        f"?username={SKYROUTER_USER}&password={SKYROUTER_PASS}"
+        f"&datatype=FlightTracking&option=EverythingSinceLastRequest"
+    )
+
+
+def build_api_url_since_utc() -> str:
+    # Optional alternative if you prefer a time window:
     now = datetime.utcnow()
     from_time = now - timedelta(hours=LOOKBACK_HOURS)
-    
-    # Build API URL based on Data Exchange format
-    # Format: .../?username=X&password=Y&datatype=FlightTracking&option=EverythingSinceLastRequest
-    # OR: .../?username=X&password=Y&datatype=FlightTracking&option=SinceUTC&sinceutc=YYYY-MM-DD HH:MM:SS
-    
-    # Using "Everything since last request" is simpler
-    url = f"{SKYROUTER_API_BASE}?username={SKYROUTER_USERNAME}&password={SKYROUTER_PASSWORD}&datatype=FlightTracking&option=EverythingSinceLastRequest"
-    
-    # Alternative: specify exact time range
-    # from_time_str = from_time.strftime("%Y-%m-%d %H:%M:%S")
-    # url = f"{SKYROUTER_API_BASE}?username={SKYROUTER_USERNAME}&password={SKYROUTER_PASSWORD}&datatype=FlightTracking&option=SinceUTC&sinceutc={from_time_str}"
-    
-    try:
-        response = requests.get(url, timeout=30)
-        response.raise_for_status()
-        return response.text
-    except requests.exceptions.RequestException as e:
-        print(f"Error fetching data from SkyRouter: {e}")
-        return None
+    from_time_str = from_time.strftime("%Y-%m-%d %H:%M:%S")
+    return (
+        f"{SKYROUTER_API_BASE}"
+        f"?username={SKYROUTER_USER}&password={SKYROUTER_PASS}"
+        f"&datatype=FlightTracking&option=SinceUTC&sinceutc={from_time_str}"
+    )
 
 
-def process_skyrouter_data(raw_data):
+def fetch_raw_flight_tracking() -> str:
     """
-    Process raw SkyRouter API response into aircraft status dict.
-    
-    Returns:
-    {
-        "N291HC": {
-            "status": "ACTIVE",
-            "at_base": False,
-            "last_update": "2026-02-25 22:40:52",
-            "timestamp": "2026-02-25T22:40:52",
-            "latitude": 40.123,
-            "longitude": -111.456,
-            "altitude": "5000",
-            "distance_from_base": 12.5
-        },
-        ...
-    }
+    Fetch raw response text. Raises on hard failures.
     """
-    if not raw_data:
-        return {}
-    
-    aircraft_data = {}
-    lines = raw_data.strip().split('\n')
-    
-    for line in lines:
+    url = build_api_url_everything_since_last_request()
+    # url = build_api_url_since_utc()  # <- switch if desired
+
+    log(f"Requesting SkyRouter FlightTracking…")
+    # Don't log full URL because it contains credentials.
+    resp = requests.get(url, timeout=HTTP_TIMEOUT_SECS)
+    resp.raise_for_status()
+
+    text = resp.text or ""
+    if not text.strip():
+        raise RuntimeError("SkyRouter API returned empty response")
+
+    # Common failure mode: HTML login page or error page
+    head = text.lstrip()[:200].lower()
+    if head.startswith("<!doctype html") or head.startswith("<html") or "login" in head[:200]:
+        raise RuntimeError("SkyRouter API returned HTML (likely wrong endpoint or auth issue)")
+
+    return text
+
+
+def process_raw_to_status(raw_text: str) -> Dict[str, Any]:
+    """
+    Convert raw response into per-aircraft status dict.
+    """
+    aircraft: Dict[str, Dict[str, Any]] = {}
+
+    for line in raw_text.splitlines():
         line = line.strip()
         if not line:
             continue
-        
-        # Parse the position data
-        pos = parse_skyrouter_position(line)
-        if not pos or not pos['registration']:
+
+        pos = parse_skyrouter_csv_record(line)
+        if not pos:
             continue
-        
-        tail = pos['registration']
-        
-        # Skip if we don't have lat/lon
-        if pos['latitude'] is None or pos['longitude'] is None:
-            continue
-        
-        # Calculate distance from base
-        distance = haversine_distance(
-            BASE_LAT, BASE_LON,
-            pos['latitude'], pos['longitude']
-        )
-        
-        # Determine if at base
-        at_base = distance <= BASE_RADIUS_MILES
-        
-        # Determine status from report type
-        report_type = pos['report_type'].upper()
+
+        tail = pos["registration"]
+
+        # distance from base
+        dist = haversine_distance_miles(BASE_LAT, BASE_LON, pos["latitude"], pos["longitude"])
+        at_base = dist <= BASE_RADIUS_MILES
+
+        report_type = str(pos["report_type"]).upper()
         status_map = {
-            'POS': 'ACTIVE',      # Regular Position
-            'TOF': 'TAKE-OFF',    # Take-Off
-            'LAN': 'LANDING',     # Landing
-            'OGA': 'DEPARTED',    # Off-Gate
-            'IGA': 'ARRIVED',     # In-Gate
-            'QPS': 'ACTIVE',      # Quick Position Report
-            'HBT': 'ACTIVE',      # Heartbeat
-            'BEA': 'ACTIVE',      # Beacon
+            "POS": "ACTIVE",
+            "QPS": "ACTIVE",
+            "HBT": "ACTIVE",
+            "BEA": "ACTIVE",
+            "TOF": "TAKE-OFF",
+            "LAN": "LANDING",
+            "OGA": "DEPARTED",
+            "IGA": "ARRIVED",
         }
         status = status_map.get(report_type, report_type)
-        
-        # If at base and not taking off, mark as AT BASE
-        if at_base and report_type not in ['TOF', 'OGA']:
-            status = 'AT BASE'
-        
-        # Combine date and time
+
+        if at_base and report_type not in ("TOF", "OGA"):
+            status = "AT BASE"
+
+        # timestamp
         timestamp_str = f"{pos['date']} {pos['time']}"
         try:
             dt = datetime.strptime(timestamp_str, "%Y%m%d %H%M%S")
-            iso_timestamp = dt.isoformat()
-        except:
-            iso_timestamp = datetime.now().isoformat()
-        
-        # Keep the most recent position for each aircraft
-        if tail not in aircraft_data:
-            aircraft_data[tail] = {
-                'status': status,
-                'at_base': at_base,
-                'last_update': timestamp_str,
-                'timestamp': iso_timestamp,
-                'latitude': pos['latitude'],
-                'longitude': pos['longitude'],
-                'altitude': pos['altitude'],
-                'velocity': pos['velocity'],
-                'heading': pos['heading'],
-                'distance_from_base': round(distance, 2)
-            }
-        else:
-            # Keep newer position
-            existing_dt = datetime.fromisoformat(aircraft_data[tail]['timestamp'])
-            new_dt = datetime.fromisoformat(iso_timestamp)
-            if new_dt > existing_dt:
-                aircraft_data[tail] = {
-                    'status': status,
-                    'at_base': at_base,
-                    'last_update': timestamp_str,
-                    'timestamp': iso_timestamp,
-                    'latitude': pos['latitude'],
-                    'longitude': pos['longitude'],
-                    'altitude': pos['altitude'],
-                    'velocity': pos['velocity'],
-                    'heading': pos['heading'],
-                    'distance_from_base': round(distance, 2)
-                }
-    
-    return aircraft_data
-
-
-def fetch_and_save():
-    """Main function to fetch data and save to JSON."""
-    log_path = Path(__file__).with_name("skyrouter_api_log.txt")
-    
-    def log(msg):
-        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        line = f"[{timestamp}] {msg}"
-        print(line)
-        try:
-            with open(log_path, 'a', encoding='utf-8') as f:
-                f.write(line + '\n')
+            iso_ts = dt.isoformat()
         except Exception:
-            pass
-    
-    try:
-        log("SkyRouter API fetch started")
-        
-        # Fetch data
-        log("Fetching flight tracking data from API...")
-        raw_data = fetch_flight_tracking_data()
-        
-        if not raw_data:
-            log("WARNING: No data received from API")
-            return False
-        
-        log(f"Received {len(raw_data)} bytes of data")
-        
-        # Process data
-        log("Processing position data...")
-        aircraft_data = process_skyrouter_data(raw_data)
-        log(f"Processed status for {len(aircraft_data)} aircraft")
-        
-        # Save to JSON
-        output_path = Path(OUTPUT_FOLDER) / OUTPUT_FILENAME
-        output_data = {
-            "last_updated": datetime.now().isoformat(),
-            "aircraft": aircraft_data
+            iso_ts = datetime.utcnow().isoformat()
+
+        new_record = {
+            "status": status,
+            "at_base": at_base,
+            "last_update": timestamp_str,
+            "timestamp": iso_ts,
+            "latitude": pos["latitude"],
+            "longitude": pos["longitude"],
+            "altitude": pos["altitude"],
+            "velocity": pos["velocity"],
+            "heading": pos["heading"],
+            "distance_from_base": round(dist, 2),
         }
-        
-        with open(output_path, 'w', encoding='utf-8') as f:
-            json.dump(output_data, f, indent=2)
-        
-        log(f"Data saved to {output_path}")
-        
-        # Log summary
-        at_base = sum(1 for a in aircraft_data.values() if a['at_base'])
-        away = len(aircraft_data) - at_base
-        log(f"Summary: {at_base} at base, {away} away")
-        
-        log("SkyRouter API fetch completed successfully")
-        return True
-        
+
+        # Keep newest per tail
+        if tail not in aircraft:
+            aircraft[tail] = new_record
+        else:
+            try:
+                old_dt = datetime.fromisoformat(aircraft[tail]["timestamp"])
+                new_dt = datetime.fromisoformat(iso_ts)
+                if new_dt > old_dt:
+                    aircraft[tail] = new_record
+            except Exception:
+                # If timestamps don't parse, just replace
+                aircraft[tail] = new_record
+
+    return aircraft
+
+
+def fetch_and_save() -> None:
+    OUTPUT_FOLDER.mkdir(parents=True, exist_ok=True)
+
+    log("SkyRouter API fetch started")
+
+    raw = fetch_raw_flight_tracking()
+    log(f"Received {len(raw)} bytes")
+
+    aircraft = process_raw_to_status(raw)
+    log(f"Parsed {len(aircraft)} aircraft")
+
+    out = {
+        "last_updated": datetime.utcnow().isoformat(),
+        "aircraft": aircraft,
+    }
+
+    output_path = OUTPUT_FOLDER / OUTPUT_FILENAME
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(out, f, indent=2)
+
+    at_base_count = sum(1 for a in aircraft.values() if a.get("at_base"))
+    log(f"Saved {output_path} (at base: {at_base_count}, away: {len(aircraft) - at_base_count})")
+    log("SkyRouter API fetch completed successfully")
+
+
+def main() -> int:
+    try:
+        fetch_and_save()
+        return 0
     except Exception as e:
         log(f"ERROR: {e}")
-        import traceback
-        log(traceback.format_exc())
-        return False
+        return 1
 
-# Fetch credentials from environment variables
-skyrouter_user = os.getenv('SKYROUTER_USER')
-skyrouter_pass = os.getenv('SKYROUTER_PASS')
 
-if __name__ == '__main__':
-    fetch_and_save()
-# Existing code that utilizes skyrouter_user and skyrouter_pass here...
+if __name__ == "__main__":
+    raise SystemExit(main())
