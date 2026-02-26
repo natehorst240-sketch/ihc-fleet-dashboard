@@ -12,7 +12,7 @@ import math
 
 # ── CONFIGURATION ─────────────────────────────────────────────────────────────
 
-ONEDRIVE_FOLDER = r"C:\Users\nateh\OneDrive - Intermountain Health\VeryonExports\Veryon Exports"
+OUTPUT_FOLDER = "data"
 SKYROUTER_STATUS_FILE = "skyrouter_status.json"
 BASE_ASSIGNMENTS_FILE = "base_assignments.json"
 
