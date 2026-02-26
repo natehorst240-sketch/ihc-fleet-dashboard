@@ -21,7 +21,7 @@ SKYROUTER_PASSWORD = "your_password"
 # Base API URL (from your screenshot)
 SKYROUTER_API_BASE = "https://new.skyrouter.com/Bsn.Skyrouter.DataExchange/"
 
-OUTPUT_FOLDER = r"C:\Users\nateh\OneDrive - Intermountain Health\VeryonExports\Veryon Exports"
+OUTPUT_FOLDER = "data"
 OUTPUT_FILENAME = "skyrouter_status.json"
 
 # Your base location (Provo Airport example)
