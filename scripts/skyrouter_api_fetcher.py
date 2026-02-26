@@ -16,8 +16,8 @@ import math
 
 # ── CONFIGURATION ─────────────────────────────────────────────────────────────
 
-SKYROUTER_USERNAME = "os.getenv("SKYROUTER_USER")"
-SKYROUTER_PASSWORD = "os.getenv("SKYROUTER_PASS")"
+SKYROUTER_USERNAME = os.getenv("SKYROUTER_USER")
+SKYROUTER_PASSWORD = os.getenv("SKYROUTER_PASS")
 
 # Base API URL (from your screenshot)
 SKYROUTER_API_BASE = "https://new.skyrouter.com/Bsn.Skyrouter.DataExchange/"
