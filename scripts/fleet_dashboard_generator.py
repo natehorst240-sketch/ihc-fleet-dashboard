@@ -852,6 +852,80 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, skyro
     
     mini_charts_js = '\n'.join(mini_chart_scripts)
 
+        # --- BUILD CALENDAR TAB ---
+    def build_calendar_tab(aircraft_list, flight_hours_stats):
+        rows = []
+        today = datetime.today().date()
+
+        for ac in aircraft_list:
+            tail = ac["tail"]
+            stats = flight_hours_stats.get(tail, {})
+            avg_daily = stats.get("avg_daily")
+
+            # Need an average to project
+            if not avg_daily or avg_daily <= 0:
+                continue
+
+            for interval in TARGET_INTERVALS:
+                v = ac["intervals"].get(interval)
+                if not v:
+                    continue
+                rem_hrs = v.get("rem_hrs")
+                if rem_hrs is None:
+                    continue
+
+                days = rem_hrs / avg_daily
+                due_date = today + timedelta(days=max(0, int(round(days))))
+                rows.append((due_date, tail, interval, rem_hrs, avg_daily))
+
+        rows.sort(key=lambda x: x[0])
+
+        if not rows:
+            return (
+                '<div class="section-label">Projected Maintenance Calendar</div>'
+                '<div style="font-family:var(--mono);font-size:12px;color:var(--muted);padding:20px;">'
+                'Not enough flight-hours history to project due dates yet. '
+                'Once each aircraft has multiple days of history, projections will appear here.'
+                '</div>'
+            )
+
+        items_html = ""
+        for due_date, tail, interval, rem_hrs, avg_daily in rows[:50]:
+            items_html += (
+                "<tr>"
+                f"<td>{due_date.strftime('%Y-%m-%d')}</td>"
+                f"<td>{tail}</td>"
+                f"<td>{int(interval)} Hr</td>"
+                f"<td style='text-align:center;'>{rem_hrs:.1f}</td>"
+                f"<td style='text-align:center;'>{avg_daily:.2f}</td>"
+                "</tr>"
+            )
+
+        return f"""
+        <div class="section-label">Projected Maintenance Calendar</div>
+        <div style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:10px;">
+          Projection = remaining hours ÷ average daily hours (from your history file).
+        </div>
+        <div class="insp-table-wrap">
+          <table style="min-width:700px;">
+            <thead>
+              <tr>
+                <th>Projected Due Date</th>
+                <th>Aircraft</th>
+                <th>Item</th>
+                <th class="hr-cell">Hours Remaining</th>
+                <th class="hr-cell">Avg Hrs/Day</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items_html}
+            </tbody>
+          </table>
+        </div>
+        """
+
+    calendar_tab_html = build_calendar_tab(aircraft_list, flight_hours_stats)
+    
     # --- BUILD BASES TAB ---
     bases_tab_html = ''
     
@@ -1192,7 +1266,7 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, skyro
   <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('maintenance', this)">Maintenance Due List</button>
     <button class="tab-btn" onclick="switchTab('flight-hours', this)">Flight Hours Tracking</button>
-    <button class="tab-btn" onclick="switchTab(calendar', this)">Calendar</button>
+    <button class="tab-btn" onclick="switchTab('calendar', this)">Calendar</button>
     <button class="tab-btn" onclick="switchTab('bases', this)">Bases</button>
   </div>
 
