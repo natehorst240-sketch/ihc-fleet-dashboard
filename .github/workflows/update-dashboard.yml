@@ -39,4 +39,11 @@ jobs:
           git config user.email "actions@github.com"
           git config user.name "GitHub Actions"
           git add public/index.html data/*.json || true
+          if ! git diff --staged --quiet; then
+            git pull --rebase origin main
+            git commit -m "Update dashboard $(date -u)"
+            git push origin main
+          else
+            echo "No changes to commit."
+          fi
           git diff --staged --quiet || (git commit -m "Update dashboard $(date -u)" && git push)
