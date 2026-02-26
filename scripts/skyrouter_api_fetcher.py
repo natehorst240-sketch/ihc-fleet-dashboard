@@ -7,6 +7,7 @@ Much more reliable than web scraping!
 Based on SkyRouter DataExchange API documentation.
 """
 
+import os
 import json
 import requests
 from datetime import datetime, timedelta
@@ -15,8 +16,8 @@ import math
 
 # ── CONFIGURATION ─────────────────────────────────────────────────────────────
 
-SKYROUTER_USERNAME = "your_username"
-SKYROUTER_PASSWORD = "your_password"
+SKYROUTER_USERNAME = "os.getenv("SKYROUTER_USER")"
+SKYROUTER_PASSWORD = "os.getenv("SKYROUTER_PASS")"
 
 # Base API URL (from your screenshot)
 SKYROUTER_API_BASE = "https://new.skyrouter.com/Bsn.Skyrouter.DataExchange/"
