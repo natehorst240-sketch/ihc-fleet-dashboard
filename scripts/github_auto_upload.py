@@ -4,7 +4,7 @@ import base64
 import requests
 from pathlib import Path
 
-GITHUB_TOKEN = "your_token"
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 GITHUB_USERNAME = "natehorst240-sketch"
 GITHUB_REPO = "ihc-fleet-dashboard"
 
