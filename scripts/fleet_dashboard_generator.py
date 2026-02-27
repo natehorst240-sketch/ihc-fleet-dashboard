@@ -1338,11 +1338,11 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, skyro
   </div>
   <!-- END FLIGHT HOURS TAB -->
   
-  <!-- CALENDAR TAB -->
-  <div id="tab-calendar" class="tab-content">
-    {calendar_tab_html}
-  </div>
-  <!--END CALENDAR TAB -->
+#  <!-- CALENDAR TAB -->
+ # <div id="tab-calendar" class="tab-content">
+  #  {calendar_tab_html}
+ # </div>
+ # <!--END CALENDAR TAB -->
 
   <!-- BASES TAB -->
   <div id="tab-bases" class="tab-content">
