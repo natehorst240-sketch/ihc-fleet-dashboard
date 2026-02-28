@@ -1,5 +1,7 @@
 {
-  "last_updated": "2026-02-28T22:05:18.390275+00:00",
+  "last_updated": "2026-02-28T22:30:03.563068+00:00",
+  "last_checked": "2026-02-28T23:00:04.076334+00:00",
+  "live_data": false,
   "source": "adsb.lol",
   "bases": {
     "LOGAN": {
@@ -84,11 +86,25 @@
       "aircraft": [],
       "status": "available"
     },
-    "unassigned": []
+    "unassigned": [
+      {
+        "tail": "N291HC",
+        "hours": null,
+        "at_base": false,
+        "airborne": true,
+        "seen_seconds_ago": 0.1,
+        "altitude": 5275,
+        "ground_speed": 131.5,
+        "track": 283.19,
+        "distance_miles": 9.92,
+        "closest_base": "McKay"
+      }
+    ]
   },
   "summary": {
-    "total_aircraft": 0,
+    "total_aircraft": 1,
     "at_bases": 0,
-    "away_from_base": 0
+    "away_from_base": 0,
+    "airborne": 1
   }
 }
