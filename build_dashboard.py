@@ -211,8 +211,20 @@ def calculate_flight_hours_stats(history_data, aircraft_list):
             days_of_data = (today - datetime.strptime(thirty_days_ago_str, "%Y-%m-%d")).days
             if days_of_data > 0:
                 avg_daily = monthly_hours / days_of_data
-                projection_weekly  = avg_daily * 7
-                projection_monthly = avg_daily * 30
+        elif weekly_hours is not None:
+            days_of_data = (today - datetime.strptime(seven_days_ago_str, "%Y-%m-%d")).days
+            if days_of_data > 0:
+                avg_daily = weekly_hours / days_of_data
+        elif len(sorted_dates) >= 2:
+            oldest = sorted_dates[-1]
+            newest = sorted_dates[0]
+            span_days = (datetime.strptime(newest, "%Y-%m-%d") - datetime.strptime(oldest, "%Y-%m-%d")).days
+            if span_days > 0:
+                span_hours = tail_history[newest]['hours'] - tail_history[oldest]['hours']
+                avg_daily = span_hours / span_days
+        if avg_daily is not None:
+            projection_weekly  = avg_daily * 7
+            projection_monthly = avg_daily * 30
         stats[tail] = {
             'current_hours': current_hours, 'daily': daily_data,
             'weekly': weekly_hours, 'monthly': monthly_hours,
