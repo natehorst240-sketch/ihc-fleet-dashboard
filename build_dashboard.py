@@ -20,6 +20,8 @@ OUTPUT_FOLDER = "data"
 
 INPUT_FILENAME     = "Due-List_Latest_aw109sp.csv"
 WEEKLY_FILENAME    = "Due-List_BIG_WEEKLY_aw109sp.csv"
+INPUT_FALLBACKS    = ["Due-List_Latest.csv"]
+WEEKLY_FALLBACKS   = ["Due-List_BIG_WEEKLY.csv"]
 OUTPUT_FILENAME    = "fleet_dashboard.html"
 HISTORY_FILENAME   = "flight_hours_history.json"
 POSITIONS_FILENAME = "positions_aw109sp.json"
@@ -444,7 +446,7 @@ def parse_due_list(daily_path, weekly_path=None):
 
 # ── BUILD HTML ────────────────────────────────────────────────────────────────
 
-def build_html(report_date, aircraft_list, components, flight_hours_stats, positions):
+def build_html(report_date, aircraft_list, components, flight_hours_stats, positions, source_filename):
 
     def fmt_hrs(val_dict):
         if val_dict is None:
@@ -868,7 +870,7 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
   </div>
 </main>
 <footer>
-  <span>SOURCE: VERYON MAINTENANCE TRACKING &nbsp;|&nbsp; {INPUT_FILENAME}</span>
+  <span>SOURCE: VERYON MAINTENANCE TRACKING &nbsp;|&nbsp; {source_filename}</span>
   <span>IHC HEALTH SERVICES — AVIATION MAINTENANCE</span>
 </footer>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -1032,8 +1034,9 @@ def _build_bases_tab(aircraft_list, positions):
 # ── MAIN ──────────────────────────────────────────────────────────────────────
 
 def main():
-    input_path     = Path(OUTPUT_FOLDER) / INPUT_FILENAME
-    weekly_path    = Path(OUTPUT_FOLDER) / WEEKLY_FILENAME
+    data_dir       = Path(OUTPUT_FOLDER)
+    input_path     = data_dir / INPUT_FILENAME
+    weekly_path    = data_dir / WEEKLY_FILENAME
     output_path    = Path(OUTPUT_FOLDER) / OUTPUT_FILENAME
     history_path   = Path(OUTPUT_FOLDER) / HISTORY_FILENAME
     positions_path = Path(OUTPUT_FOLDER) / POSITIONS_FILENAME
@@ -1052,6 +1055,14 @@ def main():
     log("Dashboard generator started.")
 
     if not input_path.exists():
+        for fallback in INPUT_FALLBACKS:
+            candidate = data_dir / fallback
+            if candidate.exists():
+                input_path = candidate
+                log(f"Primary input missing. Using fallback file: {input_path}")
+                break
+
+    if not input_path.exists():
         log(f"WARNING: Input file not found: {input_path}")
         log("Previous dashboard left in place. Will retry next run.")
         sys.exit(0)
@@ -1059,6 +1070,14 @@ def main():
     file_age_hrs = (datetime.now().timestamp() - input_path.stat().st_mtime) / 3600
     if file_age_hrs > 36:
         log(f"WARNING: Input file is {file_age_hrs:.1f} hours old. May not be today's data.")
+
+    if not weekly_path.exists():
+        for fallback in WEEKLY_FALLBACKS:
+            candidate = data_dir / fallback
+            if candidate.exists():
+                weekly_path = candidate
+                log(f"Primary weekly file missing. Using fallback file: {weekly_path}")
+                break
 
     if not weekly_path.exists():
         log(f"WARNING: Weekly file not found: {weekly_path} (long-range inspections will stay blank)")
@@ -1083,7 +1102,14 @@ def main():
         else:
             log("No positions data (fetch_positions.py may not have run yet).")
 
-        html = build_html(report_date, aircraft_list, components, flight_hours_stats, positions)
+        html = build_html(
+            report_date,
+            aircraft_list,
+            components,
+            flight_hours_stats,
+            positions,
+            input_path.name,
+        )
 
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(html)
