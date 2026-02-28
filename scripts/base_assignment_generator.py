@@ -26,7 +26,7 @@ import requests
 # Where you want outputs written (same folder you were using for SkyRouter/OneDrive)
 # Example Windows OneDrive path:
 # ONEDRIVE_FOLDER = r"C:\Users\YourUser\OneDrive\407-Fleet-Tracker"
-ONEDRIVE_FOLDER = r"."  # <- change me
+ONEDRIVE_FOLDER = r"C:\Users\nateh\Documents\ihc-fleet-dashboard\data"
 
 OUTPUT_FOLDER = "data"
 BASE_ASSIGNMENTS_FILE = "base_assignments.json"
@@ -40,8 +40,15 @@ USER_AGENT = "407-Fleet-Tracker/1.0 (base-assignments)"
 # ICAO should be a 6-hex-char string, case-insensitive (e.g., "A1B2C3").
 # You can also move this into a json file if you prefer.
 AIRCRAFT: Dict[str, Dict[str, str]] = {
-    # "N291HC": {"icao": "A1B2C3"},
-    # "N271HC": {"icao": "D4E5F6"},
+    "N251HC": {"icao": "A25BE7"},
+    "N261HC": {"icao": "A28366"},
+    "N271HC": {"icao": "A2AAE5"},
+    "N281HC": {"icao": "A2D264"},
+    "N291HC": {"icao": "A2F9E3"},
+    "N431HC": {"icao": "A52787"},
+    "N531HC": {"icao": "A6B4D6"},
+    "N631HC": {"icao": "A84225"},
+    "N731HC": {"icao": "A9CF74"},
 }
 
 # Define your bases with coordinates and radius
