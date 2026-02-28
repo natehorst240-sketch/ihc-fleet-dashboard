@@ -839,17 +839,7 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
   .away-card{{background:var(--surface);border:1px solid var(--border);border-radius:3px;padding:12px;}}
   .away-tail{{font-family:var(--sans);font-weight:700;font-size:14px;color:var(--heading);margin-bottom:4px;}}
   .away-info{{font-family:var(--mono);font-size:10px;color:var(--muted);}}
-  .cal-grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;}}
-  .cal-card{{background:var(--surface);border:1px solid var(--border);border-radius:4px;overflow:hidden;}}
-  .cal-card-header{{padding:10px 16px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}}
-  .cal-card-tail{{font-family:var(--sans);font-weight:900;font-size:16px;letter-spacing:1px;color:var(--heading);}}
-  .cal-card-hrs{{font-family:var(--mono);font-size:10px;color:var(--muted);}}
-  .cal-row{{display:flex;justify-content:space-between;align-items:center;padding:8px 16px;border-bottom:1px solid rgba(30,37,48,0.6);font-family:var(--mono);font-size:11px;}}
-  .cal-row:last-child{{border-bottom:none;}}
-  .cal-insp{{color:var(--text);}}
-  .cal-date{{color:var(--blue);}}
-  .cal-date.soon{{color:var(--amber);}}
-  .cal-date.urgent{{color:var(--red);}}
+  .cal-months-wrap{{display:flex;flex-direction:column;gap:32px;}}
   footer{{margin-top:48px;padding:16px 32px;border-top:1px solid var(--border);font-family:var(--mono);font-size:10px;color:var(--muted);display:flex;justify-content:space-between;letter-spacing:1px;}}
 </style>
 </head>
