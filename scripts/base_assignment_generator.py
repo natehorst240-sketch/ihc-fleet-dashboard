@@ -36,10 +36,15 @@ ADSBLOL_BASE_URL = "https://api.adsb.lol"  # base host
 REQUEST_TIMEOUT_SEC = 15
 USER_AGENT = "407-Fleet-Tracker/1.0 (base-assignments)"
 
-# Tail -> ICAO hex mapping
+# Optional mapping file (supports either of these structures):
+# 1) {"N251HC": {"icao": "A25BE7"}, ...}
+# 2) {"N251HC": "A25BE7", ...}
+# 3) [{"tail": "N251HC", "icao": "A25BE7"}, ...]
+AIRCRAFT_MAPPING_FILE = "aircraft_icao_map.json"
+
+# Tail -> ICAO hex fallback mapping
 # ICAO should be a 6-hex-char string, case-insensitive (e.g., "A1B2C3").
-# You can also move this into a json file if you prefer.
-AIRCRAFT: Dict[str, Dict[str, str]] = {
+DEFAULT_AIRCRAFT: Dict[str, Dict[str, str]] = {
     "N251HC": {"icao": "A25BE7"},
     "N261HC": {"icao": "A28366"},
     "N271HC": {"icao": "A2AAE5"},
@@ -203,7 +208,55 @@ def normalize_adsblol_aircraft(payload: Dict[str, Any]) -> Optional[Dict[str, An
     return None
 
 
-def load_adsblol_status() -> Dict[str, Dict[str, Any]]:
+def normalize_aircraft_mapping(raw_mapping: Any) -> Dict[str, Dict[str, str]]:
+    """Normalize several mapping shapes to {tail: {"icao": <hex>}}."""
+    normalized: Dict[str, Dict[str, str]] = {}
+
+    if isinstance(raw_mapping, dict):
+        for tail, value in raw_mapping.items():
+            tail_key = str(tail).strip().upper()
+            if not tail_key:
+                continue
+
+            if isinstance(value, str):
+                icao = value.strip().upper()
+            elif isinstance(value, dict):
+                icao = str(value.get("icao") or "").strip().upper()
+            else:
+                icao = ""
+
+            if icao:
+                normalized[tail_key] = {"icao": icao}
+
+    elif isinstance(raw_mapping, list):
+        for entry in raw_mapping:
+            if not isinstance(entry, dict):
+                continue
+            tail_key = str(entry.get("tail") or "").strip().upper()
+            icao = str(entry.get("icao") or "").strip().upper()
+            if tail_key and icao:
+                normalized[tail_key] = {"icao": icao}
+
+    return normalized
+
+
+def load_aircraft_mapping(base_folder: Path) -> Tuple[Dict[str, Dict[str, str]], str]:
+    """Load mapping from JSON file when present; otherwise use DEFAULT_AIRCRAFT."""
+    mapping_path = base_folder / AIRCRAFT_MAPPING_FILE
+    if mapping_path.exists():
+        try:
+            with open(mapping_path, "r", encoding="utf-8") as f:
+                file_mapping = json.load(f)
+            normalized = normalize_aircraft_mapping(file_mapping)
+            if normalized:
+                return normalized, f"file:{mapping_path}"
+        except Exception:
+            pass
+
+    return normalize_aircraft_mapping(DEFAULT_AIRCRAFT), "embedded DEFAULT_AIRCRAFT"
+
+
+def load_adsblol_status(aircraft_mapping: Dict[str, Dict[str, str]]) -> Dict[str, Dict[str, Any]]:
     """
     Build a SkyRouter-like dict keyed by tail number:
       {
@@ -214,7 +267,7 @@ def load_adsblol_status() -> Dict[str, Dict[str, Any]]:
     status: Dict[str, Dict[str, Any]] = {}
     session = _requests_session()
 
-    for tail, info in AIRCRAFT.items():
+    for tail, info in aircraft_mapping.items():
         icao_hex = (info.get("icao") or "").strip()
         if not icao_hex:
             continue
@@ -340,12 +393,16 @@ def generate_base_assignments() -> bool:
     try:
         log("Base assignment generation started (ADSB.lol)")
 
-        if not AIRCRAFT:
+        aircraft_mapping, mapping_source = load_aircraft_mapping(base_folder)
+
+        if not aircraft_mapping:
             log("ERROR: AIRCRAFT mapping is empty. Add tail->icao entries in AIRCRAFT.")
             return False
 
+        log(f"Loaded {len(aircraft_mapping)} aircraft ICAO mappings from {mapping_source}")
+
         log("Loading ADSB.lol positions...")
-        aircraft_status = load_adsblol_status()
+        aircraft_status = load_adsblol_status(aircraft_mapping)
 
         if not aircraft_status:
             log("WARNING: No ADSB.lol data available (check ICAO hex values and endpoint).")
