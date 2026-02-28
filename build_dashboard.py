@@ -617,103 +617,127 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
     if not comp_panels_html:
         comp_panels_html = '<div style="font-family:var(--mono);font-size:12px;color:var(--muted);padding:20px;">No components within 200 hours across fleet.</div>'
 
-    flight_hours_cards = []
-    mini_charts_data   = {}
+    # Build utilization rates data for bar chart
+    util_tails = []
+    util_avg_daily = []
+    util_avg_weekly = []
+    util_tt = []
+
     for ac in aircraft_list:
-        tail  = ac['tail']
+        tail = ac['tail']
         stats = flight_hours_stats.get(tail, {})
-        current_hrs  = stats.get('current_hours')
-        weekly       = stats.get('weekly')
-        monthly      = stats.get('monthly')
-        avg_daily    = stats.get('avg_daily')
-        daily_data   = stats.get('daily', [])
-        current_hrs_str = f"{current_hrs:,.1f}" if current_hrs else 'N/A'
-        weekly_str  = f"{weekly:.1f}"  if weekly  is not None else "—"
-        monthly_str = f"{monthly:.1f}" if monthly is not None else "—"
-        avg_daily_str = f"{avg_daily:.2f} hrs/day" if avg_daily is not None else "—"
-        weekly_class  = "positive" if weekly  and weekly  > 5  else ("low" if weekly  and weekly  > 0 else "")
-        monthly_class = "positive" if monthly and monthly > 20 else ("low" if monthly and monthly > 0 else "")
+        avg_daily = stats.get('avg_daily')
+        util_tails.append(tail)
+        util_avg_daily.append(round(avg_daily, 2) if avg_daily is not None else 0)
+        util_avg_weekly.append(round(avg_daily * 7, 2) if avg_daily is not None else 0)
+        util_tt.append(stats.get('current_hours') or 0)
 
-        hrs_today = get_hours_today(tail, positions)
-        flights_today = get_flights_today(tail, positions)
-        adsb_html = ''
-        if hrs_today or flights_today:
-            adsb_html = f'''
-            <div class="hours-stat-row">
-              <div class="hours-stat-label">ADSB Today</div>
-              <div>
-                <div class="hours-stat-value" style="font-size:18px;color:var(--blue);">{hrs_today:.1f} hrs</div>
-                <div class="hours-stat-sub">{len(flights_today)} flight(s)</div>
-              </div>
-            </div>'''
-
-        if daily_data and len(daily_data) >= 2:
-            chart_id = f"chart-{tail.replace(' ', '-')}"
-            mini_charts_data[tail] = {
-                'dates': [d['date'][-5:] for d in daily_data],
-                'hours': [d['hours'] for d in daily_data],
-            }
-            mini_chart_html = f'<canvas id="{chart_id}" class="mini-chart"></canvas>'
-        else:
-            mini_chart_html = '<div style="font-family:var(--mono);font-size:11px;color:var(--muted);padding:20px;text-align:center;">Insufficient data (need 2+ days)</div>'
-
-        flight_hours_cards.append(f'''
-        <div class="hours-card">
-          <div class="hours-card-header">
-            <div class="hours-card-tail">{tail}</div>
-            <div class="hours-card-current">{current_hrs_str} TT</div>
-          </div>
-          <div class="hours-card-body">
-            {adsb_html}
-            <div class="hours-stat-row">
-              <div class="hours-stat-label">Last 7 Days</div>
-              <div><div class="hours-stat-value {weekly_class}">{weekly_str}</div></div>
-            </div>
-            <div class="hours-stat-row">
-              <div class="hours-stat-label">Last 30 Days</div>
-              <div><div class="hours-stat-value {monthly_class}">{monthly_str}</div></div>
-            </div>
-            <div class="hours-stat-row">
-              <div class="hours-stat-label">Average Daily</div>
-              <div><div class="hours-stat-value" style="font-size:18px;">{avg_daily_str}</div></div>
-            </div>
-            {mini_chart_html}
-          </div>
-        </div>''')
+    tails_js    = '[' + ','.join(f'"{t}"' for t in util_tails) + ']'
+    daily_js    = '[' + ','.join(str(v) for v in util_avg_daily) + ']'
+    weekly_js   = '[' + ','.join(str(v) for v in util_avg_weekly) + ']'
+    tt_js       = '[' + ','.join(str(v) for v in util_tt) + ']'
 
     flight_hours_tab_html = f'''
-    <div class="section-label">Weekly & Monthly Flight Hours by Aircraft</div>
-    <div class="hours-grid">{''.join(flight_hours_cards)}</div>''' if flight_hours_cards else \
-    '<div style="font-family:var(--mono);font-size:12px;color:var(--muted);padding:20px;">No flight hours data available yet.</div>'
+    <div class="section-label">Fleet Utilization Rates</div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:20px;">
+      Average based on available history. Updates as more data accumulates.
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:24px;margin-bottom:32px;">
+      <canvas id="utilChart" style="width:100%;height:320px;"></canvas>
+    </div>
+    <div class="hours-grid">
+    '''
 
-    # FIX 1: Mini chart Y axis starts near data, not zero, to show meaningful scale
-    mini_charts_js = '\n'.join([f"""
-    if (document.getElementById('chart-{tail.replace(" ", "-")}')) {{
-      new Chart(document.getElementById('chart-{tail.replace(" ", "-")}'), {{
-        type: 'line',
+    for ac in aircraft_list:
+        tail = ac['tail']
+        stats = flight_hours_stats.get(tail, {})
+        avg_daily = stats.get('avg_daily')
+        current_hrs = stats.get('current_hours')
+        ah = f"{current_hrs:,.1f}" if current_hrs else 'N/A'
+        d_str = f"{avg_daily:.2f}" if avg_daily else "—"
+        w_str = f"{avg_daily*7:.1f}" if avg_daily else "—"
+        m_str = f"{avg_daily*30:.1f}" if avg_daily else "—"
+        flight_hours_tab_html += f'''
+      <div class="hours-card">
+        <div class="hours-card-header">
+          <div class="hours-card-tail">{tail}</div>
+          <div class="hours-card-current">{ah} TT</div>
+        </div>
+        <div class="hours-card-body">
+          <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div>
+            <div class="hours-stat-value">{d_str} hrs</div></div>
+          <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div>
+            <div class="hours-stat-value">{w_str} hrs</div></div>
+          <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div>
+            <div class="hours-stat-value">{m_str} hrs</div></div>
+        </div>
+      </div>'''
+
+    flight_hours_tab_html += '</div>'
+
+    mini_charts_js = f'''
+    (function() {{
+      var ctx = document.getElementById('utilChart');
+      if (!ctx) return;
+      new Chart(ctx, {{
+        type: 'bar',
         data: {{
-          labels: [{','.join([f"'{d}'" for d in data['dates']])}],
-          datasets: [{{ label: 'Total Hours', data: [{','.join([f'{h:.1f}' for h in data['hours']])}],
-            borderColor: '#29b6f6', backgroundColor: 'rgba(41,182,246,0.1)',
-            borderWidth: 2, tension: 0.4, pointRadius: 3, pointBackgroundColor: '#29b6f6'
-          }}]
+          labels: {tails_js},
+          datasets: [
+            {{
+              label: 'Avg Daily (hrs)',
+              data: {daily_js},
+              backgroundColor: 'rgba(41,182,246,0.8)',
+              borderColor: '#29b6f6',
+              borderWidth: 1,
+              yAxisID: 'yDaily'
+            }},
+            {{
+              label: 'Avg Weekly (hrs)',
+              data: {weekly_js},
+              backgroundColor: 'rgba(246,173,85,0.8)',
+              borderColor: '#f6ad55',
+              borderWidth: 1,
+              yAxisID: 'yWeekly'
+            }}
+          ]
         }},
         options: {{
-          responsive: true, maintainAspectRatio: false,
-          plugins: {{ legend: {{ display: false }},
-            tooltip: {{ callbacks: {{ label: function(c) {{ return c.parsed.y.toFixed(1) + ' hrs'; }} }} }}
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {{
+            legend: {{ labels: {{ color: '#a0aec0', font: {{ family: 'monospace', size: 11 }} }} }},
+            datalabels: {{
+              anchor: 'end', align: 'top',
+              color: '#a0aec0',
+              font: {{ size: 9, family: 'monospace' }},
+              formatter: function(v) {{ return v > 0 ? v.toFixed(2) : ''; }}
+            }}
           }},
           scales: {{
-            y: {{
-              beginAtZero: false,
-              ticks: {{ color: '#4a5568', font: {{ size: 9 }}, callback: function(v) {{ return v.toFixed(0); }} }},
-              grid: {{ color: 'rgba(30,37,48,0.5)' }}
+            yDaily: {{
+              type: 'linear', position: 'left',
+              beginAtZero: true,
+              title: {{ display: true, text: 'Daily Avg (hrs)', color: '#29b6f6', font: {{ size: 10 }} }},
+              ticks: {{ color: '#4a5568', font: {{ size: 10 }} }},
+              grid: {{ color: 'rgba(30,37,48,0.8)' }}
             }},
-            x: {{ ticks: {{ color: '#4a5568', font: {{ size: 9 }} }}, grid: {{ display: false }} }}
+            yWeekly: {{
+              type: 'linear', position: 'right',
+              beginAtZero: true,
+              title: {{ display: true, text: 'Weekly Avg (hrs)', color: '#f6ad55', font: {{ size: 10 }} }},
+              ticks: {{ color: '#4a5568', font: {{ size: 10 }} }},
+              grid: {{ drawOnChartArea: false }}
+            }},
+            x: {{
+              ticks: {{ color: '#a0aec0', font: {{ size: 10, family: 'monospace' }} }},
+              grid: {{ display: false }}
+            }}
           }}
-        }}
+        }},
+        plugins: [ChartDataLabels]
       }});
-    }}""" for tail, data in mini_charts_data.items()])
+    }})();'''
 
     bases_tab_html = _build_bases_tab(aircraft_list, positions)
 
@@ -1117,7 +1141,7 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
                 ev_html = ''
                 for t, interval, urgency in day_events:
                     ev_cls = f'cal-ev-{urgency}'
-                    ev_html += f'<div class="cal-ev {ev_cls}">{t[-4:]} {interval}h</div>'
+                    ev_html += f'<div class="cal-ev {ev_cls}">{t} {interval}h</div>'
 
                 cells += (
                     f'<div class="cal-day {cell_cls}{today_cls}">'
