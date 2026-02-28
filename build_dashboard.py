@@ -226,8 +226,6 @@ def calculate_flight_hours_stats(history_data, aircraft_list):
 # ── POSITIONS (ADSB) ──────────────────────────────────────────────────────────
 
 def load_positions(positions_path):
-<<<<<<< Updated upstream
-=======
     """
     Load positions from base_assignments.json and normalize into a
     per-tail dict that the rest of the dashboard expects.
@@ -244,7 +242,6 @@ def load_positions(positions_path):
         'total_flight_hrs_today': 0.0,
       }
     """
->>>>>>> Stashed changes
     if not positions_path.exists():
         return {}
     try:
