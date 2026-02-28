@@ -405,7 +405,7 @@ def generate_base_assignments() -> bool:
         aircraft_status = load_adsblol_status(aircraft_mapping)
 
         if not aircraft_status:
-          log("WARNING: No live ADSB.lol data available. Writing last-known assignments.")
+           log("WARNING: No live ADSB.lol data available. Writing last-known assignments.")
         log(f"Loaded position data for {len(aircraft_status)} aircraft")
 
         previous_assignments = load_previous_assignments(assignments_path)
