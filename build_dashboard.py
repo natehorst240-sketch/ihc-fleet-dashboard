@@ -1001,9 +1001,14 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
 
 
 def _build_calendar_tab(aircraft_list, flight_hours_stats):
-    """Build projected maintenance calendar based on avg daily utilization."""
+    """Build a month-view calendar with projected maintenance due dates."""
+    import calendar as cal_mod
+
     today = datetime.today()
-    cards_html = ''
+
+    # Collect all projected events: {date_str: [(tail, interval, urgency), ...]}
+    events = {}
+    fallback_cards = []
 
     for ac in aircraft_list:
         tail = ac['tail']
@@ -1014,7 +1019,41 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
         stats = flight_hours_stats.get(tail, {})
         avg_daily = stats.get('avg_daily')
 
-        rows_html = ''
+        if not avg_daily or avg_daily <= 0:
+            rows = []
+            for interval in TARGET_INTERVALS:
+                v = ac['intervals'].get(interval)
+                if v is None:
+                    continue
+                rem_hrs = v.get('rem_hrs')
+                if rem_hrs is None:
+                    continue
+                if rem_hrs < 0:
+                    cls = 'cal-ev-overdue'
+                    label = 'OVERDUE'
+                elif rem_hrs <= 25:
+                    cls = 'cal-ev-urgent'
+                    label = f'{rem_hrs:.0f} hrs'
+                elif rem_hrs <= 100:
+                    cls = 'cal-ev-soon'
+                    label = f'{rem_hrs:.0f} hrs'
+                else:
+                    cls = ''
+                    label = f'{rem_hrs:.0f} hrs'
+                rows.append(
+                    f'<div class="cal-fb-row"><span class="cal-fb-insp">{interval} Hr</span>'
+                    f'<span class="cal-fb-val {cls}">{label}</span></div>'
+                )
+            if rows:
+                ah = f'{current_hrs:,.1f}' if current_hrs else 'N/A'
+                fallback_cards.append(
+                    f'<div class="cal-fb-card"><div class="cal-fb-head">'
+                    f'<span class="cal-fb-tail">{tail}</span>'
+                    f'<span class="cal-fb-hrs">{ah} TT &mdash; no utilization data</span>'
+                    f'</div>{"".join(rows)}</div>'
+                )
+            continue
+
         for interval in TARGET_INTERVALS:
             v = ac['intervals'].get(interval)
             if v is None:
@@ -1022,43 +1061,152 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
             rem_hrs = v.get('rem_hrs')
             if rem_hrs is None:
                 continue
+
             if rem_hrs < 0:
-                date_str = 'OVERDUE'
-                date_cls = 'urgent'
-            elif avg_daily and avg_daily > 0:
-                days_until = rem_hrs / avg_daily
-                projected = today + timedelta(days=days_until)
-                date_str = projected.strftime('%d %b %Y').upper()
-                date_cls = 'urgent' if days_until <= 30 else ('soon' if days_until <= 90 else '')
+                due_date = today
+                urgency = 'overdue'
             else:
-                date_str = f'{rem_hrs:.0f} hrs remaining'
-                date_cls = 'urgent' if rem_hrs <= 25 else ('soon' if rem_hrs <= 100 else '')
+                days_until = rem_hrs / avg_daily
+                due_date = today + timedelta(days=days_until)
+                if days_until <= 30:
+                    urgency = 'urgent'
+                elif days_until <= 90:
+                    urgency = 'soon'
+                else:
+                    urgency = 'ok'
 
-            rows_html += f'''
-            <div class="cal-row">
-              <span class="cal-insp">{interval} Hr</span>
-              <span class="cal-date {date_cls}">{date_str}</span>
-            </div>'''
+            key = due_date.strftime('%Y-%m-%d')
+            events.setdefault(key, []).append((tail, interval, urgency))
 
-        if rows_html:
-            ah = f"{current_hrs:,.1f}" if current_hrs else 'N/A'
-            avg_str = f'{avg_daily:.2f} hrs/day' if avg_daily else 'No utilization data'
-            cards_html += f'''
-        <div class="cal-card">
-          <div class="cal-card-header">
-            <div class="cal-card-tail">{tail}</div>
-            <div class="cal-card-hrs">{ah} TT · {avg_str}</div>
-          </div>
-          {rows_html}
-        </div>'''
+    # Build 3-month calendar view
+    months_html = ''
+    for month_offset in range(3):
+        m = today.month + month_offset
+        y = today.year + (m - 1) // 12
+        m = ((m - 1) % 12) + 1
 
-    if not cards_html:
-        return '<div style="font-family:var(--mono);font-size:12px;color:var(--muted);padding:20px;">Not enough flight-hours history to project due dates yet. Once each aircraft has multiple days of history, projections will appear here.</div>'
+        month_name = datetime(y, m, 1).strftime('%B %Y').upper()
+        first_dow = datetime(y, m, 1).weekday()  # 0=Monday
+        days_in_month = cal_mod.monthrange(y, m)[1]
 
-    return f'''
-    <div class="section-label">Projected Maintenance Calendar</div>
-    <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:16px;">Dates projected based on average daily utilization. Actual dates will vary.</div>
-    <div class="cal-grid">{cards_html}</div>'''
+        day_headers = ''.join(
+            f'<div class="cal-dow">{d}</div>'
+            for d in ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
+        )
+
+        cells = '<div class="cal-empty"></div>' * first_dow
+
+        for day in range(1, days_in_month + 1):
+            date_key = f'{y}-{m:02d}-{day:02d}'
+            day_events = events.get(date_key, [])
+            is_today = (y == today.year and m == today.month and day == today.day)
+            today_cls = ' cal-today' if is_today else ''
+
+            if day_events:
+                if any(e[2] == 'overdue' for e in day_events):
+                    cell_cls = 'cal-day-overdue'
+                elif any(e[2] == 'urgent' for e in day_events):
+                    cell_cls = 'cal-day-urgent'
+                elif any(e[2] == 'soon' for e in day_events):
+                    cell_cls = 'cal-day-soon'
+                else:
+                    cell_cls = 'cal-day-ok'
+
+                ev_html = ''
+                for t, interval, urgency in day_events:
+                    ev_cls = f'cal-ev-{urgency}'
+                    ev_html += f'<div class="cal-ev {ev_cls}">{t[-4:]} {interval}h</div>'
+
+                cells += (
+                    f'<div class="cal-day {cell_cls}{today_cls}">'
+                    f'<div class="cal-day-num">{day}</div>{ev_html}</div>'
+                )
+            else:
+                is_past = (y == today.year and m == today.month and day < today.day)
+                past_cls = ' cal-past' if is_past else ''
+                cells += (
+                    f'<div class="cal-day{today_cls}{past_cls}">'
+                    f'<div class="cal-day-num">{day}</div></div>'
+                )
+
+        months_html += (
+            f'<div class="cal-month">'
+            f'<div class="cal-month-title">{month_name}</div>'
+            f'<div class="cal-grid-days">{day_headers}{cells}</div>'
+            f'</div>'
+        )
+
+    fallback_html = ''
+    if fallback_cards:
+        fallback_html = (
+            f'<div class="section-label" style="margin-top:32px;">AIRCRAFT WITHOUT UTILIZATION DATA</div>'
+            f'<div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:12px;">'
+            f'Showing hours remaining. Projected dates appear once utilization history accumulates.</div>'
+            f'<div class="cal-fb-grid">{"".join(fallback_cards)}</div>'
+        )
+
+    legend_html = (
+        '<div class="cal-legend">'
+        '<span class="cal-leg-item"><span class="cal-leg-dot cal-ev-overdue"></span>OVERDUE</span>'
+        '<span class="cal-leg-item"><span class="cal-leg-dot cal-ev-urgent"></span>DUE &le;30 DAYS</span>'
+        '<span class="cal-leg-item"><span class="cal-leg-dot cal-ev-soon"></span>DUE &le;90 DAYS</span>'
+        '<span class="cal-leg-item"><span class="cal-leg-dot cal-ev-ok"></span>SCHEDULED</span>'
+        '</div>'
+    )
+
+    css = (
+        '<style>'
+        '.cal-months-wrap{display:flex;flex-direction:column;gap:32px;}'
+        '.cal-month{width:100%;}'
+        '.cal-month-title{font-family:var(--mono);font-size:11px;font-weight:700;'
+        'color:var(--cyan);letter-spacing:2px;margin-bottom:8px;}'
+        '.cal-grid-days{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}'
+        '.cal-dow{font-family:var(--mono);font-size:9px;color:var(--muted);'
+        'text-align:center;padding:4px 0;letter-spacing:1px;}'
+        '.cal-empty{background:transparent;min-height:60px;}'
+        '.cal-day{background:#0d1117;border:1px solid #1e2533;border-radius:3px;'
+        'min-height:60px;padding:4px;position:relative;overflow:hidden;}'
+        '.cal-day-num{font-family:var(--mono);font-size:9px;color:var(--muted);margin-bottom:2px;}'
+        '.cal-today{border-color:var(--cyan)!important;}'
+        '.cal-today .cal-day-num{color:var(--cyan);font-weight:700;}'
+        '.cal-past{opacity:0.4;}'
+        '.cal-day-overdue{background:#2a0a0a;border-color:#c0392b;}'
+        '.cal-day-urgent{background:#1a1200;border-color:#e67e22;}'
+        '.cal-day-soon{background:#0d1a0d;border-color:#f39c12;}'
+        '.cal-day-ok{background:#0a1520;border-color:#2980b9;}'
+        '.cal-ev{font-family:var(--mono);font-size:8px;padding:1px 3px;'
+        'border-radius:2px;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}'
+        '.cal-ev-overdue{background:#c0392b;color:#fff;}'
+        '.cal-ev-urgent{background:#e67e22;color:#000;}'
+        '.cal-ev-soon{background:#f39c12;color:#000;}'
+        '.cal-ev-ok{background:#2980b9;color:#fff;}'
+        '.cal-legend{display:flex;gap:20px;margin-bottom:20px;font-family:var(--mono);'
+        'font-size:10px;color:var(--muted);flex-wrap:wrap;}'
+        '.cal-leg-item{display:flex;align-items:center;gap:6px;}'
+        '.cal-leg-dot{width:10px;height:10px;border-radius:2px;display:inline-block;}'
+        '.cal-fb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;}'
+        '.cal-fb-card{background:#0d1117;border:1px solid #1e2533;border-radius:4px;padding:12px;}'
+        '.cal-fb-head{display:flex;justify-content:space-between;align-items:baseline;'
+        'margin-bottom:8px;border-bottom:1px solid #1e2533;padding-bottom:6px;}'
+        '.cal-fb-tail{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--cyan);}'
+        '.cal-fb-hrs{font-family:var(--mono);font-size:9px;color:var(--muted);}'
+        '.cal-fb-row{display:flex;justify-content:space-between;font-family:var(--mono);'
+        'font-size:11px;padding:3px 0;border-bottom:1px solid #161c25;}'
+        '.cal-fb-insp{color:var(--muted);}'
+        '.cal-fb-val{font-weight:700;}'
+        '</style>'
+    )
+
+    return (
+        f'{css}'
+        f'<div class="section-label">PROJECTED MAINTENANCE CALENDAR</div>'
+        f'<div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:16px;">'
+        f'Dates projected from average daily utilization. Actual dates will vary.</div>'
+        f'{legend_html}'
+        f'<div class="cal-months-wrap">{months_html}</div>'
+        f'{fallback_html}'
+    )
+
 
 
 def _build_bases_tab(aircraft_list, positions):
