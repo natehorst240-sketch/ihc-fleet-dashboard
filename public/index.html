@@ -146,6 +146,7 @@
   <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('maintenance',this)">Maintenance Due List</button>
     <button class="tab-btn" onclick="switchTab('flight-hours',this)">Flight Hours Tracking</button>
+    <button class="tab-btn" onclick="switchTab('calendar',this)">Calendar</button>
     <button class="tab-btn" onclick="switchTab('bases',this)">Bases</button>
   </div>
 
@@ -664,6 +665,14 @@
         </div></div>
   </div>
 
+  <!-- CALENDAR TAB -->
+  <div id="tab-calendar" class="tab-content">
+    <div class="section-label">Projected Maintenance Calendar</div>
+    <div style="font-family:var(--mono);font-size:12px;color:var(--muted);padding:20px;">
+      Not enough flight-hours history to project due dates yet. Once each aircraft has multiple days of history, projections will appear here.
+    </div>
+  </div>
+  
   <!-- BASES TAB -->
   <div id="tab-bases" class="tab-content">
 <div style="font-family:var(--mono);font-size:12px;color:var(--muted);padding:20px;">No position data available. Runs after fetch_positions.py completes.</div>
@@ -673,6 +682,7 @@
   <span>SOURCE: VERYON MAINTENANCE TRACKING &nbsp;|&nbsp; Due-List_Latest_aw109sp.csv</span>
   <span>IHC HEALTH SERVICES — AVIATION MAINTENANCE</span>
 </footer>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
   function switchTab(tabName, btn) {
@@ -707,15 +717,28 @@
   } else {
     new Chart(document.getElementById('bar200'), {
       type: 'bar',
-      data: { labels: labels200, datasets: [{ label: 'Hours remaining to 200 Hr', data: values200 }] },
+      data: { labels: labels200, datasets: [{ 
+        label: 'Hours remaining to 200 Hr', 
+        data: values200,
+        backgroundColor: '#29b6f6'
+      }] },
       options: {
         responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: true } },
+        plugins: { 
+          legend: { display: true },
+          datalabels: {
+            anchor: 'end', align: 'top',
+            color: '#cdd6e0',
+            font: { family: 'Share Tech Mono', size: 11 },
+            formatter: function(value) { return value.toFixed(1); }
+          }
+        },
         scales: {
-          y: { title: { display: true, text: 'Hours Remaining' } },
+          y: { beginAtZero: true, title: { display: true, text: 'Hours Remaining' } },
           x: { title: { display: true, text: 'Aircraft (closest first)' } }
         }
-      }
+      },
+      plugins: [ChartDataLabels]
     });
   }
   
@@ -735,6 +758,7 @@
             tooltip: { callbacks: { label: function(c) { return c.parsed.y.toFixed(1) + ' hrs'; } } }
           },
           scales: {
+            min: 0,
             y: { ticks: { color: '#4a5568', font: { size: 9 } }, grid: { color: 'rgba(30,37,48,0.5)' } },
             x: { ticks: { color: '#4a5568', font: { size: 9 } }, grid: { display: false } }
           }
@@ -758,6 +782,7 @@
             tooltip: { callbacks: { label: function(c) { return c.parsed.y.toFixed(1) + ' hrs'; } } }
           },
           scales: {
+            min: 0,
             y: { ticks: { color: '#4a5568', font: { size: 9 } }, grid: { color: 'rgba(30,37,48,0.5)' } },
             x: { ticks: { color: '#4a5568', font: { size: 9 } }, grid: { display: false } }
           }
@@ -781,6 +806,7 @@
             tooltip: { callbacks: { label: function(c) { return c.parsed.y.toFixed(1) + ' hrs'; } } }
           },
           scales: {
+            min: 0,
             y: { ticks: { color: '#4a5568', font: { size: 9 } }, grid: { color: 'rgba(30,37,48,0.5)' } },
             x: { ticks: { color: '#4a5568', font: { size: 9 } }, grid: { display: false } }
           }
@@ -804,6 +830,7 @@
             tooltip: { callbacks: { label: function(c) { return c.parsed.y.toFixed(1) + ' hrs'; } } }
           },
           scales: {
+            min: 0,
             y: { ticks: { color: '#4a5568', font: { size: 9 } }, grid: { color: 'rgba(30,37,48,0.5)' } },
             x: { ticks: { color: '#4a5568', font: { size: 9 } }, grid: { display: false } }
           }
@@ -827,6 +854,7 @@
             tooltip: { callbacks: { label: function(c) { return c.parsed.y.toFixed(1) + ' hrs'; } } }
           },
           scales: {
+            min: 0,
             y: { ticks: { color: '#4a5568', font: { size: 9 } }, grid: { color: 'rgba(30,37,48,0.5)' } },
             x: { ticks: { color: '#4a5568', font: { size: 9 } }, grid: { display: false } }
           }
@@ -850,6 +878,7 @@
             tooltip: { callbacks: { label: function(c) { return c.parsed.y.toFixed(1) + ' hrs'; } } }
           },
           scales: {
+            min: 0,
             y: { ticks: { color: '#4a5568', font: { size: 9 } }, grid: { color: 'rgba(30,37,48,0.5)' } },
             x: { ticks: { color: '#4a5568', font: { size: 9 } }, grid: { display: false } }
           }
@@ -873,6 +902,7 @@
             tooltip: { callbacks: { label: function(c) { return c.parsed.y.toFixed(1) + ' hrs'; } } }
           },
           scales: {
+            min: 0,
             y: { ticks: { color: '#4a5568', font: { size: 9 } }, grid: { color: 'rgba(30,37,48,0.5)' } },
             x: { ticks: { color: '#4a5568', font: { size: 9 } }, grid: { display: false } }
           }
@@ -896,6 +926,7 @@
             tooltip: { callbacks: { label: function(c) { return c.parsed.y.toFixed(1) + ' hrs'; } } }
           },
           scales: {
+            min: 0,
             y: { ticks: { color: '#4a5568', font: { size: 9 } }, grid: { color: 'rgba(30,37,48,0.5)' } },
             x: { ticks: { color: '#4a5568', font: { size: 9 } }, grid: { display: false } }
           }
@@ -919,6 +950,7 @@
             tooltip: { callbacks: { label: function(c) { return c.parsed.y.toFixed(1) + ' hrs'; } } }
           },
           scales: {
+            min: 0,
             y: { ticks: { color: '#4a5568', font: { size: 9 } }, grid: { color: 'rgba(30,37,48,0.5)' } },
             x: { ticks: { color: '#4a5568', font: { size: 9 } }, grid: { display: false } }
           }
