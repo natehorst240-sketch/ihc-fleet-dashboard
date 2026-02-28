@@ -35,7 +35,9 @@ jobs:
         run: |
           git config user.email "actions@github.com"
           git config user.name "GitHub Actions"
+          git stash -u
           git pull --rebase origin main
-          git add public/index.html data/*.json || true
+          git stash pop
+          git add public/index.html data/fleet_dashboard.html data/*.json || true
           git commit -m "Update dashboard $(date -u)" || echo "No changes"
           git push
