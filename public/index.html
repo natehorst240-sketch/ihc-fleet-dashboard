@@ -121,6 +121,17 @@
   .away-card{background:var(--surface);border:1px solid var(--border);border-radius:3px;padding:12px;}
   .away-tail{font-family:var(--sans);font-weight:700;font-size:14px;color:var(--heading);margin-bottom:4px;}
   .away-info{font-family:var(--mono);font-size:10px;color:var(--muted);}
+  .cal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;}
+  .cal-card{background:var(--surface);border:1px solid var(--border);border-radius:4px;overflow:hidden;}
+  .cal-card-header{padding:10px 16px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+  .cal-card-tail{font-family:var(--sans);font-weight:900;font-size:16px;letter-spacing:1px;color:var(--heading);}
+  .cal-card-hrs{font-family:var(--mono);font-size:10px;color:var(--muted);}
+  .cal-row{display:flex;justify-content:space-between;align-items:center;padding:8px 16px;border-bottom:1px solid rgba(30,37,48,0.6);font-family:var(--mono);font-size:11px;}
+  .cal-row:last-child{border-bottom:none;}
+  .cal-insp{color:var(--text);}
+  .cal-date{color:var(--blue);}
+  .cal-date.soon{color:var(--amber);}
+  .cal-date.urgent{color:var(--red);}
   footer{margin-top:48px;padding:16px 32px;border-top:1px solid var(--border);font-family:var(--mono);font-size:10px;color:var(--muted);display:flex;justify-content:space-between;letter-spacing:1px;}
 </style>
 </head>
@@ -132,7 +143,7 @@
   </div>
   <div class="header-meta">
     <div class="date">REPORT DATE: 20 FEB 2026</div>
-    <div>FLEET: 9 AIRCRAFT &nbsp;|&nbsp; 0 AIRBORNE &nbsp;|&nbsp; 0 AT BASE &nbsp;|&nbsp; GENERATED: 28 FEB 2026 19:10</div>
+    <div>FLEET: 9 AIRCRAFT &nbsp;|&nbsp; 0 AIRBORNE &nbsp;|&nbsp; 0 AT BASE &nbsp;|&nbsp; GENERATED: 28 FEB 2026 21:39</div>
   </div>
 </header>
 <div class="legend">
@@ -667,12 +678,327 @@
 
   <!-- CALENDAR TAB -->
   <div id="tab-calendar" class="tab-content">
+
     <div class="section-label">Projected Maintenance Calendar</div>
-    <div style="font-family:var(--mono);font-size:12px;color:var(--muted);padding:20px;">
-      Not enough flight-hours history to project due dates yet. Once each aircraft has multiple days of history, projections will appear here.
-    </div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:16px;">Dates projected based on average daily utilization. Actual dates will vary.</div>
+    <div class="cal-grid">
+        <div class="cal-card">
+          <div class="cal-card-header">
+            <div class="cal-card-tail">N251HC</div>
+            <div class="cal-card-hrs">6,043.9 TT · No utilization data</div>
+          </div>
+          
+            <div class="cal-row">
+              <span class="cal-insp">50 Hr</span>
+              <span class="cal-date soon">47 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">100 Hr</span>
+              <span class="cal-date soon">97 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">200 Hr</span>
+              <span class="cal-date soon">99 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">400 Hr</span>
+              <span class="cal-date ">299 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">800 Hr</span>
+              <span class="cal-date ">310 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">2400 Hr</span>
+              <span class="cal-date ">1112 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">3200 Hr</span>
+              <span class="cal-date ">292 hrs remaining</span>
+            </div>
+        </div>
+        <div class="cal-card">
+          <div class="cal-card-header">
+            <div class="cal-card-tail">N261HC</div>
+            <div class="cal-card-hrs">6,073.7 TT · No utilization data</div>
+          </div>
+          
+            <div class="cal-row">
+              <span class="cal-insp">50 Hr</span>
+              <span class="cal-date urgent">14 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">100 Hr</span>
+              <span class="cal-date soon">64 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">200 Hr</span>
+              <span class="cal-date soon">62 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">400 Hr</span>
+              <span class="cal-date ">262 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">800 Hr</span>
+              <span class="cal-date ">258 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">2400 Hr</span>
+              <span class="cal-date ">1066 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">3200 Hr</span>
+              <span class="cal-date ">301 hrs remaining</span>
+            </div>
+        </div>
+        <div class="cal-card">
+          <div class="cal-card-header">
+            <div class="cal-card-tail">N271HC</div>
+            <div class="cal-card-hrs">6,969.0 TT · No utilization data</div>
+          </div>
+          
+            <div class="cal-row">
+              <span class="cal-insp">50 Hr</span>
+              <span class="cal-date soon">46 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">100 Hr</span>
+              <span class="cal-date soon">46 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">200 Hr</span>
+              <span class="cal-date ">146 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">400 Hr</span>
+              <span class="cal-date ">174 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">800 Hr</span>
+              <span class="cal-date ">183 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">2400 Hr</span>
+              <span class="cal-date ">169 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">3200 Hr</span>
+              <span class="cal-date ">2583 hrs remaining</span>
+            </div>
+        </div>
+        <div class="cal-card">
+          <div class="cal-card-header">
+            <div class="cal-card-tail">N281HC</div>
+            <div class="cal-card-hrs">6,494.7 TT · No utilization data</div>
+          </div>
+          
+            <div class="cal-row">
+              <span class="cal-insp">50 Hr</span>
+              <span class="cal-date soon">28 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">100 Hr</span>
+              <span class="cal-date soon">30 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">200 Hr</span>
+              <span class="cal-date soon">26 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">400 Hr</span>
+              <span class="cal-date ">226 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">800 Hr</span>
+              <span class="cal-date ">626 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">2400 Hr</span>
+              <span class="cal-date ">229 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">3200 Hr</span>
+              <span class="cal-date ">3026 hrs remaining</span>
+            </div>
+        </div>
+        <div class="cal-card">
+          <div class="cal-card-header">
+            <div class="cal-card-tail">N291HC</div>
+            <div class="cal-card-hrs">5,888.5 TT · No utilization data</div>
+          </div>
+          
+            <div class="cal-row">
+              <span class="cal-insp">50 Hr</span>
+              <span class="cal-date urgent">17 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">100 Hr</span>
+              <span class="cal-date soon">67 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">200 Hr</span>
+              <span class="cal-date soon">68 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">400 Hr</span>
+              <span class="cal-date soon">72 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">800 Hr</span>
+              <span class="cal-date ">472 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">2400 Hr</span>
+              <span class="cal-date ">1277 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">3200 Hr</span>
+              <span class="cal-date ">484 hrs remaining</span>
+            </div>
+        </div>
+        <div class="cal-card">
+          <div class="cal-card-header">
+            <div class="cal-card-tail">N431HC</div>
+            <div class="cal-card-hrs">1,998.7 TT · No utilization data</div>
+          </div>
+          
+            <div class="cal-row">
+              <span class="cal-insp">50 Hr</span>
+              <span class="cal-date soon">33 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">100 Hr</span>
+              <span class="cal-date soon">83 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">200 Hr</span>
+              <span class="cal-date ">183 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">400 Hr</span>
+              <span class="cal-date ">383 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">800 Hr</span>
+              <span class="cal-date ">390 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">2400 Hr</span>
+              <span class="cal-date ">401 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">3200 Hr</span>
+              <span class="cal-date ">1201 hrs remaining</span>
+            </div>
+        </div>
+        <div class="cal-card">
+          <div class="cal-card-header">
+            <div class="cal-card-tail">N531HC</div>
+            <div class="cal-card-hrs">3,319.7 TT · No utilization data</div>
+          </div>
+          
+            <div class="cal-row">
+              <span class="cal-insp">50 Hr</span>
+              <span class="cal-date urgent">11 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">100 Hr</span>
+              <span class="cal-date urgent">9 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">200 Hr</span>
+              <span class="cal-date ">109 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">400 Hr</span>
+              <span class="cal-date ">111 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">800 Hr</span>
+              <span class="cal-date ">511 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">2400 Hr</span>
+              <span class="cal-date ">1403 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">3200 Hr</span>
+              <span class="cal-date ">2911 hrs remaining</span>
+            </div>
+        </div>
+        <div class="cal-card">
+          <div class="cal-card-header">
+            <div class="cal-card-tail">N631HC</div>
+            <div class="cal-card-hrs">1,847.1 TT · No utilization data</div>
+          </div>
+          
+            <div class="cal-row">
+              <span class="cal-insp">50 Hr</span>
+              <span class="cal-date soon">50 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">100 Hr</span>
+              <span class="cal-date soon">83 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">200 Hr</span>
+              <span class="cal-date ">151 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">400 Hr</span>
+              <span class="cal-date ">152 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">800 Hr</span>
+              <span class="cal-date ">552 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">2400 Hr</span>
+              <span class="cal-date ">553 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">3200 Hr</span>
+              <span class="cal-date ">1353 hrs remaining</span>
+            </div>
+        </div>
+        <div class="cal-card">
+          <div class="cal-card-header">
+            <div class="cal-card-tail">N731HC</div>
+            <div class="cal-card-hrs">11.1 TT · No utilization data</div>
+          </div>
+          
+            <div class="cal-row">
+              <span class="cal-insp">50 Hr</span>
+              <span class="cal-date soon">39 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">100 Hr</span>
+              <span class="cal-date soon">89 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">200 Hr</span>
+              <span class="cal-date ">189 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">400 Hr</span>
+              <span class="cal-date ">389 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">800 Hr</span>
+              <span class="cal-date ">789 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">2400 Hr</span>
+              <span class="cal-date ">2389 hrs remaining</span>
+            </div>
+            <div class="cal-row">
+              <span class="cal-insp">3200 Hr</span>
+              <span class="cal-date ">3189 hrs remaining</span>
+            </div>
+        </div></div>
   </div>
-  
+
   <!-- BASES TAB -->
   <div id="tab-bases" class="tab-content">
 <div style="font-family:var(--mono);font-size:12px;color:var(--muted);padding:20px;">No position data available. Runs after fetch_positions.py completes.</div>
@@ -682,8 +1008,8 @@
   <span>SOURCE: VERYON MAINTENANCE TRACKING &nbsp;|&nbsp; Due-List_Latest_aw109sp.csv</span>
   <span>IHC HEALTH SERVICES — AVIATION MAINTENANCE</span>
 </footer>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 <script>
   function switchTab(tabName, btn) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -717,14 +1043,10 @@
   } else {
     new Chart(document.getElementById('bar200'), {
       type: 'bar',
-      data: { labels: labels200, datasets: [{ 
-        label: 'Hours remaining to 200 Hr', 
-        data: values200,
-        backgroundColor: '#29b6f6'
-      }] },
+      data: { labels: labels200, datasets: [{ label: 'Hours remaining to 200 Hr', data: values200, backgroundColor: '#29b6f6' }] },
       options: {
         responsive: true, maintainAspectRatio: false,
-        plugins: { 
+        plugins: {
           legend: { display: true },
           datalabels: {
             anchor: 'end', align: 'top',
@@ -758,7 +1080,11 @@
             tooltip: { callbacks: { label: function(c) { return c.parsed.y.toFixed(1) + ' hrs'; } } }
           },
           scales: {
-            y: { min: 0, ticks: { color: '#4a5568', font: { size: 9 } }, grid: { color: 'rgba(30,37,48,0.5)' } },
+            y: {
+              beginAtZero: false,
+              ticks: { color: '#4a5568', font: { size: 9 }, callback: function(v) { return v.toFixed(0); } },
+              grid: { color: 'rgba(30,37,48,0.5)' }
+            },
             x: { ticks: { color: '#4a5568', font: { size: 9 } }, grid: { display: false } }
           }
         }
@@ -781,7 +1107,11 @@
             tooltip: { callbacks: { label: function(c) { return c.parsed.y.toFixed(1) + ' hrs'; } } }
           },
           scales: {
-            y: { min: 0, ticks: { color: '#4a5568', font: { size: 9 } }, grid: { color: 'rgba(30,37,48,0.5)' } },
+            y: {
+              beginAtZero: false,
+              ticks: { color: '#4a5568', font: { size: 9 }, callback: function(v) { return v.toFixed(0); } },
+              grid: { color: 'rgba(30,37,48,0.5)' }
+            },
             x: { ticks: { color: '#4a5568', font: { size: 9 } }, grid: { display: false } }
           }
         }
@@ -804,7 +1134,11 @@
             tooltip: { callbacks: { label: function(c) { return c.parsed.y.toFixed(1) + ' hrs'; } } }
           },
           scales: {
-            y: { min: 0, ticks: { color: '#4a5568', font: { size: 9 } }, grid: { color: 'rgba(30,37,48,0.5)' } },
+            y: {
+              beginAtZero: false,
+              ticks: { color: '#4a5568', font: { size: 9 }, callback: function(v) { return v.toFixed(0); } },
+              grid: { color: 'rgba(30,37,48,0.5)' }
+            },
             x: { ticks: { color: '#4a5568', font: { size: 9 } }, grid: { display: false } }
           }
         }
@@ -827,7 +1161,11 @@
             tooltip: { callbacks: { label: function(c) { return c.parsed.y.toFixed(1) + ' hrs'; } } }
           },
           scales: {
-            y: { min: 0, ticks: { color: '#4a5568', font: { size: 9 } }, grid: { color: 'rgba(30,37,48,0.5)' } },
+            y: {
+              beginAtZero: false,
+              ticks: { color: '#4a5568', font: { size: 9 }, callback: function(v) { return v.toFixed(0); } },
+              grid: { color: 'rgba(30,37,48,0.5)' }
+            },
             x: { ticks: { color: '#4a5568', font: { size: 9 } }, grid: { display: false } }
           }
         }
@@ -850,7 +1188,11 @@
             tooltip: { callbacks: { label: function(c) { return c.parsed.y.toFixed(1) + ' hrs'; } } }
           },
           scales: {
-            y: { min: 0, ticks: { color: '#4a5568', font: { size: 9 } }, grid: { color: 'rgba(30,37,48,0.5)' } },
+            y: {
+              beginAtZero: false,
+              ticks: { color: '#4a5568', font: { size: 9 }, callback: function(v) { return v.toFixed(0); } },
+              grid: { color: 'rgba(30,37,48,0.5)' }
+            },
             x: { ticks: { color: '#4a5568', font: { size: 9 } }, grid: { display: false } }
           }
         }
@@ -873,7 +1215,11 @@
             tooltip: { callbacks: { label: function(c) { return c.parsed.y.toFixed(1) + ' hrs'; } } }
           },
           scales: {
-            y: { min: 0, ticks: { color: '#4a5568', font: { size: 9 } }, grid: { color: 'rgba(30,37,48,0.5)' } },
+            y: {
+              beginAtZero: false,
+              ticks: { color: '#4a5568', font: { size: 9 }, callback: function(v) { return v.toFixed(0); } },
+              grid: { color: 'rgba(30,37,48,0.5)' }
+            },
             x: { ticks: { color: '#4a5568', font: { size: 9 } }, grid: { display: false } }
           }
         }
@@ -896,7 +1242,11 @@
             tooltip: { callbacks: { label: function(c) { return c.parsed.y.toFixed(1) + ' hrs'; } } }
           },
           scales: {
-            y: { min: 0, ticks: { color: '#4a5568', font: { size: 9 } }, grid: { color: 'rgba(30,37,48,0.5)' } },
+            y: {
+              beginAtZero: false,
+              ticks: { color: '#4a5568', font: { size: 9 }, callback: function(v) { return v.toFixed(0); } },
+              grid: { color: 'rgba(30,37,48,0.5)' }
+            },
             x: { ticks: { color: '#4a5568', font: { size: 9 } }, grid: { display: false } }
           }
         }
@@ -919,7 +1269,11 @@
             tooltip: { callbacks: { label: function(c) { return c.parsed.y.toFixed(1) + ' hrs'; } } }
           },
           scales: {
-            y: { min: 0, ticks: { color: '#4a5568', font: { size: 9 } }, grid: { color: 'rgba(30,37,48,0.5)' } },
+            y: {
+              beginAtZero: false,
+              ticks: { color: '#4a5568', font: { size: 9 }, callback: function(v) { return v.toFixed(0); } },
+              grid: { color: 'rgba(30,37,48,0.5)' }
+            },
             x: { ticks: { color: '#4a5568', font: { size: 9 } }, grid: { display: false } }
           }
         }
@@ -942,7 +1296,11 @@
             tooltip: { callbacks: { label: function(c) { return c.parsed.y.toFixed(1) + ' hrs'; } } }
           },
           scales: {
-            y: { min: 0, ticks: { color: '#4a5568', font: { size: 9 } }, grid: { color: 'rgba(30,37,48,0.5)' } },
+            y: {
+              beginAtZero: false,
+              ticks: { color: '#4a5568', font: { size: 9 }, callback: function(v) { return v.toFixed(0); } },
+              grid: { color: 'rgba(30,37,48,0.5)' }
+            },
             x: { ticks: { color: '#4a5568', font: { size: 9 } }, grid: { display: false } }
           }
         }
