@@ -571,6 +571,8 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
             mini_charts_data[tail] = {
                 'dates': [d['date'][-5:] for d in daily_data],
                 'hours': [d['hours'] for d in daily_data],
+                'min_hours': min(d['hours'] for d in daily_data),
+                'max_hours': max(d['hours'] for d in daily_data),
             }
             mini_chart_html = f'<canvas id="{chart_id}" class="mini-chart"></canvas>'
         else:
@@ -625,6 +627,8 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
           scales: {{
             y: {{
               beginAtZero: false,
+              suggestedMin: {data['min_hours'] - max((data['max_hours'] - data['min_hours']) * 0.2, 1)},
+              suggestedMax: {data['max_hours'] + max((data['max_hours'] - data['min_hours']) * 0.2, 1)},
               ticks: {{ color: '#4a5568', font: {{ size: 9 }}, callback: function(v) {{ return v.toFixed(0); }} }},
               grid: {{ color: 'rgba(30,37,48,0.5)' }}
             }},
