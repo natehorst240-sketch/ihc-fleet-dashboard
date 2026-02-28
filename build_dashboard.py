@@ -24,7 +24,7 @@ INPUT_FALLBACKS    = ["Due-List_Latest.csv"]
 WEEKLY_FALLBACKS   = ["Due-List_BIG_WEEKLY.csv"]
 OUTPUT_FILENAME    = "fleet_dashboard.html"
 HISTORY_FILENAME   = "flight_hours_history.json"
-POSITIONS_FILENAME = "positions_aw109sp.json"
+POSITIONS_FILENAME = "base_assignments.json"
 
 # Phase inspection intervals to track (hours)
 TARGET_INTERVALS = [50, 100, 200, 400, 800, 2400, 3200]
@@ -226,14 +226,86 @@ def calculate_flight_hours_stats(history_data, aircraft_list):
 # ── POSITIONS (ADSB) ──────────────────────────────────────────────────────────
 
 def load_positions(positions_path):
+<<<<<<< Updated upstream
+=======
+    """
+    Load positions from base_assignments.json and normalize into a
+    per-tail dict that the rest of the dashboard expects.
+
+    Output format per tail:
+      {
+        'status': 'AT_BASE' | 'AWAY' | 'AIRBORNE' | 'UNKNOWN',
+        'current_base': {'id': str, 'name': str, 'dist_nm': float} | None,
+        'nearest_base':  {'id': str, 'name': str, 'dist_nm': float} | None,
+        'last_alt_ft': int | '',
+        'last_gs_kts': int | '',
+        'last_updated': str,
+        'flights_today': [],
+        'total_flight_hrs_today': 0.0,
+      }
+    """
+>>>>>>> Stashed changes
     if not positions_path.exists():
         return {}
     try:
         with open(positions_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
-        return data.get('aircraft', {})
     except Exception:
         return {}
+
+    assignments  = data.get('assignments', {})
+    bases_meta   = data.get('bases', {})
+    last_updated = data.get('last_updated', '')
+    aircraft_positions = {}
+
+    # Walk every base and collect assigned aircraft
+    for base_id, base_data in assignments.items():
+        if base_id == 'unassigned':
+            ac_list = base_data if isinstance(base_data, list) else []
+            for ac in ac_list:
+                tail = ac.get('tail') or ac.get('registration', '')
+                if not tail:
+                    continue
+                aircraft_positions[tail] = {
+                    'status': 'AWAY',
+                    'current_base': None,
+                    'nearest_base': None,
+                    'last_alt_ft': ac.get('altitude', ''),
+                    'last_gs_kts': ac.get('ground_speed', ''),
+                    'last_updated': last_updated,
+                    'flights_today': [],
+                    'total_flight_hrs_today': 0.0,
+                }
+        else:
+            ac_list = base_data.get('aircraft', []) if isinstance(base_data, dict) else []
+            base_name = bases_meta.get(base_id, {}).get('name', base_id)
+            for ac in ac_list:
+                tail = ac.get('tail') or ac.get('registration', '')
+                if not tail:
+                    continue
+                status_raw = str(ac.get('status', '')).upper()
+                if 'AIRBORNE' in status_raw or 'IN_FLIGHT' in status_raw:
+                    status = 'AIRBORNE'
+                    curr_base = None
+                else:
+                    status = 'AT_BASE'
+                    curr_base = {
+                        'id': base_id,
+                        'name': base_name,
+                        'dist_nm': round(ac.get('distance_miles', 0) * 0.868976, 1),
+                    }
+                aircraft_positions[tail] = {
+                    'status': status,
+                    'current_base': curr_base,
+                    'nearest_base': None,
+                    'last_alt_ft': ac.get('altitude', ''),
+                    'last_gs_kts': ac.get('ground_speed', ''),
+                    'last_updated': last_updated,
+                    'flights_today': [],
+                    'total_flight_hrs_today': 0.0,
+                }
+
+    return aircraft_positions
 
 
 def get_location_badge(tail, positions):

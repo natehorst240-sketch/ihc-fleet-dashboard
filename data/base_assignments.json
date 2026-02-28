@@ -1,5 +1,6 @@
 {
-  "last_updated": "2026-02-26T01:06:28.424315",
+  "last_updated": "2026-02-28T22:05:18.390275+00:00",
+  "source": "adsb.lol",
   "bases": {
     "LOGAN": {
       "name": "Logan",
@@ -52,41 +53,20 @@
   },
   "assignments": {
     "LOGAN": {
-      "aircraft": [
-        {
-          "tail": "N281HC",
-          "hours": 5682.7,
-          "distance": 0.5,
-          "at_base": true
-        }
-      ],
-      "status": "occupied"
+      "aircraft": [],
+      "status": "available"
     },
     "MCKAY": {
       "aircraft": [],
       "status": "available"
     },
     "IMED": {
-      "aircraft": [
-        {
-          "tail": "N251HC",
-          "hours": 6849.7,
-          "distance": 1.2,
-          "at_base": true
-        }
-      ],
-      "status": "occupied"
+      "aircraft": [],
+      "status": "available"
     },
     "PROVO": {
-      "aircraft": [
-        {
-          "tail": "N291HC",
-          "hours": 3068.9,
-          "distance": 0.3,
-          "at_base": true
-        }
-      ],
-      "status": "occupied"
+      "aircraft": [],
+      "status": "available"
     },
     "ROOSEVELT": {
       "aircraft": [],
@@ -101,29 +81,14 @@
       "status": "available"
     },
     "KSLC": {
-      "aircraft": [
-        {
-          "tail": "N261HC",
-          "hours": 6480.5,
-          "distance": 2.1,
-          "at_base": true
-        }
-      ],
-      "status": "occupied"
+      "aircraft": [],
+      "status": "available"
     },
-    "unassigned": [
-      {
-        "tail": "N271HC",
-        "hours": 1943.1,
-        "closest_base": "Provo",
-        "distance_from_closest": 35.5,
-        "at_base": false
-      }
-    ]
+    "unassigned": []
   },
   "summary": {
-    "total_aircraft": 5,
-    "at_bases": 4,
-    "away_from_base": 1
+    "total_aircraft": 0,
+    "at_bases": 0,
+    "away_from_base": 0
   }
 }
