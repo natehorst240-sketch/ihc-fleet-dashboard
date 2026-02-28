@@ -1,5 +1,4 @@
 name: Update Fleet Dashboard
-
 on:
   push:
     paths:
@@ -9,7 +8,7 @@ on:
 permissions:
   contents: write
 
-concurrency: 
+concurrency:
   group: dashboard-update
   cancel-in-progress: false
 
@@ -26,15 +25,9 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Fetch SkyRouter Data
-        env:
-          SKYROUTER_USER: ${{ secrets.SKYROUTER_USER }}
-          SKYROUTER_PASS: ${{ secrets.SKYROUTER_PASS }}
-        run: python scripts/skyrouter_api_fetcher.py
-
       - name: Generate dashboard
         run: |
-          python scripts/fleet_dashboard_generator.py
+          python build_dashboard.py
           mkdir -p public
           cp data/fleet_dashboard.html public/index.html
 
@@ -42,11 +35,7 @@ jobs:
         run: |
           git config user.email "actions@github.com"
           git config user.name "GitHub Actions"
-
-          git add public/index.html data/*.json || true
-
-          git commit -m "Update dashboard $(date -u)" || echo "No changes"
-
           git pull --rebase origin main
+          git add public/index.html data/*.json || true
+          git commit -m "Update dashboard $(date -u)" || echo "No changes"
           git push
-
