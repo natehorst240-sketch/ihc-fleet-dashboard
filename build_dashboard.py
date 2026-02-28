@@ -226,10 +226,6 @@ def calculate_flight_hours_stats(history_data, aircraft_list):
 # ── POSITIONS (ADSB) ──────────────────────────────────────────────────────────
 
 def load_positions(positions_path):
-    """
-    Load aircraft positions from positions_aw109sp.json produced by fetch_positions.py.
-    Returns dict keyed by tail number.
-    """
     if not positions_path.exists():
         return {}
     try:
@@ -241,48 +237,36 @@ def load_positions(positions_path):
 
 
 def get_location_badge(tail, positions):
-    """
-    Return HTML badge for aircraft location status using ADSB positions data.
-    Statuses: AIRBORNE, AT_BASE, AWAY, NO_SIGNAL, UNKNOWN
-    """
     ac = positions.get(tail, {})
     if not ac:
         return ''
-
     status    = ac.get('status', '').upper()
     curr_base = ac.get('current_base')
     near_base = ac.get('nearest_base')
-
     if status == 'AIRBORNE':
         last_alt = ac.get('last_alt_ft', '')
         alt_str  = f" {last_alt}ft" if last_alt else ''
         return f'<span class="location-badge location-active">AIRBORNE{alt_str}</span>'
-
     if status == 'AT_BASE':
         base_name = curr_base.get('name', '') if curr_base else ''
         label = f'AT BASE' + (f' · {base_name}' if base_name else '')
         return f'<span class="location-badge location-at-base">{label}</span>'
-
     if status == 'AWAY':
         near_str = ''
         if near_base:
             near_str = f" · {near_base.get('dist_nm', '?')}nm from {near_base.get('name', '?')}"
         return f'<span class="location-badge location-away">AWAY{near_str}</span>'
-
     if status == 'NO_SIGNAL':
         return '<span class="location-badge location-unknown">NO SIGNAL</span>'
-
     return ''
 
 
 def get_flights_today(tail, positions):
-    """Return list of flights today for a tail from positions data."""
     ac = positions.get(tail, {})
     return ac.get('flights_today', [])
 
 
 def get_hours_today(tail, positions):
-    """Return total flight hours today from positions data."""
     ac = positions.get(tail, {})
     return ac.get('total_flight_hrs_today', 0.0)
 
@@ -342,7 +326,6 @@ def parse_due_list_parts(filepath):
         rem_days  = safe_float(row[COL_REM_DAYS])
         status    = row[COL_STATUS].strip()     if row[COL_STATUS]    else ""
 
-        # Phase inspections
         if item_type.upper() == "INSPECTION":
             for interval in TARGET_INTERVALS:
                 patterns = compiled_phase.get(interval, [])
@@ -362,7 +345,6 @@ def parse_due_list_parts(filepath):
                         "status": status, "desc": desc,
                     }
 
-        # Components
         is_part = (item_type.upper() == "PART")
         is_retirement_insp = (item_type.upper() == "INSPECTION" and has_retirement_keyword(desc))
         if is_part or is_retirement_insp:
@@ -471,7 +453,6 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
             return f'<span class="hr-na">{label}</span>'
         return f'<span class="hr-badge {badge_cls}">{label}</span>'
 
-    # Summary stats
     total_ac = len(aircraft_list)
     crit_count = coming_count = comp_overdue = 0
     for ac in aircraft_list:
@@ -490,11 +471,9 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
             if (rem is not None and rem < 0) or (rem is None and rem_d is not None and rem_d < 0):
                 comp_overdue += 1
 
-    # Count airborne / at base from positions
     airborne_count = sum(1 for t in aircraft_list if positions.get(t['tail'], {}).get('status') == 'AIRBORNE')
     at_base_count  = sum(1 for t in aircraft_list if positions.get(t['tail'], {}).get('status') == 'AT_BASE')
 
-    # Table rows
     table_rows_html = ''
     for ac in aircraft_list:
         tail = ac['tail']
@@ -511,7 +490,6 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
             cells += f'<td class="hr-cell">{fmt_hrs(ac["intervals"].get(i))}</td>'
         table_rows_html += f'<tr data-tail="{tail}">{cells}</tr>\n'
 
-    # Component panels
     comp_panels_html = ''
     for ac in aircraft_list:
         reg   = ac['tail']
@@ -558,7 +536,6 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
     if not comp_panels_html:
         comp_panels_html = '<div style="font-family:var(--mono);font-size:12px;color:var(--muted);padding:20px;">No components within 200 hours across fleet.</div>'
 
-    # Flight hours tab
     flight_hours_cards = []
     mini_charts_data   = {}
     for ac in aircraft_list:
@@ -576,7 +553,6 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
         weekly_class  = "positive" if weekly  and weekly  > 5  else ("low" if weekly  and weekly  > 0 else "")
         monthly_class = "positive" if monthly and monthly > 20 else ("low" if monthly and monthly > 0 else "")
 
-        # ADSB hours today
         hrs_today = get_hours_today(tail, positions)
         flights_today = get_flights_today(tail, positions)
         adsb_html = ''
@@ -629,7 +605,7 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
     <div class="hours-grid">{''.join(flight_hours_cards)}</div>''' if flight_hours_cards else \
     '<div style="font-family:var(--mono);font-size:12px;color:var(--muted);padding:20px;">No flight hours data available yet.</div>'
 
-    # Mini chart scripts
+    # FIX 1: Mini chart Y axis starts near data, not zero, to show meaningful scale
     mini_charts_js = '\n'.join([f"""
     if (document.getElementById('chart-{tail.replace(" ", "-")}')) {{
       new Chart(document.getElementById('chart-{tail.replace(" ", "-")}'), {{
@@ -647,17 +623,22 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
             tooltip: {{ callbacks: {{ label: function(c) {{ return c.parsed.y.toFixed(1) + ' hrs'; }} }} }}
           }},
           scales: {{
-            y: {{ ticks: {{ color: '#4a5568', font: {{ size: 9 }} }}, grid: {{ color: 'rgba(30,37,48,0.5)' }} }},
+            y: {{
+              beginAtZero: false,
+              ticks: {{ color: '#4a5568', font: {{ size: 9 }}, callback: function(v) {{ return v.toFixed(0); }} }},
+              grid: {{ color: 'rgba(30,37,48,0.5)' }}
+            }},
             x: {{ ticks: {{ color: '#4a5568', font: {{ size: 9 }} }}, grid: {{ display: false }} }}
           }}
         }}
       }});
     }}""" for tail, data in mini_charts_data.items()])
 
-    # Bases tab — built from positions data
     bases_tab_html = _build_bases_tab(aircraft_list, positions)
 
-    # Bar chart data
+    # Calendar tab
+    calendar_tab_html = _build_calendar_tab(aircraft_list, flight_hours_stats)
+
     chart_rows = sorted(
         [(ac['tail'], float(v['rem_hrs'])) for ac in aircraft_list
          if (v := ac['intervals'].get(200)) and v.get('rem_hrs') is not None],
@@ -666,7 +647,6 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
     labels_js = "[" + ",".join([f"'{t}'" for t, _ in chart_rows]) + "]"
     values_js = "[" + ",".join([f"{v:.2f}" for _, v in chart_rows]) + "]"
 
-    # ── HTML ──────────────────────────────────────────────────────────────────
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -790,6 +770,17 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
   .away-card{{background:var(--surface);border:1px solid var(--border);border-radius:3px;padding:12px;}}
   .away-tail{{font-family:var(--sans);font-weight:700;font-size:14px;color:var(--heading);margin-bottom:4px;}}
   .away-info{{font-family:var(--mono);font-size:10px;color:var(--muted);}}
+  .cal-grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;}}
+  .cal-card{{background:var(--surface);border:1px solid var(--border);border-radius:4px;overflow:hidden;}}
+  .cal-card-header{{padding:10px 16px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}}
+  .cal-card-tail{{font-family:var(--sans);font-weight:900;font-size:16px;letter-spacing:1px;color:var(--heading);}}
+  .cal-card-hrs{{font-family:var(--mono);font-size:10px;color:var(--muted);}}
+  .cal-row{{display:flex;justify-content:space-between;align-items:center;padding:8px 16px;border-bottom:1px solid rgba(30,37,48,0.6);font-family:var(--mono);font-size:11px;}}
+  .cal-row:last-child{{border-bottom:none;}}
+  .cal-insp{{color:var(--text);}}
+  .cal-date{{color:var(--blue);}}
+  .cal-date.soon{{color:var(--amber);}}
+  .cal-date.urgent{{color:var(--red);}}
   footer{{margin-top:48px;padding:16px 32px;border-top:1px solid var(--border);font-family:var(--mono);font-size:10px;color:var(--muted);display:flex;justify-content:space-between;letter-spacing:1px;}}
 </style>
 </head>
@@ -815,6 +806,7 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
   <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('maintenance',this)">Maintenance Due List</button>
     <button class="tab-btn" onclick="switchTab('flight-hours',this)">Flight Hours Tracking</button>
+    <button class="tab-btn" onclick="switchTab('calendar',this)">Calendar</button>
     <button class="tab-btn" onclick="switchTab('bases',this)">Bases</button>
   </div>
 
@@ -864,6 +856,11 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
 {flight_hours_tab_html}
   </div>
 
+  <!-- CALENDAR TAB -->
+  <div id="tab-calendar" class="tab-content">
+{calendar_tab_html}
+  </div>
+
   <!-- BASES TAB -->
   <div id="tab-bases" class="tab-content">
 {bases_tab_html}
@@ -874,6 +871,7 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
   <span>IHC HEALTH SERVICES — AVIATION MAINTENANCE</span>
 </footer>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 <script>
   function switchTab(tabName, btn) {{
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -907,15 +905,24 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
   }} else {{
     new Chart(document.getElementById('bar200'), {{
       type: 'bar',
-      data: {{ labels: labels200, datasets: [{{ label: 'Hours remaining to 200 Hr', data: values200 }}] }},
+      data: {{ labels: labels200, datasets: [{{ label: 'Hours remaining to 200 Hr', data: values200, backgroundColor: '#29b6f6' }}] }},
       options: {{
         responsive: true, maintainAspectRatio: false,
-        plugins: {{ legend: {{ display: true }} }},
+        plugins: {{
+          legend: {{ display: true }},
+          datalabels: {{
+            anchor: 'end', align: 'top',
+            color: '#cdd6e0',
+            font: {{ family: 'Share Tech Mono', size: 11 }},
+            formatter: function(value) {{ return value.toFixed(1); }}
+          }}
+        }},
         scales: {{
-          y: {{ title: {{ display: true, text: 'Hours Remaining' }} }},
+          y: {{ beginAtZero: true, title: {{ display: true, text: 'Hours Remaining' }} }},
           x: {{ title: {{ display: true, text: 'Aircraft (closest first)' }} }}
         }}
-      }}
+      }},
+      plugins: [ChartDataLabels]
     }});
   }}
   {mini_charts_js}
@@ -924,16 +931,74 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
 </html>"""
 
 
+def _build_calendar_tab(aircraft_list, flight_hours_stats):
+    """Build projected maintenance calendar based on avg daily utilization."""
+    today = datetime.today()
+    cards_html = ''
+
+    for ac in aircraft_list:
+        tail = ac['tail']
+        current_hrs = ac['airframe_hrs']
+        if current_hrs is None:
+            continue
+
+        stats = flight_hours_stats.get(tail, {})
+        avg_daily = stats.get('avg_daily')
+
+        rows_html = ''
+        for interval in TARGET_INTERVALS:
+            v = ac['intervals'].get(interval)
+            if v is None:
+                continue
+            rem_hrs = v.get('rem_hrs')
+            if rem_hrs is None:
+                continue
+            if rem_hrs < 0:
+                date_str = 'OVERDUE'
+                date_cls = 'urgent'
+            elif avg_daily and avg_daily > 0:
+                days_until = rem_hrs / avg_daily
+                projected = today + timedelta(days=days_until)
+                date_str = projected.strftime('%d %b %Y').upper()
+                date_cls = 'urgent' if days_until <= 30 else ('soon' if days_until <= 90 else '')
+            else:
+                date_str = f'{rem_hrs:.0f} hrs remaining'
+                date_cls = 'urgent' if rem_hrs <= 25 else ('soon' if rem_hrs <= 100 else '')
+
+            rows_html += f'''
+            <div class="cal-row">
+              <span class="cal-insp">{interval} Hr</span>
+              <span class="cal-date {date_cls}">{date_str}</span>
+            </div>'''
+
+        if rows_html:
+            ah = f"{current_hrs:,.1f}" if current_hrs else 'N/A'
+            avg_str = f'{avg_daily:.2f} hrs/day' if avg_daily else 'No utilization data'
+            cards_html += f'''
+        <div class="cal-card">
+          <div class="cal-card-header">
+            <div class="cal-card-tail">{tail}</div>
+            <div class="cal-card-hrs">{ah} TT · {avg_str}</div>
+          </div>
+          {rows_html}
+        </div>'''
+
+    if not cards_html:
+        return '<div style="font-family:var(--mono);font-size:12px;color:var(--muted);padding:20px;">Not enough flight-hours history to project due dates yet. Once each aircraft has multiple days of history, projections will appear here.</div>'
+
+    return f'''
+    <div class="section-label">Projected Maintenance Calendar</div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:16px;">Dates projected based on average daily utilization. Actual dates will vary.</div>
+    <div class="cal-grid">{cards_html}</div>'''
+
+
 def _build_bases_tab(aircraft_list, positions):
-    """Build the bases tab from live ADSB positions data."""
     if not positions:
         return '<div style="font-family:var(--mono);font-size:12px;color:var(--muted);padding:20px;">No position data available. Runs after fetch_positions.py completes.</div>'
 
-    # Group aircraft by base
-    base_buckets = {}   # base_id -> list of (tail, ac_pos, airframe_hrs)
+    base_buckets = {}
     away_list    = []
     airborne_list = []
-
     ac_hrs = {ac['tail']: ac['airframe_hrs'] for ac in aircraft_list}
 
     for ac in aircraft_list:
@@ -953,7 +1018,6 @@ def _build_bases_tab(aircraft_list, positions):
         else:
             away_list.append({'tail': tail, 'hrs': hrs, 'pos': pos, 'nearest': near})
 
-    # Base cards
     base_cards_html = ''
     for bid, bdata in sorted(base_buckets.items()):
         count = len(bdata['aircraft'])
@@ -979,7 +1043,6 @@ def _build_bases_tab(aircraft_list, positions):
           <div class="base-body">{aircraft_html}</div>
         </div>'''
 
-    # Airborne section
     airborne_html = ''
     if airborne_list:
         cards = ''
@@ -1000,7 +1063,6 @@ def _build_bases_tab(aircraft_list, positions):
           <div class="away-grid">{cards}</div>
         </div>'''
 
-    # Away section
     away_html = ''
     if away_list:
         cards = ''
