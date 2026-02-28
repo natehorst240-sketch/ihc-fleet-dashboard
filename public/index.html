@@ -682,8 +682,8 @@
   <span>SOURCE: VERYON MAINTENANCE TRACKING &nbsp;|&nbsp; Due-List_Latest_aw109sp.csv</span>
   <span>IHC HEALTH SERVICES — AVIATION MAINTENANCE</span>
 </footer>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
 <script>
   function switchTab(tabName, btn) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -709,6 +709,20 @@
       tr.style.display = show ? '' : 'none';
     });
   }
+
+  function getTrendYScale(values) {
+    const minValue = Math.min(...values);
+    const maxValue = Math.max(...values);
+    const range = maxValue - minValue;
+    const padding = Math.max(range * 0.35, 2);
+    return {
+      min: Math.max(0, Math.floor(minValue - padding)),
+      max: Math.ceil(maxValue + padding),
+      ticks: { color: '#4a5568', font: { size: 9 } },
+      grid: { color: 'rgba(30,37,48,0.5)' }
+    };
+  }
+
   const labels200 = ['N281HC','N261HC','N291HC','N251HC','N531HC','N271HC','N631HC','N431HC','N731HC'];
   const values200 = [25.60,62.20,67.70,99.30,108.80,145.90,151.30,183.20,188.90];
   if (!labels200 || labels200.length === 0) {
@@ -758,8 +772,7 @@
             tooltip: { callbacks: { label: function(c) { return c.parsed.y.toFixed(1) + ' hrs'; } } }
           },
           scales: {
-            min: 0,
-            y: { ticks: { color: '#4a5568', font: { size: 9 } }, grid: { color: 'rgba(30,37,48,0.5)' } },
+            y: getTrendYScale([6040.5,6040.8,6043.9]),
             x: { ticks: { color: '#4a5568', font: { size: 9 } }, grid: { display: false } }
           }
         }
@@ -782,8 +795,7 @@
             tooltip: { callbacks: { label: function(c) { return c.parsed.y.toFixed(1) + ' hrs'; } } }
           },
           scales: {
-            min: 0,
-            y: { ticks: { color: '#4a5568', font: { size: 9 } }, grid: { color: 'rgba(30,37,48,0.5)' } },
+            y: getTrendYScale([6066.0,6069.7,6073.7]),
             x: { ticks: { color: '#4a5568', font: { size: 9 } }, grid: { display: false } }
           }
         }
@@ -806,8 +818,7 @@
             tooltip: { callbacks: { label: function(c) { return c.parsed.y.toFixed(1) + ' hrs'; } } }
           },
           scales: {
-            min: 0,
-            y: { ticks: { color: '#4a5568', font: { size: 9 } }, grid: { color: 'rgba(30,37,48,0.5)' } },
+            y: getTrendYScale([6967.4,6967.4,6969.0]),
             x: { ticks: { color: '#4a5568', font: { size: 9 } }, grid: { display: false } }
           }
         }
@@ -830,8 +841,7 @@
             tooltip: { callbacks: { label: function(c) { return c.parsed.y.toFixed(1) + ' hrs'; } } }
           },
           scales: {
-            min: 0,
-            y: { ticks: { color: '#4a5568', font: { size: 9 } }, grid: { color: 'rgba(30,37,48,0.5)' } },
+            y: getTrendYScale([6490.0,6492.5,6494.7]),
             x: { ticks: { color: '#4a5568', font: { size: 9 } }, grid: { display: false } }
           }
         }
@@ -854,8 +864,7 @@
             tooltip: { callbacks: { label: function(c) { return c.parsed.y.toFixed(1) + ' hrs'; } } }
           },
           scales: {
-            min: 0,
-            y: { ticks: { color: '#4a5568', font: { size: 9 } }, grid: { color: 'rgba(30,37,48,0.5)' } },
+            y: getTrendYScale([5886.7,5887.3,5888.5]),
             x: { ticks: { color: '#4a5568', font: { size: 9 } }, grid: { display: false } }
           }
         }
@@ -878,8 +887,7 @@
             tooltip: { callbacks: { label: function(c) { return c.parsed.y.toFixed(1) + ' hrs'; } } }
           },
           scales: {
-            min: 0,
-            y: { ticks: { color: '#4a5568', font: { size: 9 } }, grid: { color: 'rgba(30,37,48,0.5)' } },
+            y: getTrendYScale([1995.7,1998.7,1998.7]),
             x: { ticks: { color: '#4a5568', font: { size: 9 } }, grid: { display: false } }
           }
         }
@@ -902,8 +910,7 @@
             tooltip: { callbacks: { label: function(c) { return c.parsed.y.toFixed(1) + ' hrs'; } } }
           },
           scales: {
-            min: 0,
-            y: { ticks: { color: '#4a5568', font: { size: 9 } }, grid: { color: 'rgba(30,37,48,0.5)' } },
+            y: getTrendYScale([3316.2,3317.3,3319.7]),
             x: { ticks: { color: '#4a5568', font: { size: 9 } }, grid: { display: false } }
           }
         }
@@ -926,8 +933,7 @@
             tooltip: { callbacks: { label: function(c) { return c.parsed.y.toFixed(1) + ' hrs'; } } }
           },
           scales: {
-            min: 0,
-            y: { ticks: { color: '#4a5568', font: { size: 9 } }, grid: { color: 'rgba(30,37,48,0.5)' } },
+            y: getTrendYScale([1847.1,1847.1,1847.1]),
             x: { ticks: { color: '#4a5568', font: { size: 9 } }, grid: { display: false } }
           }
         }
@@ -950,8 +956,7 @@
             tooltip: { callbacks: { label: function(c) { return c.parsed.y.toFixed(1) + ' hrs'; } } }
           },
           scales: {
-            min: 0,
-            y: { ticks: { color: '#4a5568', font: { size: 9 } }, grid: { color: 'rgba(30,37,48,0.5)' } },
+            y: getTrendYScale([11.1,11.1,11.1]),
             x: { ticks: { color: '#4a5568', font: { size: 9 } }, grid: { display: false } }
           }
         }
