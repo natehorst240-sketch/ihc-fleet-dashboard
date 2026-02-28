@@ -1021,7 +1021,131 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
     }});
   }}
   {mini_charts_js}
+
+  // ── EDITABLE CALENDAR ─────────────────────────────────────────────────────
+  (function() {{
+    var STORAGE_KEY = 'ihc_cal_notes';
+
+    function loadNotes() {{
+      try {{ return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{{}}'); }} catch(e) {{ return {{}}; }}
+    }}
+    function saveNotes(notes) {{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
+    }}
+
+    function renderUserEvents() {{
+      var notes = loadNotes();
+      Object.keys(notes).forEach(function(dateKey) {{
+        var note = notes[dateKey];
+        if (!note || (!note.text && !note.label)) return;
+        var cell = document.querySelector('.cal-day[data-date="' + dateKey + '"]');
+        if (!cell) return;
+        var existing = cell.querySelector('.cal-user-ev');
+        if (existing) existing.remove();
+        var el = document.createElement('div');
+        el.className = 'cal-user-ev';
+        el.textContent = (note.label || 'NOTE') + (note.text ? ': ' + note.text : '');
+        el.title = note.text || '';
+        cell.appendChild(el);
+      }});
+    }}
+
+    function openModal(dateKey) {{
+      var notes = loadNotes();
+      var existing = notes[dateKey] || {{}};
+      var modal = document.getElementById('cal-modal');
+      document.getElementById('cal-modal-date').textContent = dateKey;
+      document.getElementById('cal-modal-label').value = existing.label || '';
+      document.getElementById('cal-modal-text').value = existing.text || '';
+      document.getElementById('cal-modal-color').value = existing.color || '#f6ad55';
+      modal.style.display = 'flex';
+      document.getElementById('cal-modal-text').focus();
+    }}
+
+    function closeModal() {{
+      document.getElementById('cal-modal').style.display = 'none';
+    }}
+
+    function saveModal() {{
+      var dateKey = document.getElementById('cal-modal-date').textContent;
+      var label = document.getElementById('cal-modal-label').value.trim();
+      var text  = document.getElementById('cal-modal-text').value.trim();
+      var color = document.getElementById('cal-modal-color').value;
+      var notes = loadNotes();
+      if (label || text) {{
+        notes[dateKey] = {{ label: label, text: text, color: color }};
+      }} else {{
+        delete notes[dateKey];
+      }}
+      saveNotes(notes);
+      closeModal();
+      renderUserEvents();
+    }}
+
+    function clearModal() {{
+      var dateKey = document.getElementById('cal-modal-date').textContent;
+      var notes = loadNotes();
+      delete notes[dateKey];
+      saveNotes(notes);
+      closeModal();
+      renderUserEvents();
+    }}
+
+    // Attach click handlers to all cal-day cells
+    document.querySelectorAll('.cal-day').forEach(function(cell) {{
+      cell.style.cursor = 'pointer';
+      cell.addEventListener('click', function() {{
+        var dateKey = cell.getAttribute('data-date');
+        if (dateKey) openModal(dateKey);
+      }});
+    }});
+
+    document.getElementById('cal-modal-save').addEventListener('click', saveModal);
+    document.getElementById('cal-modal-clear').addEventListener('click', clearModal);
+    document.getElementById('cal-modal-cancel').addEventListener('click', closeModal);
+    document.getElementById('cal-modal').addEventListener('click', function(e) {{
+      if (e.target === this) closeModal();
+    }});
+
+    renderUserEvents();
+  }})();
 </script>
+
+<!-- Calendar Note Modal -->
+<div id="cal-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);
+  z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:#0d1117;border:1px solid #29b6f6;border-radius:6px;padding:28px;
+    min-width:340px;max-width:480px;width:90%;font-family:monospace;">
+    <div style="font-size:11px;color:#4a9eff;letter-spacing:2px;margin-bottom:4px;">SCHEDULE / NOTE</div>
+    <div id="cal-modal-date" style="font-size:16px;color:#e2e8f0;font-weight:700;margin-bottom:20px;"></div>
+    <label style="display:block;font-size:10px;color:#718096;letter-spacing:1px;margin-bottom:4px;">LABEL (e.g. 50 HR INSP)</label>
+    <input id="cal-modal-label" type="text" maxlength="30"
+      style="width:100%;box-sizing:border-box;background:#161c25;border:1px solid #2d3748;
+      border-radius:3px;color:#e2e8f0;padding:8px;font-family:monospace;font-size:13px;margin-bottom:14px;">
+    <label style="display:block;font-size:10px;color:#718096;letter-spacing:1px;margin-bottom:4px;">NOTES</label>
+    <textarea id="cal-modal-text" rows="3" maxlength="200"
+      style="width:100%;box-sizing:border-box;background:#161c25;border:1px solid #2d3748;
+      border-radius:3px;color:#e2e8f0;padding:8px;font-family:monospace;font-size:12px;
+      resize:vertical;margin-bottom:14px;"></textarea>
+    <label style="display:block;font-size:10px;color:#718096;letter-spacing:1px;margin-bottom:4px;">COLOR</label>
+    <input id="cal-modal-color" type="color" value="#f6ad55"
+      style="width:48px;height:32px;border:none;background:none;cursor:pointer;margin-bottom:20px;">
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button id="cal-modal-clear"
+        style="background:transparent;border:1px solid #c0392b;color:#c0392b;
+        padding:7px 16px;border-radius:3px;cursor:pointer;font-family:monospace;font-size:11px;">
+        CLEAR</button>
+      <button id="cal-modal-cancel"
+        style="background:transparent;border:1px solid #4a5568;color:#718096;
+        padding:7px 16px;border-radius:3px;cursor:pointer;font-family:monospace;font-size:11px;">
+        CANCEL</button>
+      <button id="cal-modal-save"
+        style="background:#29b6f6;border:none;color:#000;
+        padding:7px 16px;border-radius:3px;cursor:pointer;font-family:monospace;font-size:11px;font-weight:700;">
+        SAVE</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>"""
 
@@ -1144,14 +1268,14 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
                     ev_html += f'<div class="cal-ev {ev_cls}">{t} {interval}h</div>'
 
                 cells += (
-                    f'<div class="cal-day {cell_cls}{today_cls}">'
+                    f'<div class="cal-day {cell_cls}{today_cls}" data-date="{date_key}">'
                     f'<div class="cal-day-num">{day}</div>{ev_html}</div>'
                 )
             else:
                 is_past = (y == today.year and m == today.month and day < today.day)
                 past_cls = ' cal-past' if is_past else ''
                 cells += (
-                    f'<div class="cal-day{today_cls}{past_cls}">'
+                    f'<div class="cal-day{today_cls}{past_cls}" data-date="{date_key}">'
                     f'<div class="cal-day-num">{day}</div></div>'
                 )
 
@@ -1220,6 +1344,9 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
         'font-size:11px;padding:3px 0;border-bottom:1px solid #161c25;}'
         '.cal-fb-insp{color:var(--muted);}'
         '.cal-fb-val{font-weight:700;}'
+        '.cal-user-ev{font-family:var(--mono);font-size:8px;padding:2px 4px;border-radius:2px;'
+        'margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'
+        'background:#2d3748;color:#e2e8f0;border-left:3px solid #f6ad55;}'
         '</style>'
     )
 
