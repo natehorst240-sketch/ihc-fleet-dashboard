@@ -712,14 +712,14 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
               type: 'linear', position: 'left',
               beginAtZero: true,
               title: {{ display: true, text: 'Daily Avg (hrs)', color: '#29b6f6', font: {{ size: 10 }} }},
-              ticks: {{ color: '#4a5568', font: {{ size: 10 }} }},
+              ticks: {{ color: '#fff', font: {{ size: 10 }} }},
               grid: {{ color: 'rgba(30,37,48,0.8)' }}
             }},
             yWeekly: {{
               type: 'linear', position: 'right',
               beginAtZero: true,
               title: {{ display: true, text: 'Weekly Avg (hrs)', color: '#f6ad55', font: {{ size: 10 }} }},
-              ticks: {{ color: '#4a5568', font: {{ size: 10 }} }},
+              ticks: {{ color: '#fff', font: {{ size: 10 }} }},
               grid: {{ drawOnChartArea: false }}
             }},
             x: {{
@@ -756,7 +756,7 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
   :root {{
     --bg:#0a0c0f; --surface:#111418; --surface2:#181c22; --border:#1e2530;
     --green:#00e676; --amber:#ffab00; --red:#ff1744; --overdue:#ff6d00;
-    --blue:#29b6f6; --text:#cdd6e0; --muted:#4a5568; --heading:#e8edf2;
+    --blue:#29b6f6; --text:#cdd6e0; --muted:#fff; --heading:#e8edf2;
     --mono:'Share Tech Mono',monospace;
     --sans:'Barlow Condensed',sans-serif;
     --body:'Barlow',sans-serif;
@@ -1129,7 +1129,7 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
         padding:7px 16px;border-radius:3px;cursor:pointer;font-family:monospace;font-size:11px;">
         CLEAR</button>
       <button id="cal-modal-cancel"
-        style="background:transparent;border:1px solid #4a5568;color:#718096;
+        style="background:transparent;border:1px solid #fff;color:#718096;
         padding:7px 16px;border-radius:3px;cursor:pointer;font-family:monospace;font-size:11px;">
         CANCEL</button>
       <button id="cal-modal-save"
