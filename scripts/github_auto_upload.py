@@ -11,7 +11,7 @@ GITHUB_REPO = "ihc-fleet-dashboard"
 # Configuration: Where to find CSVs for each fleet
 FLEETS = {
     "aw109sp": {
-        "csv_folder": r"C:\Users\nateh\OneDrive - Intermountain Health\VeryonExports\Veryon Exports",
+        "csv_folder": r"C:\Users\nateh\Documents\ihc-fleet-dashboard\data",
         "csv_files": ["Due-List_BIG_WEEKLY.csv"]
     },
 }
