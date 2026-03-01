@@ -1,7 +1,7 @@
 """
 Fleet Maintenance Dashboard Generator (CSV)
 ==========================================
-Reads Due-List_Latest_aw109sp.csv and Due-List_BIG_WEEKLY_aw109sp.csv
+Reads Due-List_BIG_WEEKLY_aw109sp.csv
 from the data/ folder and writes data/fleet_dashboard.html.
 
 Run via GitHub Actions after CSV files are pushed to repo.
