@@ -2,10 +2,6 @@ name: Update Fleet Dashboard
 on:
   push:
     branches: ["main"]
-    paths-ignore:
-      - 'public/**'
-      - '.github/**'
-      - '*.md'
   workflow_dispatch:
 
 permissions:
