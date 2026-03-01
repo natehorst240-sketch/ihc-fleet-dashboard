@@ -1,10 +1,10 @@
 """
 Fleet Maintenance Dashboard Generator (CSV)
 ==========================================
-Reads Due-List_Latest_aw109sp.csv and Due-List_BIG_WEEKLY_aw109sp.csv
-from the data/ folder and writes data/fleet_dashboard.html.
+Reads Due-List_BIG_WEEKLY_aw109sp.csv from the data/ folder
+and writes data/fleet_dashboard.html.
 
-Run via GitHub Actions after CSV files are pushed to repo.
+Run via GitHub Actions after the CSV file is pushed to repo.
 """
 
 import sys
@@ -18,8 +18,8 @@ from pathlib import Path
 
 OUTPUT_FOLDER = "data"
 
-INPUT_FILENAME     = "Due-List_BIG_WEEKLY_aw109sp.csv"
 WEEKLY_FILENAME    = "Due-List_BIG_WEEKLY_aw109sp.csv"
+WEEKLY_FALLBACKS   = ["Due-List_BIG_WEEKLY.csv"]
 OUTPUT_FILENAME    = "fleet_dashboard.html"
 HISTORY_FILENAME   = "flight_hours_history.json"
 POSITIONS_FILENAME = "base_assignments.json"
@@ -209,8 +209,20 @@ def calculate_flight_hours_stats(history_data, aircraft_list):
             days_of_data = (today - datetime.strptime(thirty_days_ago_str, "%Y-%m-%d")).days
             if days_of_data > 0:
                 avg_daily = monthly_hours / days_of_data
-                projection_weekly  = avg_daily * 7
-                projection_monthly = avg_daily * 30
+        elif weekly_hours is not None:
+            days_of_data = (today - datetime.strptime(seven_days_ago_str, "%Y-%m-%d")).days
+            if days_of_data > 0:
+                avg_daily = weekly_hours / days_of_data
+        elif len(sorted_dates) >= 2:
+            oldest = sorted_dates[-1]
+            newest = sorted_dates[0]
+            span_days = (datetime.strptime(newest, "%Y-%m-%d") - datetime.strptime(oldest, "%Y-%m-%d")).days
+            if span_days > 0:
+                span_hours = tail_history[newest]['hours'] - tail_history[oldest]['hours']
+                avg_daily = span_hours / span_days
+        if avg_daily is not None:
+            projection_weekly  = avg_daily * 7
+            projection_monthly = avg_daily * 30
         stats[tail] = {
             'current_hours': current_hours, 'daily': daily_data,
             'weekly': weekly_hours, 'monthly': monthly_hours,
@@ -225,62 +237,116 @@ def calculate_flight_hours_stats(history_data, aircraft_list):
 
 def load_positions(positions_path):
     """
-    Load aircraft positions from positions_aw109sp.json produced by fetch_positions.py.
-    Returns dict keyed by tail number.
+    Load positions from base_assignments.json and normalize into a
+    per-tail dict that the rest of the dashboard expects.
+
+    Output format per tail:
+      {
+        'status': 'AT_BASE' | 'AWAY' | 'AIRBORNE' | 'UNKNOWN',
+        'current_base': {'id': str, 'name': str, 'dist_nm': float} | None,
+        'nearest_base':  {'id': str, 'name': str, 'dist_nm': float} | None,
+        'last_alt_ft': int | '',
+        'last_gs_kts': int | '',
+        'last_updated': str,
+        'flights_today': [],
+        'total_flight_hrs_today': 0.0,
+      }
     """
     if not positions_path.exists():
         return {}
     try:
         with open(positions_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
-        return data.get('aircraft', {})
     except Exception:
         return {}
 
+    assignments  = data.get('assignments', {})
+    bases_meta   = data.get('bases', {})
+    last_updated = data.get('last_updated', '')
+    aircraft_positions = {}
+
+    # Walk every base and collect assigned aircraft
+    for base_id, base_data in assignments.items():
+        if base_id == 'unassigned':
+            ac_list = base_data if isinstance(base_data, list) else []
+            for ac in ac_list:
+                tail = ac.get('tail') or ac.get('registration', '')
+                if not tail:
+                    continue
+                status = 'AIRBORNE' if ac.get('airborne') else 'AWAY'
+                aircraft_positions[tail] = {
+                    'status': status,
+                    'current_base': None,
+                    'nearest_base': None,
+                    'last_alt_ft': ac.get('altitude', ''),
+                    'last_gs_kts': ac.get('ground_speed', ''),
+                    'last_updated': last_updated,
+                    'flights_today': [],
+                    'total_flight_hrs_today': 0.0,
+                }
+        else:
+            ac_list = base_data.get('aircraft', []) if isinstance(base_data, dict) else []
+            base_name = bases_meta.get(base_id, {}).get('name', base_id)
+            for ac in ac_list:
+                tail = ac.get('tail') or ac.get('registration', '')
+                if not tail:
+                    continue
+                status_raw = str(ac.get('status', '')).upper()
+                if 'AIRBORNE' in status_raw or 'IN_FLIGHT' in status_raw:
+                    status = 'AIRBORNE'
+                    curr_base = None
+                else:
+                    status = 'AT_BASE'
+                    curr_base = {
+                        'id': base_id,
+                        'name': base_name,
+                        'dist_nm': round(ac.get('distance_miles', 0) * 0.868976, 1),
+                    }
+                aircraft_positions[tail] = {
+                    'status': status,
+                    'current_base': curr_base,
+                    'nearest_base': None,
+                    'last_alt_ft': ac.get('altitude', ''),
+                    'last_gs_kts': ac.get('ground_speed', ''),
+                    'last_updated': last_updated,
+                    'flights_today': [],
+                    'total_flight_hrs_today': 0.0,
+                }
+
+    return aircraft_positions
+
 
 def get_location_badge(tail, positions):
-    """
-    Return HTML badge for aircraft location status using ADSB positions data.
-    Statuses: AIRBORNE, AT_BASE, AWAY, NO_SIGNAL, UNKNOWN
-    """
     ac = positions.get(tail, {})
     if not ac:
         return ''
-
     status    = ac.get('status', '').upper()
     curr_base = ac.get('current_base')
     near_base = ac.get('nearest_base')
-
     if status == 'AIRBORNE':
         last_alt = ac.get('last_alt_ft', '')
         alt_str  = f" {last_alt}ft" if last_alt else ''
         return f'<span class="location-badge location-active">AIRBORNE{alt_str}</span>'
-
     if status == 'AT_BASE':
         base_name = curr_base.get('name', '') if curr_base else ''
         label = f'AT BASE' + (f' · {base_name}' if base_name else '')
         return f'<span class="location-badge location-at-base">{label}</span>'
-
     if status == 'AWAY':
         near_str = ''
         if near_base:
             near_str = f" · {near_base.get('dist_nm', '?')}nm from {near_base.get('name', '?')}"
         return f'<span class="location-badge location-away">AWAY{near_str}</span>'
-
     if status == 'NO_SIGNAL':
         return '<span class="location-badge location-unknown">NO SIGNAL</span>'
-
     return ''
 
 
 def get_flights_today(tail, positions):
-    """Return list of flights today for a tail from positions data."""
     ac = positions.get(tail, {})
     return ac.get('flights_today', [])
 
 
 def get_hours_today(tail, positions):
-    """Return total flight hours today from positions data."""
     ac = positions.get(tail, {})
     return ac.get('total_flight_hrs_today', 0.0)
 
@@ -340,7 +406,6 @@ def parse_due_list_parts(filepath):
         rem_days  = safe_float(row[COL_REM_DAYS])
         status    = row[COL_STATUS].strip()     if row[COL_STATUS]    else ""
 
-        # Phase inspections
         if item_type.upper() == "INSPECTION":
             for interval in TARGET_INTERVALS:
                 patterns = compiled_phase.get(interval, [])
@@ -360,7 +425,6 @@ def parse_due_list_parts(filepath):
                         "status": status, "desc": desc,
                     }
 
-        # Components
         is_part = (item_type.upper() == "PART")
         is_retirement_insp = (item_type.upper() == "INSPECTION" and has_retirement_keyword(desc))
         if is_part or is_retirement_insp:
@@ -399,21 +463,15 @@ def parse_due_list_parts(filepath):
     return aircraft_meta, aircraft_raw, components_raw, report_date_dt
 
 
-def parse_due_list(daily_path, weekly_path=None):
-    daily_meta, daily_raw, daily_components, daily_rpt_dt = parse_due_list_parts(daily_path)
-    weekly_meta = {}
-    weekly_raw  = {}
-    weekly_rpt_dt = None
-    if weekly_path and Path(weekly_path).exists():
-        weekly_meta, weekly_raw, _, weekly_rpt_dt = parse_due_list_parts(weekly_path)
+def parse_due_list(weekly_path):
+    weekly_meta, weekly_raw, weekly_components, weekly_rpt_dt = parse_due_list_parts(weekly_path)
 
-    merged_raw = merge_inspections(weekly_raw, daily_raw)
-    all_regs   = sorted(set(weekly_meta.keys()) | set(daily_meta.keys()))
+    all_regs = sorted(weekly_meta.keys())
     aircraft_list = []
 
     for reg in all_regs:
-        meta = daily_meta.get(reg) or weekly_meta.get(reg) or {"airframe_hrs": None, "report_date": None}
-        insp = merged_raw.get(reg, {})
+        meta = weekly_meta.get(reg) or {"airframe_hrs": None, "report_date": None}
+        insp = weekly_raw.get(reg, {})
         intervals = {}
         for i in TARGET_INTERVALS:
             key = f"{i:.2f}"
@@ -433,18 +491,18 @@ def parse_due_list(daily_path, weekly_path=None):
             "intervals":    intervals,
         })
 
-    report_date_dt = daily_rpt_dt or weekly_rpt_dt
+    report_date_dt = weekly_rpt_dt
     if isinstance(report_date_dt, datetime):
         report_date_str = report_date_dt.strftime("%d %b %Y").upper()
     else:
         report_date_str = datetime.today().strftime("%d %b %Y").upper()
 
-    return report_date_str, aircraft_list, daily_components
+    return report_date_str, aircraft_list, weekly_components
 
 
 # ── BUILD HTML ────────────────────────────────────────────────────────────────
 
-def build_html(report_date, aircraft_list, components, flight_hours_stats, positions):
+def build_html(report_date, aircraft_list, components, flight_hours_stats, positions, source_filename):
 
     def fmt_hrs(val_dict):
         if val_dict is None:
@@ -469,7 +527,6 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
             return f'<span class="hr-na">{label}</span>'
         return f'<span class="hr-badge {badge_cls}">{label}</span>'
 
-    # Summary stats
     total_ac = len(aircraft_list)
     crit_count = coming_count = comp_overdue = 0
     for ac in aircraft_list:
@@ -488,11 +545,9 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
             if (rem is not None and rem < 0) or (rem is None and rem_d is not None and rem_d < 0):
                 comp_overdue += 1
 
-    # Count airborne / at base from positions
     airborne_count = sum(1 for t in aircraft_list if positions.get(t['tail'], {}).get('status') == 'AIRBORNE')
     at_base_count  = sum(1 for t in aircraft_list if positions.get(t['tail'], {}).get('status') == 'AT_BASE')
 
-    # Table rows
     table_rows_html = ''
     for ac in aircraft_list:
         tail = ac['tail']
@@ -509,7 +564,6 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
             cells += f'<td class="hr-cell">{fmt_hrs(ac["intervals"].get(i))}</td>'
         table_rows_html += f'<tr data-tail="{tail}">{cells}</tr>\n'
 
-    # Component panels
     comp_panels_html = ''
     for ac in aircraft_list:
         reg   = ac['tail']
@@ -556,106 +610,133 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
     if not comp_panels_html:
         comp_panels_html = '<div style="font-family:var(--mono);font-size:12px;color:var(--muted);padding:20px;">No components within 200 hours across fleet.</div>'
 
-    # Flight hours tab
-    flight_hours_cards = []
-    mini_charts_data   = {}
+    # Build utilization rates data for bar chart
+    util_tails = []
+    util_avg_daily = []
+    util_avg_weekly = []
+    util_tt = []
+
     for ac in aircraft_list:
-        tail  = ac['tail']
+        tail = ac['tail']
         stats = flight_hours_stats.get(tail, {})
-        current_hrs  = stats.get('current_hours')
-        weekly       = stats.get('weekly')
-        monthly      = stats.get('monthly')
-        avg_daily    = stats.get('avg_daily')
-        daily_data   = stats.get('daily', [])
-        current_hrs_str = f"{current_hrs:,.1f}" if current_hrs else 'N/A'
-        weekly_str  = f"{weekly:.1f}"  if weekly  is not None else "—"
-        monthly_str = f"{monthly:.1f}" if monthly is not None else "—"
-        avg_daily_str = f"{avg_daily:.2f} hrs/day" if avg_daily is not None else "—"
-        weekly_class  = "positive" if weekly  and weekly  > 5  else ("low" if weekly  and weekly  > 0 else "")
-        monthly_class = "positive" if monthly and monthly > 20 else ("low" if monthly and monthly > 0 else "")
+        avg_daily = stats.get('avg_daily')
+        util_tails.append(tail)
+        util_avg_daily.append(round(avg_daily, 2) if avg_daily is not None else 0)
+        util_avg_weekly.append(round(avg_daily * 7, 2) if avg_daily is not None else 0)
+        util_tt.append(stats.get('current_hours') or 0)
 
-        # ADSB hours today
-        hrs_today = get_hours_today(tail, positions)
-        flights_today = get_flights_today(tail, positions)
-        adsb_html = ''
-        if hrs_today or flights_today:
-            adsb_html = f'''
-            <div class="hours-stat-row">
-              <div class="hours-stat-label">ADSB Today</div>
-              <div>
-                <div class="hours-stat-value" style="font-size:18px;color:var(--blue);">{hrs_today:.1f} hrs</div>
-                <div class="hours-stat-sub">{len(flights_today)} flight(s)</div>
-              </div>
-            </div>'''
-
-        if daily_data and len(daily_data) >= 2:
-            chart_id = f"chart-{tail.replace(' ', '-')}"
-            mini_charts_data[tail] = {
-                'dates': [d['date'][-5:] for d in daily_data],
-                'hours': [d['hours'] for d in daily_data],
-            }
-            mini_chart_html = f'<canvas id="{chart_id}" class="mini-chart"></canvas>'
-        else:
-            mini_chart_html = '<div style="font-family:var(--mono);font-size:11px;color:var(--muted);padding:20px;text-align:center;">Insufficient data (need 2+ days)</div>'
-
-        flight_hours_cards.append(f'''
-        <div class="hours-card">
-          <div class="hours-card-header">
-            <div class="hours-card-tail">{tail}</div>
-            <div class="hours-card-current">{current_hrs_str} TT</div>
-          </div>
-          <div class="hours-card-body">
-            {adsb_html}
-            <div class="hours-stat-row">
-              <div class="hours-stat-label">Last 7 Days</div>
-              <div><div class="hours-stat-value {weekly_class}">{weekly_str}</div></div>
-            </div>
-            <div class="hours-stat-row">
-              <div class="hours-stat-label">Last 30 Days</div>
-              <div><div class="hours-stat-value {monthly_class}">{monthly_str}</div></div>
-            </div>
-            <div class="hours-stat-row">
-              <div class="hours-stat-label">Average Daily</div>
-              <div><div class="hours-stat-value" style="font-size:18px;">{avg_daily_str}</div></div>
-            </div>
-            {mini_chart_html}
-          </div>
-        </div>''')
+    tails_js    = '[' + ','.join(f'"{t}"' for t in util_tails) + ']'
+    daily_js    = '[' + ','.join(str(v) for v in util_avg_daily) + ']'
+    weekly_js   = '[' + ','.join(str(v) for v in util_avg_weekly) + ']'
+    tt_js       = '[' + ','.join(str(v) for v in util_tt) + ']'
 
     flight_hours_tab_html = f'''
-    <div class="section-label">Weekly & Monthly Flight Hours by Aircraft</div>
-    <div class="hours-grid">{''.join(flight_hours_cards)}</div>''' if flight_hours_cards else \
-    '<div style="font-family:var(--mono);font-size:12px;color:var(--muted);padding:20px;">No flight hours data available yet.</div>'
+    <div class="section-label">Fleet Utilization Rates</div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:20px;">
+      Average based on available history. Updates as more data accumulates.
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:24px;margin-bottom:32px;">
+      <canvas id="utilChart" style="width:100%;height:320px;"></canvas>
+    </div>
+    <div class="hours-grid">
+    '''
 
-    # Mini chart scripts
-    mini_charts_js = '\n'.join([f"""
-    if (document.getElementById('chart-{tail.replace(" ", "-")}')) {{
-      new Chart(document.getElementById('chart-{tail.replace(" ", "-")}'), {{
-        type: 'line',
+    for ac in aircraft_list:
+        tail = ac['tail']
+        stats = flight_hours_stats.get(tail, {})
+        avg_daily = stats.get('avg_daily')
+        current_hrs = stats.get('current_hours')
+        ah = f"{current_hrs:,.1f}" if current_hrs else 'N/A'
+        d_str = f"{avg_daily:.2f}" if avg_daily else "—"
+        w_str = f"{avg_daily*7:.1f}" if avg_daily else "—"
+        m_str = f"{avg_daily*30:.1f}" if avg_daily else "—"
+        flight_hours_tab_html += f'''
+      <div class="hours-card">
+        <div class="hours-card-header">
+          <div class="hours-card-tail">{tail}</div>
+          <div class="hours-card-current">{ah} TT</div>
+        </div>
+        <div class="hours-card-body">
+          <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div>
+            <div class="hours-stat-value">{d_str} hrs</div></div>
+          <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div>
+            <div class="hours-stat-value">{w_str} hrs</div></div>
+          <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div>
+            <div class="hours-stat-value">{m_str} hrs</div></div>
+        </div>
+      </div>'''
+
+    flight_hours_tab_html += '</div>'
+
+    mini_charts_js = f'''
+    (function() {{
+      var ctx = document.getElementById('utilChart');
+      if (!ctx) return;
+      new Chart(ctx, {{
+        type: 'bar',
         data: {{
-          labels: [{','.join([f"'{d}'" for d in data['dates']])}],
-          datasets: [{{ label: 'Total Hours', data: [{','.join([f'{h:.1f}' for h in data['hours']])}],
-            borderColor: '#29b6f6', backgroundColor: 'rgba(41,182,246,0.1)',
-            borderWidth: 2, tension: 0.4, pointRadius: 3, pointBackgroundColor: '#29b6f6'
-          }}]
+          labels: {tails_js},
+          datasets: [
+            {{
+              label: 'Avg Daily (hrs)',
+              data: {daily_js},
+              backgroundColor: 'rgba(41,182,246,0.8)',
+              borderColor: '#29b6f6',
+              borderWidth: 1,
+              yAxisID: 'yDaily'
+            }},
+            {{
+              label: 'Avg Weekly (hrs)',
+              data: {weekly_js},
+              backgroundColor: 'rgba(246,173,85,0.8)',
+              borderColor: '#f6ad55',
+              borderWidth: 1,
+              yAxisID: 'yWeekly'
+            }}
+          ]
         }},
         options: {{
-          responsive: true, maintainAspectRatio: false,
-          plugins: {{ legend: {{ display: false }},
-            tooltip: {{ callbacks: {{ label: function(c) {{ return c.parsed.y.toFixed(1) + ' hrs'; }} }} }}
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {{
+            legend: {{ labels: {{ color: '#a0aec0', font: {{ family: 'monospace', size: 11 }} }} }},
+            datalabels: {{
+              anchor: 'end', align: 'top',
+              color: '#a0aec0',
+              font: {{ size: 9, family: 'monospace' }},
+              formatter: function(v) {{ return v > 0 ? v.toFixed(2) : ''; }}
+            }}
           }},
           scales: {{
-            y: {{ ticks: {{ color: '#4a5568', font: {{ size: 9 }} }}, grid: {{ color: 'rgba(30,37,48,0.5)' }} }},
-            x: {{ ticks: {{ color: '#4a5568', font: {{ size: 9 }} }}, grid: {{ display: false }} }}
+            yDaily: {{
+              type: 'linear', position: 'left',
+              beginAtZero: true,
+              title: {{ display: true, text: 'Daily Avg (hrs)', color: '#29b6f6', font: {{ size: 10 }} }},
+              ticks: {{ color: '#4a5568', font: {{ size: 10 }} }},
+              grid: {{ color: 'rgba(30,37,48,0.8)' }}
+            }},
+            yWeekly: {{
+              type: 'linear', position: 'right',
+              beginAtZero: true,
+              title: {{ display: true, text: 'Weekly Avg (hrs)', color: '#f6ad55', font: {{ size: 10 }} }},
+              ticks: {{ color: '#4a5568', font: {{ size: 10 }} }},
+              grid: {{ drawOnChartArea: false }}
+            }},
+            x: {{
+              ticks: {{ color: '#a0aec0', font: {{ size: 10, family: 'monospace' }} }},
+              grid: {{ display: false }}
+            }}
           }}
-        }}
+        }},
+        plugins: [ChartDataLabels]
       }});
-    }}""" for tail, data in mini_charts_data.items()])
+    }})();'''
 
-    # Bases tab — built from positions data
     bases_tab_html = _build_bases_tab(aircraft_list, positions)
 
-    # Bar chart data
+    # Calendar tab
+    calendar_tab_html = _build_calendar_tab(aircraft_list, flight_hours_stats)
+
     chart_rows = sorted(
         [(ac['tail'], float(v['rem_hrs'])) for ac in aircraft_list
          if (v := ac['intervals'].get(200)) and v.get('rem_hrs') is not None],
@@ -664,7 +745,6 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
     labels_js = "[" + ",".join([f"'{t}'" for t, _ in chart_rows]) + "]"
     values_js = "[" + ",".join([f"{v:.2f}" for _, v in chart_rows]) + "]"
 
-    # ── HTML ──────────────────────────────────────────────────────────────────
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -788,6 +868,7 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
   .away-card{{background:var(--surface);border:1px solid var(--border);border-radius:3px;padding:12px;}}
   .away-tail{{font-family:var(--sans);font-weight:700;font-size:14px;color:var(--heading);margin-bottom:4px;}}
   .away-info{{font-family:var(--mono);font-size:10px;color:var(--muted);}}
+  .cal-months-wrap{{display:flex;flex-direction:column;gap:32px;}}
   footer{{margin-top:48px;padding:16px 32px;border-top:1px solid var(--border);font-family:var(--mono);font-size:10px;color:var(--muted);display:flex;justify-content:space-between;letter-spacing:1px;}}
 </style>
 </head>
@@ -813,6 +894,7 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
   <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('maintenance',this)">Maintenance Due List</button>
     <button class="tab-btn" onclick="switchTab('flight-hours',this)">Flight Hours Tracking</button>
+    <button class="tab-btn" onclick="switchTab('calendar',this)">Calendar</button>
     <button class="tab-btn" onclick="switchTab('bases',this)">Bases</button>
   </div>
 
@@ -862,16 +944,22 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
 {flight_hours_tab_html}
   </div>
 
+  <!-- CALENDAR TAB -->
+  <div id="tab-calendar" class="tab-content">
+{calendar_tab_html}
+  </div>
+
   <!-- BASES TAB -->
   <div id="tab-bases" class="tab-content">
 {bases_tab_html}
   </div>
 </main>
 <footer>
-  <span>SOURCE: VERYON MAINTENANCE TRACKING &nbsp;|&nbsp; {INPUT_FILENAME}</span>
+  <span>SOURCE: VERYON MAINTENANCE TRACKING &nbsp;|&nbsp; {source_filename}</span>
   <span>IHC HEALTH SERVICES — AVIATION MAINTENANCE</span>
 </footer>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 <script>
   function switchTab(tabName, btn) {{
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -905,33 +993,375 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
   }} else {{
     new Chart(document.getElementById('bar200'), {{
       type: 'bar',
-      data: {{ labels: labels200, datasets: [{{ label: 'Hours remaining to 200 Hr', data: values200 }}] }},
+      data: {{ labels: labels200, datasets: [{{ label: 'Hours remaining to 200 Hr', data: values200, backgroundColor: '#29b6f6' }}] }},
       options: {{
         responsive: true, maintainAspectRatio: false,
-        plugins: {{ legend: {{ display: true }} }},
+        plugins: {{
+          legend: {{ display: true }},
+          datalabels: {{
+            anchor: 'end', align: 'top',
+            color: '#cdd6e0',
+            font: {{ family: 'Share Tech Mono', size: 11 }},
+            formatter: function(value) {{ return value.toFixed(1); }}
+          }}
+        }},
         scales: {{
-          y: {{ title: {{ display: true, text: 'Hours Remaining' }} }},
+          y: {{ beginAtZero: true, title: {{ display: true, text: 'Hours Remaining' }} }},
           x: {{ title: {{ display: true, text: 'Aircraft (closest first)' }} }}
         }}
-      }}
+      }},
+      plugins: [ChartDataLabels]
     }});
   }}
   {mini_charts_js}
+
+  // ── EDITABLE CALENDAR ─────────────────────────────────────────────────────
+  (function() {{
+    var STORAGE_KEY = 'ihc_cal_notes';
+
+    function loadNotes() {{
+      try {{ return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{{}}'); }} catch(e) {{ return {{}}; }}
+    }}
+    function saveNotes(notes) {{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
+    }}
+
+    function renderUserEvents() {{
+      var notes = loadNotes();
+      Object.keys(notes).forEach(function(dateKey) {{
+        var note = notes[dateKey];
+        if (!note || (!note.text && !note.label)) return;
+        var cell = document.querySelector('.cal-day[data-date="' + dateKey + '"]');
+        if (!cell) return;
+        var existing = cell.querySelector('.cal-user-ev');
+        if (existing) existing.remove();
+        var el = document.createElement('div');
+        el.className = 'cal-user-ev';
+        el.textContent = (note.label || 'NOTE') + (note.text ? ': ' + note.text : '');
+        el.title = note.text || '';
+        cell.appendChild(el);
+      }});
+    }}
+
+    function openModal(dateKey) {{
+      var notes = loadNotes();
+      var existing = notes[dateKey] || {{}};
+      var modal = document.getElementById('cal-modal');
+      document.getElementById('cal-modal-date').textContent = dateKey;
+      document.getElementById('cal-modal-label').value = existing.label || '';
+      document.getElementById('cal-modal-text').value = existing.text || '';
+      document.getElementById('cal-modal-color').value = existing.color || '#f6ad55';
+      modal.style.display = 'flex';
+      document.getElementById('cal-modal-text').focus();
+    }}
+
+    function closeModal() {{
+      document.getElementById('cal-modal').style.display = 'none';
+    }}
+
+    function saveModal() {{
+      var dateKey = document.getElementById('cal-modal-date').textContent;
+      var label = document.getElementById('cal-modal-label').value.trim();
+      var text  = document.getElementById('cal-modal-text').value.trim();
+      var color = document.getElementById('cal-modal-color').value;
+      var notes = loadNotes();
+      if (label || text) {{
+        notes[dateKey] = {{ label: label, text: text, color: color }};
+      }} else {{
+        delete notes[dateKey];
+      }}
+      saveNotes(notes);
+      closeModal();
+      renderUserEvents();
+    }}
+
+    function clearModal() {{
+      var dateKey = document.getElementById('cal-modal-date').textContent;
+      var notes = loadNotes();
+      delete notes[dateKey];
+      saveNotes(notes);
+      closeModal();
+      renderUserEvents();
+    }}
+
+    // Attach click handlers to all cal-day cells
+    document.querySelectorAll('.cal-day').forEach(function(cell) {{
+      cell.style.cursor = 'pointer';
+      cell.addEventListener('click', function() {{
+        var dateKey = cell.getAttribute('data-date');
+        if (dateKey) openModal(dateKey);
+      }});
+    }});
+
+    document.getElementById('cal-modal-save').addEventListener('click', saveModal);
+    document.getElementById('cal-modal-clear').addEventListener('click', clearModal);
+    document.getElementById('cal-modal-cancel').addEventListener('click', closeModal);
+    document.getElementById('cal-modal').addEventListener('click', function(e) {{
+      if (e.target === this) closeModal();
+    }});
+
+    renderUserEvents();
+  }})();
 </script>
+
+<!-- Calendar Note Modal -->
+<div id="cal-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);
+  z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:#0d1117;border:1px solid #29b6f6;border-radius:6px;padding:28px;
+    min-width:340px;max-width:480px;width:90%;font-family:monospace;">
+    <div style="font-size:11px;color:#4a9eff;letter-spacing:2px;margin-bottom:4px;">SCHEDULE / NOTE</div>
+    <div id="cal-modal-date" style="font-size:16px;color:#e2e8f0;font-weight:700;margin-bottom:20px;"></div>
+    <label style="display:block;font-size:10px;color:#718096;letter-spacing:1px;margin-bottom:4px;">LABEL (e.g. 50 HR INSP)</label>
+    <input id="cal-modal-label" type="text" maxlength="30"
+      style="width:100%;box-sizing:border-box;background:#161c25;border:1px solid #2d3748;
+      border-radius:3px;color:#e2e8f0;padding:8px;font-family:monospace;font-size:13px;margin-bottom:14px;">
+    <label style="display:block;font-size:10px;color:#718096;letter-spacing:1px;margin-bottom:4px;">NOTES</label>
+    <textarea id="cal-modal-text" rows="3" maxlength="200"
+      style="width:100%;box-sizing:border-box;background:#161c25;border:1px solid #2d3748;
+      border-radius:3px;color:#e2e8f0;padding:8px;font-family:monospace;font-size:12px;
+      resize:vertical;margin-bottom:14px;"></textarea>
+    <label style="display:block;font-size:10px;color:#718096;letter-spacing:1px;margin-bottom:4px;">COLOR</label>
+    <input id="cal-modal-color" type="color" value="#f6ad55"
+      style="width:48px;height:32px;border:none;background:none;cursor:pointer;margin-bottom:20px;">
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button id="cal-modal-clear"
+        style="background:transparent;border:1px solid #c0392b;color:#c0392b;
+        padding:7px 16px;border-radius:3px;cursor:pointer;font-family:monospace;font-size:11px;">
+        CLEAR</button>
+      <button id="cal-modal-cancel"
+        style="background:transparent;border:1px solid #4a5568;color:#718096;
+        padding:7px 16px;border-radius:3px;cursor:pointer;font-family:monospace;font-size:11px;">
+        CANCEL</button>
+      <button id="cal-modal-save"
+        style="background:#29b6f6;border:none;color:#000;
+        padding:7px 16px;border-radius:3px;cursor:pointer;font-family:monospace;font-size:11px;font-weight:700;">
+        SAVE</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>"""
 
 
+def _build_calendar_tab(aircraft_list, flight_hours_stats):
+    """Build a month-view calendar with projected maintenance due dates."""
+    import calendar as cal_mod
+
+    today = datetime.today()
+
+    # Collect all projected events: {date_str: [(tail, interval, urgency), ...]}
+    events = {}
+    fallback_cards = []
+
+    for ac in aircraft_list:
+        tail = ac['tail']
+        current_hrs = ac['airframe_hrs']
+        if current_hrs is None:
+            continue
+
+        stats = flight_hours_stats.get(tail, {})
+        avg_daily = stats.get('avg_daily')
+
+        if not avg_daily or avg_daily <= 0:
+            rows = []
+            for interval in TARGET_INTERVALS:
+                v = ac['intervals'].get(interval)
+                if v is None:
+                    continue
+                rem_hrs = v.get('rem_hrs')
+                if rem_hrs is None:
+                    continue
+                if rem_hrs < 0:
+                    cls = 'cal-ev-overdue'
+                    label = 'OVERDUE'
+                elif rem_hrs <= 25:
+                    cls = 'cal-ev-urgent'
+                    label = f'{rem_hrs:.0f} hrs'
+                elif rem_hrs <= 100:
+                    cls = 'cal-ev-soon'
+                    label = f'{rem_hrs:.0f} hrs'
+                else:
+                    cls = ''
+                    label = f'{rem_hrs:.0f} hrs'
+                rows.append(
+                    f'<div class="cal-fb-row"><span class="cal-fb-insp">{interval} Hr</span>'
+                    f'<span class="cal-fb-val {cls}">{label}</span></div>'
+                )
+            if rows:
+                ah = f'{current_hrs:,.1f}' if current_hrs else 'N/A'
+                fallback_cards.append(
+                    f'<div class="cal-fb-card"><div class="cal-fb-head">'
+                    f'<span class="cal-fb-tail">{tail}</span>'
+                    f'<span class="cal-fb-hrs">{ah} TT &mdash; no utilization data</span>'
+                    f'</div>{"".join(rows)}</div>'
+                )
+            continue
+
+        for interval in TARGET_INTERVALS:
+            v = ac['intervals'].get(interval)
+            if v is None:
+                continue
+            rem_hrs = v.get('rem_hrs')
+            if rem_hrs is None:
+                continue
+
+            if rem_hrs < 0:
+                due_date = today
+                urgency = 'overdue'
+            else:
+                days_until = rem_hrs / avg_daily
+                due_date = today + timedelta(days=days_until)
+                if days_until <= 30:
+                    urgency = 'urgent'
+                elif days_until <= 90:
+                    urgency = 'soon'
+                else:
+                    urgency = 'ok'
+
+            key = due_date.strftime('%Y-%m-%d')
+            events.setdefault(key, []).append((tail, interval, urgency))
+
+    # Build 3-month calendar view
+    months_html = ''
+    for month_offset in range(3):
+        m = today.month + month_offset
+        y = today.year + (m - 1) // 12
+        m = ((m - 1) % 12) + 1
+
+        month_name = datetime(y, m, 1).strftime('%B %Y').upper()
+        first_dow = datetime(y, m, 1).weekday()  # 0=Monday
+        days_in_month = cal_mod.monthrange(y, m)[1]
+
+        day_headers = ''.join(
+            f'<div class="cal-dow">{d}</div>'
+            for d in ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
+        )
+
+        cells = '<div class="cal-empty"></div>' * first_dow
+
+        for day in range(1, days_in_month + 1):
+            date_key = f'{y}-{m:02d}-{day:02d}'
+            day_events = events.get(date_key, [])
+            is_today = (y == today.year and m == today.month and day == today.day)
+            today_cls = ' cal-today' if is_today else ''
+
+            if day_events:
+                if any(e[2] == 'overdue' for e in day_events):
+                    cell_cls = 'cal-day-overdue'
+                elif any(e[2] == 'urgent' for e in day_events):
+                    cell_cls = 'cal-day-urgent'
+                elif any(e[2] == 'soon' for e in day_events):
+                    cell_cls = 'cal-day-soon'
+                else:
+                    cell_cls = 'cal-day-ok'
+
+                ev_html = ''
+                for t, interval, urgency in day_events:
+                    ev_cls = f'cal-ev-{urgency}'
+                    ev_html += f'<div class="cal-ev {ev_cls}">{t} {interval}h</div>'
+
+                cells += (
+                    f'<div class="cal-day {cell_cls}{today_cls}" data-date="{date_key}">'
+                    f'<div class="cal-day-num">{day}</div>{ev_html}</div>'
+                )
+            else:
+                is_past = (y == today.year and m == today.month and day < today.day)
+                past_cls = ' cal-past' if is_past else ''
+                cells += (
+                    f'<div class="cal-day{today_cls}{past_cls}" data-date="{date_key}">'
+                    f'<div class="cal-day-num">{day}</div></div>'
+                )
+
+        months_html += (
+            f'<div class="cal-month">'
+            f'<div class="cal-month-title">{month_name}</div>'
+            f'<div class="cal-grid-days">{day_headers}{cells}</div>'
+            f'</div>'
+        )
+
+    fallback_html = ''
+    if fallback_cards:
+        fallback_html = (
+            f'<div class="section-label" style="margin-top:32px;">AIRCRAFT WITHOUT UTILIZATION DATA</div>'
+            f'<div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:12px;">'
+            f'Showing hours remaining. Projected dates appear once utilization history accumulates.</div>'
+            f'<div class="cal-fb-grid">{"".join(fallback_cards)}</div>'
+        )
+
+    legend_html = (
+        '<div class="cal-legend">'
+        '<span class="cal-leg-item"><span class="cal-leg-dot cal-ev-overdue"></span>OVERDUE</span>'
+        '<span class="cal-leg-item"><span class="cal-leg-dot cal-ev-urgent"></span>DUE &le;30 DAYS</span>'
+        '<span class="cal-leg-item"><span class="cal-leg-dot cal-ev-soon"></span>DUE &le;90 DAYS</span>'
+        '<span class="cal-leg-item"><span class="cal-leg-dot cal-ev-ok"></span>SCHEDULED</span>'
+        '</div>'
+    )
+
+    css = (
+        '<style>'
+        '.cal-months-wrap{display:flex;flex-direction:column;gap:32px;}'
+        '.cal-month{width:100%;}'
+        '.cal-month-title{font-family:var(--mono);font-size:11px;font-weight:700;'
+        'color:var(--cyan);letter-spacing:2px;margin-bottom:8px;}'
+        '.cal-grid-days{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}'
+        '.cal-dow{font-family:var(--mono);font-size:9px;color:var(--muted);'
+        'text-align:center;padding:4px 0;letter-spacing:1px;}'
+        '.cal-empty{background:transparent;min-height:60px;}'
+        '.cal-day{background:#0d1117;border:1px solid #1e2533;border-radius:3px;'
+        'min-height:60px;padding:4px;position:relative;overflow:hidden;}'
+        '.cal-day-num{font-family:var(--mono);font-size:9px;color:var(--muted);margin-bottom:2px;}'
+        '.cal-today{border-color:var(--cyan)!important;}'
+        '.cal-today .cal-day-num{color:var(--cyan);font-weight:700;}'
+        '.cal-past{opacity:0.4;}'
+        '.cal-day-overdue{background:#2a0a0a;border-color:#c0392b;}'
+        '.cal-day-urgent{background:#1a1200;border-color:#e67e22;}'
+        '.cal-day-soon{background:#0d1a0d;border-color:#f39c12;}'
+        '.cal-day-ok{background:#0a1520;border-color:#2980b9;}'
+        '.cal-ev{font-family:var(--mono);font-size:8px;padding:1px 3px;'
+        'border-radius:2px;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}'
+        '.cal-ev-overdue{background:#c0392b;color:#fff;}'
+        '.cal-ev-urgent{background:#e67e22;color:#000;}'
+        '.cal-ev-soon{background:#f39c12;color:#000;}'
+        '.cal-ev-ok{background:#2980b9;color:#fff;}'
+        '.cal-legend{display:flex;gap:20px;margin-bottom:20px;font-family:var(--mono);'
+        'font-size:10px;color:var(--muted);flex-wrap:wrap;}'
+        '.cal-leg-item{display:flex;align-items:center;gap:6px;}'
+        '.cal-leg-dot{width:10px;height:10px;border-radius:2px;display:inline-block;}'
+        '.cal-fb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;}'
+        '.cal-fb-card{background:#0d1117;border:1px solid #1e2533;border-radius:4px;padding:12px;}'
+        '.cal-fb-head{display:flex;justify-content:space-between;align-items:baseline;'
+        'margin-bottom:8px;border-bottom:1px solid #1e2533;padding-bottom:6px;}'
+        '.cal-fb-tail{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--cyan);}'
+        '.cal-fb-hrs{font-family:var(--mono);font-size:9px;color:var(--muted);}'
+        '.cal-fb-row{display:flex;justify-content:space-between;font-family:var(--mono);'
+        'font-size:11px;padding:3px 0;border-bottom:1px solid #161c25;}'
+        '.cal-fb-insp{color:var(--muted);}'
+        '.cal-fb-val{font-weight:700;}'
+        '.cal-user-ev{font-family:var(--mono);font-size:8px;padding:2px 4px;border-radius:2px;'
+        'margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'
+        'background:#2d3748;color:#e2e8f0;border-left:3px solid #f6ad55;}'
+        '</style>'
+    )
+
+    return (
+        f'{css}'
+        f'<div class="section-label">PROJECTED MAINTENANCE CALENDAR</div>'
+        f'<div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:16px;">'
+        f'Dates projected from average daily utilization. Actual dates will vary.</div>'
+        f'{legend_html}'
+        f'<div class="cal-months-wrap">{months_html}</div>'
+        f'{fallback_html}'
+    )
+
+
+
 def _build_bases_tab(aircraft_list, positions):
-    """Build the bases tab from live ADSB positions data."""
     if not positions:
         return '<div style="font-family:var(--mono);font-size:12px;color:var(--muted);padding:20px;">No position data available. Runs after fetch_positions.py completes.</div>'
 
-    # Group aircraft by base
-    base_buckets = {}   # base_id -> list of (tail, ac_pos, airframe_hrs)
+    base_buckets = {}
     away_list    = []
     airborne_list = []
-
     ac_hrs = {ac['tail']: ac['airframe_hrs'] for ac in aircraft_list}
 
     for ac in aircraft_list:
@@ -951,7 +1381,6 @@ def _build_bases_tab(aircraft_list, positions):
         else:
             away_list.append({'tail': tail, 'hrs': hrs, 'pos': pos, 'nearest': near})
 
-    # Base cards
     base_cards_html = ''
     for bid, bdata in sorted(base_buckets.items()):
         count = len(bdata['aircraft'])
@@ -977,7 +1406,6 @@ def _build_bases_tab(aircraft_list, positions):
           <div class="base-body">{aircraft_html}</div>
         </div>'''
 
-    # Airborne section
     airborne_html = ''
     if airborne_list:
         cards = ''
@@ -998,7 +1426,6 @@ def _build_bases_tab(aircraft_list, positions):
           <div class="away-grid">{cards}</div>
         </div>'''
 
-    # Away section
     away_html = ''
     if away_list:
         cards = ''
@@ -1032,8 +1459,8 @@ def _build_bases_tab(aircraft_list, positions):
 # ── MAIN ──────────────────────────────────────────────────────────────────────
 
 def main():
-    input_path     = Path(OUTPUT_FOLDER) / INPUT_FILENAME
-    weekly_path    = Path(OUTPUT_FOLDER) / WEEKLY_FILENAME
+    data_dir       = Path(OUTPUT_FOLDER)
+    weekly_path    = data_dir / WEEKLY_FILENAME
     output_path    = Path(OUTPUT_FOLDER) / OUTPUT_FILENAME
     history_path   = Path(OUTPUT_FOLDER) / HISTORY_FILENAME
     positions_path = Path(OUTPUT_FOLDER) / POSITIONS_FILENAME
@@ -1051,21 +1478,26 @@ def main():
 
     log("Dashboard generator started.")
 
-    if not input_path.exists():
-        log(f"WARNING: Input file not found: {input_path}")
+    if not weekly_path.exists():
+        for fallback in WEEKLY_FALLBACKS:
+            candidate = data_dir / fallback
+            if candidate.exists():
+                weekly_path = candidate
+                log(f"Primary weekly file missing. Using fallback file: {weekly_path}")
+                break
+
+    if not weekly_path.exists():
+        log(f"WARNING: Input file not found: {weekly_path}")
         log("Previous dashboard left in place. Will retry next run.")
         sys.exit(0)
 
-    file_age_hrs = (datetime.now().timestamp() - input_path.stat().st_mtime) / 3600
+    file_age_hrs = (datetime.now().timestamp() - weekly_path.stat().st_mtime) / 3600
     if file_age_hrs > 36:
         log(f"WARNING: Input file is {file_age_hrs:.1f} hours old. May not be today's data.")
 
-    if not weekly_path.exists():
-        log(f"WARNING: Weekly file not found: {weekly_path} (long-range inspections will stay blank)")
-
     try:
-        log(f"Parsing {input_path} ...")
-        report_date, aircraft_list, components = parse_due_list(input_path, weekly_path)
+        log(f"Parsing {weekly_path} ...")
+        report_date, aircraft_list, components = parse_due_list(weekly_path)
         log(f"Parsed {len(aircraft_list)} aircraft.")
 
         log("Loading flight hours history...")
@@ -1083,7 +1515,14 @@ def main():
         else:
             log("No positions data (fetch_positions.py may not have run yet).")
 
-        html = build_html(report_date, aircraft_list, components, flight_hours_stats, positions)
+        html = build_html(
+            report_date,
+            aircraft_list,
+            components,
+            flight_hours_stats,
+            positions,
+            weekly_path.name,
+        )
 
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(html)
