@@ -1,8 +1,11 @@
 name: Update Fleet Dashboard
 on:
   push:
-    paths:
-      - "data/*.csv"
+    branches: ["main"]
+    paths-ignore:
+      - 'public/**'
+      - '.github/**'
+      - '*.md'
   workflow_dispatch:
 
 permissions:
@@ -39,5 +42,5 @@ jobs:
           git pull --rebase origin main
           git stash pop
           git add public/index.html data/fleet_dashboard.html data/*.json || true
-          git commit -m "Update dashboard $(date -u)" || echo "No changes"
+          git commit -m "Update dashboard $(date -u) [skip ci]" || echo "No changes"
           git push
