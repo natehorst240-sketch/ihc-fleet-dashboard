@@ -1,7 +1,7 @@
 """
 Fleet Maintenance Dashboard Generator (CSV)
 ==========================================
-Reads Due-List_BIG_WEEKLY_aw109sp.csv
+Reads Due-List_Latest_aw109sp.csv and Due-List_BIG_WEEKLY_aw109sp.csv
 from the data/ folder and writes data/fleet_dashboard.html.
 
 Run via GitHub Actions after CSV files are pushed to repo.
@@ -22,7 +22,7 @@ INPUT_FILENAME     = "Due-List_BIG_WEEKLY_aw109sp.csv"
 WEEKLY_FILENAME    = "Due-List_BIG_WEEKLY_aw109sp.csv"
 OUTPUT_FILENAME    = "fleet_dashboard.html"
 HISTORY_FILENAME   = "flight_hours_history.json"
-POSITIONS_FILENAME = "positions_aw109sp.json"
+POSITIONS_FILENAME = "base_assignments.json"
 
 # Phase inspection intervals to track (hours)
 TARGET_INTERVALS = [50, 100, 200, 400, 800, 2400, 3200]
