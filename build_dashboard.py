@@ -1557,7 +1557,7 @@ def _build_bases_tab(aircraft_list, positions):
 def main():
     data_dir       = Path(OUTPUT_FOLDER)
     weekly_path    = data_dir / WEEKLY_FILENAME
-    output_path    = Path(OUTPUT_FOLDER) / OUTPUT_FILENAME
+    output_path    = Path("public") / OUTPUT_FILENAME
     history_path   = Path(OUTPUT_FOLDER) / HISTORY_FILENAME
     positions_path = Path(OUTPUT_FOLDER) / POSITIONS_FILENAME
     log_path       = Path(__file__).with_name("dashboard_log.txt")
