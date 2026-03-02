@@ -1,10 +1,8 @@
 """
-Base Assignment System with ADSB.lol Integration
-===============================================
-Automatically assigns aircraft to bases based on ADSB.lol position data.
-Generates JSON for the dashboard's "Bases" tab.
-
-Runs both locally (via Task Scheduler) and in GitHub Actions.
+Base Assignment System with ADSB.lol + Airplanes.live Integration
+=================================================================
+Primary source: airplanes.live (free, no key required)
+Fallback source: adsb.lol
 """
 
 import json
@@ -12,14 +10,12 @@ import math
 import os
 from pathlib import Path
 from datetime import datetime, timezone
-from typing import Dict, Any, Optional, Tuple
+from typing import Dict, Any
 
 import requests
 
 # ── CONFIGURATION ─────────────────────────────────────────────────────────────
 
-# When running in GitHub Actions, use repo-relative path
-# When running locally, use the full OneDrive path
 if os.getenv("GITHUB_ACTIONS"):
     OUTPUT_FOLDER = Path("data")
 else:
@@ -27,11 +23,10 @@ else:
 
 BASE_ASSIGNMENTS_FILE = "base_assignments.json"
 
+AIRPLANESLIVE_BASE_URL = "https://api.airplanes.live/v2"
 ADSBLOL_BASE_URL = "https://api.adsb.lol"
 REQUEST_TIMEOUT_SEC = 15
-USER_AGENT = "407-Fleet-Tracker/1.0 (base-assignments)"
-
-AIRCRAFT_MAPPING_FILE = "aircraft_icao_map.json"
+USER_AGENT = "IHC-Fleet-Dashboard/1.0 (base-assignments)"
 
 DEFAULT_AIRCRAFT: Dict[str, Dict[str, str]] = {
     "N251HC": {"icao": "A25BE7"},
@@ -56,7 +51,7 @@ BASES = {
     "KSLC":       {"name": "KSLC",       "lat": 40.7884, "lon": -111.9778, "radius_miles": 10},
 }
 
-MAX_SEEN_AGE_SECONDS = 300  # 5 minutes
+MAX_SEEN_AGE_SECONDS = 300
 
 # ── HELPERS ───────────────────────────────────────────────────────────────────
 
@@ -66,8 +61,8 @@ def haversine_distance(lat1, lon1, lat2, lon2):
     lat2_rad = math.radians(lat2)
     delta_lat = math.radians(lat2 - lat1)
     delta_lon = math.radians(lon2 - lon1)
-    a = (math.sin(delta_lat/2)**2
-         + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(delta_lon/2)**2)
+    a = (math.sin(delta_lat / 2) ** 2
+         + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(delta_lon / 2) ** 2)
     return R * 2 * math.asin(math.sqrt(a))
 
 
@@ -81,7 +76,7 @@ def load_previous_output(assignments_path):
         return None
 
 
-# ── ADSB.lol INTEGRATION ──────────────────────────────────────────────────────
+# ── ADS-B FETCH ───────────────────────────────────────────────────────────────
 
 def _requests_session():
     s = requests.Session()
@@ -89,13 +84,15 @@ def _requests_session():
     return s
 
 
-def fetch_adsblol_by_icao(session, icao_hex):
+def fetch_aircraft_by_icao(session, icao_hex):
     icao_hex = icao_hex.strip().lower()
-    for url in [
+    urls = [
+        f"{AIRPLANESLIVE_BASE_URL}/icao/{icao_hex}",
         f"{ADSBLOL_BASE_URL}/v2/icao/{icao_hex}",
         f"{ADSBLOL_BASE_URL}/api/v2/icao/{icao_hex}",
         f"{ADSBLOL_BASE_URL}/api/icao/{icao_hex}",
-    ]:
+    ]
+    for url in urls:
         try:
             resp = session.get(url, timeout=REQUEST_TIMEOUT_SEC)
             if resp.status_code == 404:
@@ -107,59 +104,62 @@ def fetch_adsblol_by_icao(session, icao_hex):
     return None
 
 
-def normalize_adsblol_aircraft(payload):
+def normalize_aircraft_payload(payload):
     if not isinstance(payload, dict):
         return None
-    if "lat" in payload and "lon" in payload:
-        return {"latitude": payload.get("lat"), "longitude": payload.get("lon"),
-                "seen": payload.get("seen"), "altitude": payload.get("alt_baro") or payload.get("altitude"),
-                "ground_speed": payload.get("gs") or payload.get("ground_speed"), "track": payload.get("track")}
-    if "aircraft" in payload and isinstance(payload["aircraft"], dict):
-        ac = payload["aircraft"]
-        if "lat" in ac and "lon" in ac:
-            return {"latitude": ac.get("lat"), "longitude": ac.get("lon"),
-                    "seen": ac.get("seen"), "altitude": ac.get("alt_baro") or ac.get("altitude"),
-                    "ground_speed": ac.get("gs") or ac.get("ground_speed"), "track": ac.get("track")}
-    for key in ("aircraft", "ac"):
+
+    # ADSBExchange/airplanes.live v2 format: {"ac": [{...}]}
+    for key in ("ac", "aircraft"):
         if key in payload and isinstance(payload[key], list) and payload[key]:
             ac0 = payload[key][0]
             if isinstance(ac0, dict) and "lat" in ac0 and "lon" in ac0:
-                return {"latitude": ac0.get("lat"), "longitude": ac0.get("lon"),
-                        "seen": ac0.get("seen"), "altitude": ac0.get("alt_baro") or ac0.get("altitude"),
-                        "ground_speed": ac0.get("gs") or ac0.get("ground_speed"), "track": ac0.get("track")}
+                return {
+                    "latitude":     ac0.get("lat"),
+                    "longitude":    ac0.get("lon"),
+                    "seen":         ac0.get("seen"),
+                    "altitude":     ac0.get("alt_baro") or ac0.get("altitude"),
+                    "ground_speed": ac0.get("gs") or ac0.get("ground_speed"),
+                    "track":        ac0.get("track"),
+                }
+
+    # Flat format
+    if "lat" in payload and "lon" in payload:
+        return {
+            "latitude":     payload.get("lat"),
+            "longitude":    payload.get("lon"),
+            "seen":         payload.get("seen"),
+            "altitude":     payload.get("alt_baro") or payload.get("altitude"),
+            "ground_speed": payload.get("gs") or payload.get("ground_speed"),
+            "track":        payload.get("track"),
+        }
+
+    # Nested aircraft dict
+    if "aircraft" in payload and isinstance(payload["aircraft"], dict):
+        ac = payload["aircraft"]
+        if "lat" in ac and "lon" in ac:
+            return {
+                "latitude":     ac.get("lat"),
+                "longitude":    ac.get("lon"),
+                "seen":         ac.get("seen"),
+                "altitude":     ac.get("alt_baro") or ac.get("altitude"),
+                "ground_speed": ac.get("gs") or ac.get("ground_speed"),
+                "track":        ac.get("track"),
+            }
+
     return None
 
 
-def load_aircraft_mapping(base_folder):
-    mapping_path = base_folder / AIRCRAFT_MAPPING_FILE
-    if mapping_path.exists():
-        try:
-            with open(mapping_path, "r", encoding="utf-8") as f:
-                raw = json.load(f)
-            normalized = {}
-            if isinstance(raw, dict):
-                for tail, value in raw.items():
-                    icao = value if isinstance(value, str) else value.get("icao", "")
-                    if icao:
-                        normalized[tail.upper()] = {"icao": icao.upper()}
-            if normalized:
-                return normalized, f"file:{mapping_path}"
-        except Exception:
-            pass
-    return {k: v for k, v in DEFAULT_AIRCRAFT.items()}, "embedded DEFAULT_AIRCRAFT"
-
-
-def load_adsblol_status(aircraft_mapping):
+def load_aircraft_status(aircraft_mapping):
     status = {}
     session = _requests_session()
     for tail, info in aircraft_mapping.items():
         icao_hex = (info.get("icao") or "").strip()
         if not icao_hex:
             continue
-        payload = fetch_adsblol_by_icao(session, icao_hex)
+        payload = fetch_aircraft_by_icao(session, icao_hex)
         if not payload:
             continue
-        norm = normalize_adsblol_aircraft(payload)
+        norm = normalize_aircraft_payload(payload)
         if not norm:
             continue
         seen = norm.get("seen")
@@ -191,10 +191,12 @@ def find_base_for_aircraft(aircraft_data):
 def assign_aircraft_to_bases(aircraft_status):
     assignments = {base_id: {"aircraft": [], "status": "available"} for base_id in BASES}
     assignments["unassigned"] = []
+
     for tail, aircraft_data in aircraft_status.items():
         base_id, distance, at_base = find_base_for_aircraft(aircraft_data)
         alt = aircraft_data.get("altitude")
         gs  = aircraft_data.get("ground_speed")
+
         is_airborne = False
         if alt is not None:
             try:
@@ -206,15 +208,20 @@ def assign_aircraft_to_bases(aircraft_status):
                 is_airborne = float(gs) > 30
             except (ValueError, TypeError):
                 pass
+
         entry = {
-            "tail": tail, "hours": None,
-            "at_base": at_base and not is_airborne,
-            "airborne": is_airborne,
+            "tail":             tail,
+            "hours":            None,
+            "at_base":          at_base and not is_airborne,
+            "airborne":         is_airborne,
             "seen_seconds_ago": aircraft_data.get("seen"),
-            "altitude": alt, "ground_speed": gs, "track": aircraft_data.get("track"),
-            "distance_miles": round(float(distance), 2) if distance is not None else None,
-            "closest_base": BASES[base_id]["name"] if base_id else None,
+            "altitude":         alt,
+            "ground_speed":     gs,
+            "track":            aircraft_data.get("track"),
+            "distance_miles":   round(float(distance), 2) if distance is not None else None,
+            "closest_base":     BASES[base_id]["name"] if base_id else None,
         }
+
         if is_airborne:
             assignments["unassigned"].append(entry)
         elif at_base and base_id:
@@ -222,6 +229,7 @@ def assign_aircraft_to_bases(aircraft_status):
             assignments[base_id]["status"] = "occupied"
         else:
             assignments["unassigned"].append(entry)
+
     return assignments
 
 
@@ -235,7 +243,7 @@ def generate_base_assignments():
         ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
         line = f"[{ts}] {msg}"
         print(line)
-        if not os.getenv("GITHUB_ACTIONS"):  # Don't write log file in Actions
+        if not os.getenv("GITHUB_ACTIONS"):
             try:
                 with open(log_path, "a", encoding="utf-8") as f:
                     f.write(line + "\n")
@@ -243,22 +251,21 @@ def generate_base_assignments():
                 pass
 
     try:
-        log("Base assignment generation started (ADSB.lol)")
-        aircraft_mapping, mapping_source = load_aircraft_mapping(OUTPUT_FOLDER)
-        log(f"Loaded {len(aircraft_mapping)} aircraft from {mapping_source}")
+        log("Base assignment generation started (airplanes.live + adsb.lol fallback)")
+        log(f"Loaded {len(DEFAULT_AIRCRAFT)} aircraft from DEFAULT_AIRCRAFT")
 
-        log("Fetching ADSB.lol positions...")
-        aircraft_status = load_adsblol_status(aircraft_mapping)
+        log("Fetching positions...")
+        aircraft_status = load_aircraft_status(DEFAULT_AIRCRAFT)
 
         if not aircraft_status:
-            log("WARNING: No live data. Preserving previous assignments.")
+            log("WARNING: No live data from any source. Writing default structure.")
             previous = load_previous_output(assignments_path)
             if not previous:
                 previous = {
                     "assignments": {base_id: {"aircraft": [], "status": "available"} for base_id in BASES},
                     "bases": BASES,
                     "summary": {"total_aircraft": 0, "at_bases": 0, "away_from_base": 0, "airborne": 0},
-                    "source": "adsb.lol",
+                    "source": "none",
                     "live_data": False,
                 }
             previous["last_checked"] = datetime.now(timezone.utc).isoformat()
@@ -273,19 +280,20 @@ def generate_base_assignments():
 
         at_bases_count = sum(len(a["aircraft"]) for k, a in assignments.items() if k != "unassigned")
         airborne_count = sum(1 for a in assignments["unassigned"] if a.get("airborne"))
+        away_count     = len(assignments["unassigned"]) - airborne_count
 
         output_data = {
             "last_updated": datetime.now(timezone.utc).isoformat(),
             "last_checked": datetime.now(timezone.utc).isoformat(),
-            "live_data": True,
-            "source": "adsb.lol",
-            "bases": BASES,
-            "assignments": assignments,
+            "live_data":    True,
+            "source":       "airplanes.live",
+            "bases":        BASES,
+            "assignments":  assignments,
             "summary": {
                 "total_aircraft": len(aircraft_status),
-                "at_bases": at_bases_count,
-                "away_from_base": len(assignments["unassigned"]) - airborne_count,
-                "airborne": airborne_count,
+                "at_bases":       at_bases_count,
+                "away_from_base": away_count,
+                "airborne":       airborne_count,
             },
         }
 
@@ -298,12 +306,12 @@ def generate_base_assignments():
             if base_id == "unassigned":
                 for a in data:
                     status_str = "AIRBORNE" if a.get("airborne") else "AWAY"
-                    log(f"  {a['tail']} — {status_str}")
+                    log(f"  {a['tail']} — {status_str} | alt:{a.get('altitude','')} gs:{a.get('ground_speed','')} | closest: {a.get('closest_base','?')} {a.get('distance_miles','?')} mi")
             else:
                 count = len(data["aircraft"])
                 if count:
                     log(f"  {BASES[base_id]['name']}: {count} aircraft")
-        log("Done.")
+        log("Base assignment generation completed successfully")
         return True
 
     except Exception as e:
