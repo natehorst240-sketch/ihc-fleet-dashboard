@@ -2,7 +2,7 @@
 Fleet Maintenance Dashboard Generator (CSV)
 ==========================================
 Reads Due-List_BIG_WEEKLY_aw109sp.csv from the data/ folder
-and writes data/fleet_dashboard.html.
+and writes public/index.html.
 
 Run via GitHub Actions after the CSV file is pushed to repo.
 """
@@ -21,7 +21,7 @@ OUTPUT_FOLDER = "data"
 
 WEEKLY_FILENAME    = "Due-List_BIG_WEEKLY_aw109sp.csv"
 WEEKLY_FALLBACKS   = ["Due-List_BIG_WEEKLY_aw109sp.csv"]
-OUTPUT_FILENAME    = "fleet_dashboard.html"
+OUTPUT_FILENAME    = "index.html"
 HISTORY_FILENAME   = "flight_hours_history.json"
 POSITIONS_FILENAME = "base_assignments.json"
 
