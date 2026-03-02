@@ -2,10 +2,16 @@ name: Update Fleet Dashboard
 on:
   push:
     branches: ["main"]
+    paths:
+      - "data/Due-List_BIG_WEEKLY_aw109sp.csv"
+      - "data/base_assignments.json"
+      - "build_dashboard.py"
   workflow_dispatch:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 concurrency:
   group: dashboard-update
@@ -14,6 +20,9 @@ concurrency:
 jobs:
   update-dashboard:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
 
@@ -34,9 +43,17 @@ jobs:
         run: |
           git config user.email "actions@github.com"
           git config user.name "GitHub Actions"
-          git stash -u
-          git pull --rebase origin main
-          git stash pop
-          git add public/index.html data/fleet_dashboard.html data/*.json || true
-          git commit -m "Update dashboard $(date -u) [skip ci]" || echo "No changes"
-          git push
+          git add public/index.html data/fleet_dashboard.html data/flight_hours_history.json || true
+          git diff --cached --quiet && echo "No changes" || (git commit -m "Update dashboard $(date -u) [skip ci]" && git push)
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'public'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
