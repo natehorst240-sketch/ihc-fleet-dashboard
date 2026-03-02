@@ -253,12 +253,19 @@ def generate_base_assignments():
         if not aircraft_status:
             log("WARNING: No live data. Preserving previous assignments.")
             previous = load_previous_output(assignments_path)
-            if previous:
-                previous["last_checked"] = datetime.now(timezone.utc).isoformat()
-                previous["live_data"] = False
-                OUTPUT_FOLDER.mkdir(parents=True, exist_ok=True)
-                with open(assignments_path, "w", encoding="utf-8") as f:
-                    json.dump(previous, f, indent=2)
+            if not previous:
+                previous = {
+                    "assignments": {base_id: {"aircraft": [], "status": "available"} for base_id in BASES},
+                    "bases": BASES,
+                    "summary": {"total_aircraft": 0, "at_bases": 0, "away_from_base": 0, "airborne": 0},
+                    "source": "adsb.lol",
+                    "live_data": False,
+                }
+            previous["last_checked"] = datetime.now(timezone.utc).isoformat()
+            previous["live_data"] = False
+            OUTPUT_FOLDER.mkdir(parents=True, exist_ok=True)
+            with open(assignments_path, "w", encoding="utf-8") as f:
+                json.dump(previous, f, indent=2)
             return True
 
         log(f"Got positions for {len(aircraft_status)} aircraft")
