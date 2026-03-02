@@ -1,7 +1,7 @@
 {
-  "last_updated": "2026-03-02T02:00:04.256227+00:00",
-  "last_checked": "2026-03-02T02:30:03.987895+00:00",
-  "live_data": false,
+  "last_updated": "2026-03-02T02:43:10.213069+00:00",
+  "last_checked": "2026-03-02T02:43:10.213076+00:00",
+  "live_data": true,
   "source": "adsb.lol",
   "bases": {
     "LOGAN": {
@@ -88,16 +88,16 @@
     },
     "unassigned": [
       {
-        "tail": "N291HC",
+        "tail": "N531HC",
         "hours": null,
         "at_base": false,
         "airborne": true,
-        "seen_seconds_ago": 1.4,
-        "altitude": 5450,
-        "ground_speed": 140.0,
-        "track": 350.0,
-        "distance_miles": 16.7,
-        "closest_base": "McKay"
+        "seen_seconds_ago": 0.1,
+        "altitude": 7725,
+        "ground_speed": 127.9,
+        "track": 158.45,
+        "distance_miles": 16.33,
+        "closest_base": "Provo"
       }
     ]
   },
