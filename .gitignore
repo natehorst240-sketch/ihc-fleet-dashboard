@@ -4,3 +4,7 @@ node_modules/
 package-lock.json
 
 
+scripts/export_log.txt
+data/base_assignment_log.txt
+data/base_assignment_log.txt
+scripts/export_log.txt
