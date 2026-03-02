@@ -30,7 +30,9 @@ TARGET_INTERVALS = [50, 100, 200, 400, 800, 2400, 3200]
 
 # Map each interval to regex pattern(s) found in Column F (ATA and Code)
 PHASE_MATCH = {
-    50:   [r"05 1000"],
+    # Some exports may omit remaining-hours on 05 1000 rows for specific tails.
+    # Include the paired 62 MI62-01 inspection as a fallback 50-hour signal.
+    50:   [r"05 1000", r"62 MI62-01"],
     100:  [r"64 01\[273\]"],
     200:  [r"05 1005"],
     400:  [r"05 1010"],
