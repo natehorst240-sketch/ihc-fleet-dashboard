@@ -1015,6 +1015,84 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
   }}
   {mini_charts_js}
 
+   // ── LIVE BASE ASSIGNMENTS REFRESH ────────────────────────────────────────
+  (function() {{
+    function esc(text) {{
+      return String(text ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }}
+
+    function renderFromAssignments(payload) {{
+      var root = document.querySelector('#tab-bases .bases-grid');
+      if (!root || !payload || !payload.assignments || !payload.bases) return;
+
+      var baseOrder = Object.keys(payload.bases);
+      var cards = baseOrder.map(function(baseId) {{
+        var base = payload.bases[baseId] || {{}};
+        var assignment = payload.assignments[baseId] || {{ aircraft: [] }};
+        var aircraft = Array.isArray(assignment.aircraft) ? assignment.aircraft : [];
+        var occupied = aircraft.length > 0;
+
+        var aircraftHtml = aircraft.map(function(ac) {{
+          var isAirborne = !!ac.airborne;
+          var atBase = !!ac.at_base;
+          var rowClass = isAirborne ? 'airborne' : (atBase ? '' : 'away');
+          var badgeClass = isAirborne ? 'base-status-airborne' : (atBase ? 'base-status-at' : 'base-status-away');
+          var badgeText = isAirborne ? 'AIRBORNE' : (atBase ? 'AT BASE' : 'AWAY');
+          return '<div class="base-aircraft ' + rowClass + '">' +
+            '<div class="base-aircraft-tail">' + esc(ac.tail || 'UNKNOWN') + '</div>' +
+            '<span class="base-status-badge ' + badgeClass + '">' + badgeText + '</span>' +
+            '</div>';
+        }}).join('');
+
+        if (!aircraftHtml) aircraftHtml = '<div class="base-empty">No aircraft assigned</div>';
+
+        return '<div class="base-card ' + (occupied ? 'occupied' : '') + '">' +
+          '<div class="base-header">' +
+            '<div class="base-name">' + esc(base.name || baseId) + '</div>' +
+            '<div class="base-capacity">BASE ' + esc(baseId) + '</div>' +
+          '</div>' +
+          '<div class="base-body">' + aircraftHtml + '</div>' +
+          '</div>';
+      }});
+
+      var unassigned = (payload.assignments && Array.isArray(payload.assignments.unassigned))
+        ? payload.assignments.unassigned
+        : [];
+      if (unassigned.length) {{
+        cards.push(
+          '<div class="base-card">' +
+            '<div class="base-header"><div class="base-name">UNASSIGNED</div><div class="base-capacity">LIVE TRACKING</div></div>' +
+            '<div class="base-body">' +
+              unassigned.map(function(ac) {{
+                return '<div class="base-aircraft away">' +
+                  '<div class="base-aircraft-tail">' + esc(ac.tail || 'UNKNOWN') + '</div>' +
+                  '<span class="base-status-badge base-status-away">' + (ac.airborne ? 'AIRBORNE' : 'AWAY') + '</span>' +
+                '</div>';
+              }}).join('') +
+            '</div>' +
+          '</div>'
+        );
+      }}
+
+      root.innerHTML = cards.join('');
+    }}
+
+    function refreshBases() {{
+      fetch('/data/base_assignments.json?ts=' + Date.now(), {{ cache: 'no-store' }})
+        .then(function(resp) {{ if (!resp.ok) throw new Error('fetch failed'); return resp.json(); }})
+        .then(renderFromAssignments)
+        .catch(function() {{ /* keep generated fallback content */ }});
+    }}
+
+    refreshBases();
+    setInterval(refreshBases, 60000);
+  }})();
+
   // ── EDITABLE CALENDAR ─────────────────────────────────────────────────────
   (function() {{
     var STORAGE_KEY = 'ihc_cal_notes';
@@ -1100,6 +1178,24 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
       if (e.target === this) closeModal();
     }});
 
+    document.getElementById('cal-modal').addEventListener('keydown', function(e) {{
+      if (e.key === 'Escape') {{
+        e.preventDefault();
+        closeModal();
+      }}
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {{
+        e.preventDefault();
+        saveModal();
+      }}
+    }});
+
+    document.getElementById('cal-modal-label').addEventListener('keydown', function(e) {{
+      if (e.key === 'Enter') {{
+        e.preventDefault();
+        document.getElementById('cal-modal-text').focus();
+      }}
+    }});
+    
     renderUserEvents();
   }})();
 </script>
