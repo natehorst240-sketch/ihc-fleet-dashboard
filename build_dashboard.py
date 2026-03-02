@@ -11,6 +11,7 @@ import sys
 import csv
 import re
 import json
+import shutil
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -1083,7 +1084,7 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
     }}
 
     function refreshBases() {{
-      fetch('/data/base_assignments.json?ts=' + Date.now(), {{ cache: 'no-store' }})
+      fetch('data/base_assignments.json?ts=' + Date.now(), {{ cache: 'no-store' }})
         .then(function(resp) {{ if (!resp.ok) throw new Error('fetch failed'); return resp.json(); }})
         .then(renderFromAssignments)
         .catch(function() {{ /* keep generated fallback content */ }});
@@ -1623,6 +1624,14 @@ def main():
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(html)
         log(f"Dashboard written to {output_path}")
+
+        public_data_dir = output_path.parent / "data"
+        public_data_dir.mkdir(parents=True, exist_ok=True)
+        if positions_path.exists():
+            shutil.copy2(positions_path, public_data_dir / POSITIONS_FILENAME)
+            log(f"Copied {positions_path} to {public_data_dir / POSITIONS_FILENAME}")
+        else:
+            log(f"WARNING: Positions file missing, could not copy: {positions_path}")
         log("Done.")
 
     except Exception as e:

@@ -767,6 +767,9 @@
     btn.classList.add('active');
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
     document.getElementById('tab-' + tabName).classList.add('active');
+    if (tabName === 'bases' && typeof window.__refreshBasesNow === 'function') {
+      window.__refreshBasesNow();
+    }
   }
   function filterTable(filter, btn) {
     document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -946,14 +949,19 @@
     }
 
     function refreshBases() {
-      fetch('/data/base_assignments.json?ts=' + Date.now(), { cache: 'no-store' })
+      fetch('data/base_assignments.json?ts=' + Date.now(), { cache: 'no-store' })
         .then(function(resp) { if (!resp.ok) throw new Error('fetch failed'); return resp.json(); })
         .then(renderFromAssignments)
         .catch(function() { /* keep generated fallback content */ });
     }
 
+    window.__refreshBasesNow = refreshBases;
     refreshBases();
     setInterval(refreshBases, 60000);
+    window.addEventListener('focus', refreshBases);
+    document.addEventListener('visibilitychange', function() {
+      if (!document.hidden) refreshBases();
+    });
   })();
 
   // ── EDITABLE CALENDAR ─────────────────────────────────────────────────────
@@ -993,7 +1001,7 @@
       document.getElementById('cal-modal-text').value = existing.text || '';
       document.getElementById('cal-modal-color').value = existing.color || '#f6ad55';
       modal.style.display = 'flex';
-      document.getElementById('cal-modal-text').focus();
+      document.getElementById('cal-modal-label').focus();
     }
 
     function closeModal() {
@@ -1037,8 +1045,13 @@
     document.getElementById('cal-modal-save').addEventListener('click', saveModal);
     document.getElementById('cal-modal-clear').addEventListener('click', clearModal);
     document.getElementById('cal-modal-cancel').addEventListener('click', closeModal);
+    document.getElementById('cal-modal-x').addEventListener('click', closeModal);
     document.getElementById('cal-modal').addEventListener('click', function(e) {
       if (e.target === this) closeModal();
+    });
+
+    document.getElementById('cal-modal-card').addEventListener('click', function(e) {
+      e.stopPropagation();
     });
 
     document.getElementById('cal-modal').addEventListener('keydown', function(e) {
@@ -1066,9 +1079,12 @@
 <!-- Calendar Note Modal -->
 <div id="cal-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);
   z-index:9999;align-items:center;justify-content:center;">
-  <div style="background:#0d1117;border:1px solid #29b6f6;border-radius:6px;padding:28px;
+  <div id="cal-modal-card" style="background:#0d1117;border:1px solid #29b6f6;border-radius:6px;padding:28px;
     min-width:340px;max-width:480px;width:90%;font-family:monospace;">
-    <div style="font-size:11px;color:#4a9eff;letter-spacing:2px;margin-bottom:4px;">SCHEDULE / NOTE</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+      <div style="font-size:11px;color:#4a9eff;letter-spacing:2px;">SCHEDULE / NOTE</div>
+      <button id="cal-modal-x" aria-label="Close note editor" style="background:transparent;border:none;color:#718096;font-size:18px;line-height:1;cursor:pointer;padding:0 2px;">×</button>
+    </div>
     <div id="cal-modal-date" style="font-size:16px;color:#e2e8f0;font-weight:700;margin-bottom:20px;"></div>
     <label style="display:block;font-size:10px;color:#718096;letter-spacing:1px;margin-bottom:4px;">LABEL (e.g. 50 HR INSP)</label>
     <input id="cal-modal-label" type="text" maxlength="30"
