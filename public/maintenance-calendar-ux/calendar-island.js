@@ -25,13 +25,17 @@
       '.mcx-filter-label{font-family:' + theme.fontMono + ';font-size:10px;color:' + theme.muted + ';letter-spacing:1px;}',
       '.mcx-select{background:#0d1117;border:1px solid ' + theme.border + ';color:' + theme.text + ';padding:6px 8px;border-radius:3px;font-family:' + theme.fontMono + ';font-size:11px;min-width:155px;}',
       '.mcx-select:focus{outline:none;border-color:' + theme.blue + ';}',
-      '.mcx-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}',
+      '.mcx-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:0;}',
       '.mcx-dow{font-family:' + theme.fontMono + ';font-size:9px;text-align:center;letter-spacing:1px;color:' + theme.muted + ';padding:4px 0;}',
       '.mcx-empty{min-height:84px;}',
       '.mcx-day{min-height:84px;padding:6px;border:1px solid ' + theme.border + ';border-radius:3px;background:#0d1117;overflow:hidden;}',
       '.mcx-day.is-today{border-color:' + theme.blue + ';}',
       '.mcx-num{font-family:' + theme.fontMono + ';font-size:10px;color:' + theme.muted + ';margin-bottom:4px;}',
-      '.mcx-pill{font-family:' + theme.fontMono + ';font-size:9px;border-radius:2px;padding:1px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px;cursor:pointer;border:none;text-align:left;width:100%;}',
+      '.mcx-pill{font-family:' + theme.fontMono + ';font-size:9px;border-radius:2px;padding:1px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:1px;cursor:pointer;border:none;text-align:left;width:100%;}',
+      '.mcx-pill.segment{width:calc(100% + 12px);margin-left:-6px;margin-right:-6px;border-radius:0;}',
+      '.mcx-pill.seg-start{border-top-left-radius:2px;border-bottom-left-radius:2px;}',
+      '.mcx-pill.seg-end{border-top-right-radius:2px;border-bottom-right-radius:2px;}',
+      '.mcx-pill.seg-single{border-radius:2px;}',
       '.mcx-pill.red{background:#c0392b;color:#fff;}',
       '.mcx-pill.green{background:#27ae60;color:#fff;}',
       '.mcx-pill.amber{background:#e67e22;color:#000;}',
@@ -132,6 +136,12 @@
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(overrides || {}));
   }
 
+  function formatDuration(days) {
+    var n = Number(days);
+    if (!isFinite(n) || n <= 0) return '1';
+    return Number.isInteger(n) ? String(n) : String(n);
+  }
+
   function detailTitle(ev) {
     var lines = [];
     lines.push((ev.registration || ev.aircraftId || 'Aircraft') + ' — ' + (ev.inspectionType || 'Inspection'));
@@ -216,11 +226,21 @@
       var dueInput = root.querySelector('[data-editor="dueDate"]');
       var hoursInput = root.querySelector('[data-editor="hoursRemaining"]');
       var notesInput = root.querySelector('[data-editor="notes"]');
-      if (!dueInput || !hoursInput || !notesInput) return;
+      var durationInput = root.querySelector('[data-editor="durationDays"]');
+      if (!dueInput || !hoursInput || !notesInput || !durationInput) return;
       var hoursValue = Number(hoursInput.value);
+      var durationValue = Number(durationInput.value);
+      var fallbackDuration = 1;
+      for (var i = 0; i < sourceEvents.length; i++) {
+        if (sourceEvents[i] && sourceEvents[i].id === id) {
+          fallbackDuration = getInspectionDurationDays(sourceEvents[i]);
+          break;
+        }
+      }
       overrides[id] = {
         dueDate: dueInput.value,
         hoursRemaining: isFinite(hoursValue) ? hoursValue : hoursInput.value,
+        durationDays: isFinite(durationValue) && durationValue > 0 ? durationValue : fallbackDuration,
         notes: notesInput.value
       };
       saveOverrides(overrides);
@@ -302,7 +322,7 @@
         list.slice(0, 4).forEach(function (ev) {
           html += '<button class="mcx-pill ' + colorClass(ev) + (ev.userEdited ? ' user-edited' : '') + '" data-event-id="' + esc(ev.id) + '" title="' + esc(detailTitle(ev)) + '">' + esc((ev.registration || '') + ' ' + (ev.inspectionType || '') + ' · ' + (ev.durationDays || 1) + 'd') + '</button>';
         });
-        if (list.length > 4) html += '<div class="mcx-pill blue">+' + (list.length - 4) + ' more</div>';
+        if (list.length > 4) html += '<div class="mcx-pill blue seg-single">+' + (list.length - 4) + ' more</div>';
         html += '</div>';
       }
       html += '</div>';
@@ -322,6 +342,7 @@
         html += '<div class="mcx-field"><label>Inspection</label><input class="mcx-input" type="text" disabled value="' + esc(selected.inspectionType || '—') + '" /></div>';
         html += '<div class="mcx-field"><label>Due Date</label><input class="mcx-input" type="date" data-editor="dueDate" value="' + esc(selected.dueDate || '') + '" /></div>';
         html += '<div class="mcx-field"><label>Hours Remaining</label><input class="mcx-input" type="number" data-editor="hoursRemaining" value="' + esc(selected.hoursRemaining || 0) + '" /></div>';
+        html += '<div class="mcx-field"><label>Downtime (days)</label><input class="mcx-input" type="number" min="0.5" step="0.5" data-editor="durationDays" value="' + esc(formatDuration(selected.durationDays || getInspectionDurationDays(selected))) + '" /></div>';
         html += '<div class="mcx-field" style="grid-column:1/-1;"><label>Notes</label><textarea class="mcx-textarea" data-editor="notes">' + esc(selected.notes || '') + '</textarea></div>';
         html += '</div>';
         html += '<div class="mcx-btns" style="margin-top:10px;">';
