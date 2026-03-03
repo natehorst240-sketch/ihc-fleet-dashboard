@@ -1,6 +1,6 @@
 (function () {
-  function esc(v) {
-    return String(v ?? '')
+  function esc(value) {
+    return String(value == null ? '' : value)
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
@@ -8,255 +8,133 @@
       .replace(/'/g, '&#39;');
   }
 
-  function urgencyColor(hours, theme) {
-    var h = Number(hours);
-    if (!Number.isFinite(h)) return theme.blue;
-    if (h <= 50) return theme.red;
-    if (h <= 100) return theme.amber;
-    return theme.blue;
+  function ensureStyles(theme) {
+    if (document.getElementById('mcx-styles')) return;
+    var style = document.createElement('style');
+    style.id = 'mcx-styles';
+    style.textContent = [
+      '.mcx{font-family:' + theme.fontBody + ';color:' + theme.text + ';}',
+      '.mcx-toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;}',
+      '.mcx-title{font-family:' + theme.fontSans + ';letter-spacing:2px;text-transform:uppercase;font-weight:700;font-size:14px;color:' + theme.heading + ';}',
+      '.mcx-btns{display:flex;gap:8px;}',
+      '.mcx-btn{background:transparent;border:1px solid ' + theme.border + ';color:' + theme.muted + ';padding:6px 10px;border-radius:3px;cursor:pointer;font-family:' + theme.fontMono + ';font-size:11px;}',
+      '.mcx-btn:hover{border-color:' + theme.blue + ';color:' + theme.blue + ';}',
+      '.mcx-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}',
+      '.mcx-dow{font-family:' + theme.fontMono + ';font-size:9px;text-align:center;letter-spacing:1px;color:' + theme.muted + ';padding:4px 0;}',
+      '.mcx-empty{min-height:84px;}',
+      '.mcx-day{min-height:84px;padding:6px;border:1px solid ' + theme.border + ';border-radius:3px;background:#0d1117;overflow:hidden;}',
+      '.mcx-day.is-today{border-color:' + theme.blue + ';}',
+      '.mcx-num{font-family:' + theme.fontMono + ';font-size:10px;color:' + theme.muted + ';margin-bottom:4px;}',
+      '.mcx-pill{font-family:' + theme.fontMono + ';font-size:9px;border-radius:2px;padding:1px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px;}',
+      '.mcx-pill.red{background:#c0392b;color:#fff;}',
+      '.mcx-pill.amber{background:#e67e22;color:#000;}',
+      '.mcx-pill.blue{background:#2980b9;color:#fff;}',
+      '.mcx-legend{display:flex;gap:14px;flex-wrap:wrap;font-family:' + theme.fontMono + ';font-size:10px;color:' + theme.muted + ';margin-bottom:10px;}',
+      '.mcx-leg-dot{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px;vertical-align:middle;}',
+      '.mcx-empty-state{font-family:' + theme.fontMono + ';font-size:11px;color:' + theme.muted + ';padding:10px 0;}'
+    ].join('');
+    document.head.appendChild(style);
   }
 
-  function toDateKey(d) {
-    var y = d.getFullYear();
+  function iso(d) {
     var m = String(d.getMonth() + 1).padStart(2, '0');
     var day = String(d.getDate()).padStart(2, '0');
-    return y + '-' + m + '-' + day;
+    return d.getFullYear() + '-' + m + '-' + day;
   }
 
-  function ensureHoverCard(theme) {
-    var card = document.getElementById('cal-hover-card');
-    if (card) return card;
-
-    card = document.createElement('div');
-    card.id = 'cal-hover-card';
-    card.style.position = 'fixed';
-    card.style.zIndex = '10000';
-    card.style.pointerEvents = 'none';
-    card.style.display = 'none';
-    card.style.maxWidth = '280px';
-    card.style.background = theme.surface;
-    card.style.border = '1px solid ' + theme.border;
-    card.style.borderLeft = '3px solid ' + theme.blue;
-    card.style.borderRadius = '4px';
-    card.style.boxShadow = '0 8px 24px rgba(0,0,0,0.35)';
-    card.style.padding = '10px';
-    card.style.color = theme.text;
-    card.style.fontFamily = theme.fontBody;
-    card.innerHTML = '';
-    document.body.appendChild(card);
-
-    return card;
+  function monthLabel(d) {
+    return d.toLocaleString('en-US', { month: 'long', year: 'numeric' }).toUpperCase();
   }
 
-  function positionHoverCard(card, clientX, clientY) {
-    var pad = 14;
-    var x = clientX + pad;
-    var y = clientY + pad;
-
-    var vw = window.innerWidth || document.documentElement.clientWidth;
-    var vh = window.innerHeight || document.documentElement.clientHeight;
-    var w = card.offsetWidth || 280;
-    var h = card.offsetHeight || 150;
-
-    if (x + w + 8 > vw) x = clientX - w - pad;
-    if (y + h + 8 > vh) y = clientY - h - pad;
-
-    if (x < 8) x = 8;
-    if (y < 8) y = 8;
-
-    card.style.left = x + 'px';
-    card.style.top = y + 'px';
+  function buildMap(events) {
+    var map = {};
+    events.forEach(function (ev) {
+      if (!ev || !ev.dueDate) return;
+      if (!map[ev.dueDate]) map[ev.dueDate] = [];
+      map[ev.dueDate].push(ev);
+    });
+    return map;
   }
 
-  window.renderMaintenanceCalendar = function renderMaintenanceCalendar(root, payload) {
+  function colorClass(ev) {
+    var hrs = Number(ev.hoursRemaining);
+    if (!isFinite(hrs) || hrs > 100) return 'blue';
+    if (hrs <= 50) return 'red';
+    return 'amber';
+  }
+
+  window.renderMaintenanceCalendar = function (root, payload) {
     if (!root) return;
-
-    var theme = (payload && payload.themeResolved) || {
-      bg: '#0a0c0f',
-      surface: '#111418',
-      surface2: '#181c22',
-      border: '#1e2530',
-      text: '#cdd6e0',
-      muted: '#fff',
-      heading: '#e8edf2',
-      blue: '#29b6f6',
-      amber: '#ffab00',
-      red: '#ff1744',
-      green: '#00e676',
-      fontBody: 'Barlow, sans-serif',
-      fontSans: 'Barlow Condensed, sans-serif',
-      fontMono: 'Share Tech Mono, monospace'
+    payload = payload || {};
+    var theme = payload.themeResolved || {
+      text: '#cdd6e0', muted: '#fff', heading: '#e8edf2', border: '#1e2530', blue: '#29b6f6',
+      fontBody: 'Barlow, sans-serif', fontMono: 'Share Tech Mono, monospace', fontSans: 'Barlow Condensed, sans-serif'
     };
+    ensureStyles(theme);
 
-    var hoverCard = ensureHoverCard(theme);
+    var events = Array.isArray(payload.initialEvents) ? payload.initialEvents.slice() : [];
+    var date = payload.initialDate ? new Date(payload.initialDate + 'T00:00:00') : new Date();
+    if (isNaN(date.getTime())) date = new Date();
+    date.setDate(1);
 
-    var events = Array.isArray(payload && payload.initialEvents) ? payload.initialEvents.slice() : [];
-    var aircraftList = Array.isArray(payload && payload.aircraft) ? payload.aircraft : [];
-    var inspectionTypes = Array.isArray(payload && payload.inspectionTypes) ? payload.inspectionTypes : [];
-
-    var current = payload && payload.initialDate ? new Date(payload.initialDate + 'T00:00:00') : new Date();
-    if (Number.isNaN(current.getTime())) current = new Date();
-
-    var selectedAircraft = 'all';
-    var selectedInspection = 'all';
-
-    function hideHoverCard() {
-      hoverCard.style.display = 'none';
-    }
+    var todayIso = iso(new Date());
 
     function render() {
-      var y = current.getFullYear();
-      var m = current.getMonth();
-      var first = new Date(y, m, 1);
-      var daysInMonth = new Date(y, m + 1, 0).getDate();
+      var byDay = buildMap(events);
+      var year = date.getFullYear();
+      var month = date.getMonth();
+      var first = new Date(year, month, 1);
       var firstDowMon = (first.getDay() + 6) % 7;
-      var monthName = first.toLocaleString('en-US', { month: 'long', year: 'numeric' }).toUpperCase();
-
-      var filtered = events.filter(function (ev) {
-        if (selectedAircraft !== 'all' && ev.aircraftId !== selectedAircraft) return false;
-        if (selectedInspection !== 'all' && ev.inspectionType !== selectedInspection) return false;
-        return true;
-      });
-
-      var byDate = {};
-      filtered.forEach(function (ev) {
-        (byDate[ev.dueDate] = byDate[ev.dueDate] || []).push(ev);
-      });
-
-      var dayHeaders = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+      var lastDay = new Date(year, month + 1, 0).getDate();
 
       var html = '';
-      html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;">';
-      html += '<div style="font-family:' + theme.fontSans + ';font-weight:700;letter-spacing:2px;color:' + theme.heading + ';">' + esc(monthName) + '</div>';
-      html += '<div style="display:flex;gap:8px;">';
-      html += '<button data-cal-nav="prev" style="background:' + theme.surface2 + ';border:1px solid ' + theme.border + ';color:' + theme.text + ';padding:6px 10px;border-radius:3px;cursor:pointer;font-family:' + theme.fontMono + ';font-size:11px;">◀</button>';
-      html += '<button data-cal-nav="today" style="background:' + theme.blue + ';border:1px solid ' + theme.blue + ';color:#000;padding:6px 10px;border-radius:3px;cursor:pointer;font-family:' + theme.fontMono + ';font-size:11px;font-weight:700;">TODAY</button>';
-      html += '<button data-cal-nav="next" style="background:' + theme.surface2 + ';border:1px solid ' + theme.border + ';color:' + theme.text + ';padding:6px 10px;border-radius:3px;cursor:pointer;font-family:' + theme.fontMono + ';font-size:11px;">▶</button>';
+      html += '<div class="mcx">';
+      html += '<div class="mcx-toolbar">';
+      html += '<div class="mcx-title">' + esc(monthLabel(date)) + '</div>';
+      html += '<div class="mcx-btns">';
+      html += '<button class="mcx-btn" data-act="today">TODAY</button>';
+      html += '<button class="mcx-btn" data-act="prev">◀</button>';
+      html += '<button class="mcx-btn" data-act="next">▶</button>';
       html += '</div></div>';
+      html += '<div class="mcx-legend">'
+        + '<span><span class="mcx-leg-dot" style="background:#c0392b"></span>≤ 50 HRS</span>'
+        + '<span><span class="mcx-leg-dot" style="background:#e67e22"></span>≤ 100 HRS</span>'
+        + '<span><span class="mcx-leg-dot" style="background:#2980b9"></span>> 100 HRS</span>'
+        + '</div>';
+      html += '<div class="mcx-grid">';
+      ['MON','TUE','WED','THU','FRI','SAT','SUN'].forEach(function(d){ html += '<div class="mcx-dow">'+d+'</div>'; });
+      for (var i = 0; i < firstDowMon; i++) html += '<div class="mcx-empty"></div>';
 
-      html += '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">';
-      html += '<select id="cal-aircraft" style="background:' + theme.surface2 + ';border:1px solid ' + theme.border + ';color:' + theme.text + ';padding:6px 8px;border-radius:3px;font-family:' + theme.fontMono + ';font-size:11px;">';
-      html += '<option value="all">ALL AIRCRAFT</option>';
-      aircraftList.forEach(function (a) {
-        html += '<option value="' + esc(a.id) + '"' + (selectedAircraft === a.id ? ' selected' : '') + '>' + esc(a.registration || a.id) + '</option>';
-      });
-      html += '</select>';
-
-      html += '<select id="cal-inspection" style="background:' + theme.surface2 + ';border:1px solid ' + theme.border + ';color:' + theme.text + ';padding:6px 8px;border-radius:3px;font-family:' + theme.fontMono + ';font-size:11px;">';
-      html += '<option value="all">ALL INSPECTIONS</option>';
-      inspectionTypes.forEach(function (i) {
-        html += '<option value="' + esc(i) + '"' + (selectedInspection === i ? ' selected' : '') + '>' + esc(i) + '</option>';
-      });
-      html += '</select>';
-      html += '</div>';
-
-      html += '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;">';
-      dayHeaders.forEach(function (d) {
-        html += '<div style="font-family:' + theme.fontMono + ';font-size:9px;color:' + theme.muted + ';text-align:center;padding:4px 0;letter-spacing:1px;">' + d + '</div>';
-      });
-
-      for (var i = 0; i < firstDowMon; i += 1) {
-        html += '<div style="min-height:90px;"></div>';
-      }
-
-      var todayKey = toDateKey(new Date());
-      for (var day = 1; day <= daysInMonth; day += 1) {
-        var date = new Date(y, m, day);
-        var key = toDateKey(date);
-        var dayEvents = byDate[key] || [];
-        var border = key === todayKey ? theme.blue : theme.border;
-        html += '<div style="background:' + theme.bg + ';border:1px solid ' + border + ';border-radius:3px;min-height:90px;padding:4px;">';
-        html += '<div style="font-family:' + theme.fontMono + ';font-size:10px;color:' + (key === todayKey ? theme.blue : theme.muted) + ';margin-bottom:3px;">' + day + '</div>';
-
-        dayEvents.slice(0, 3).forEach(function (ev, idx) {
-          var c = urgencyColor(ev.hoursRemaining, theme);
-          var textColor = c === theme.amber ? '#000' : '#fff';
-          var cardData = esc(JSON.stringify({
-            registration: ev.registration || '',
-            inspectionType: ev.inspectionType || '',
-            dueDate: ev.dueDate || '',
-            hoursRemaining: ev.hoursRemaining,
-            notes: ev.notes || ''
-          }));
-          html += '<div data-hover-card="' + cardData + '" '
-            + 'style="font-family:' + theme.fontMono + ';font-size:8px;padding:2px 4px;border-radius:2px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:' + c + ';color:' + textColor + ';cursor:default;">'
-            + esc((ev.registration || '') + ' ' + (ev.inspectionType || '')) + '</div>';
+      for (var day = 1; day <= lastDay; day++) {
+        var key = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+        var list = byDay[key] || [];
+        var isToday = key === todayIso;
+        html += '<div class="mcx-day' + (isToday ? ' is-today' : '') + '">';
+        html += '<div class="mcx-num">' + day + '</div>';
+        list.slice(0, 4).forEach(function(ev){
+          html += '<div class="mcx-pill ' + colorClass(ev) + '" title="' + esc(ev.inspectionType || '') + '">' + esc((ev.registration || '') + ' ' + (ev.inspectionType || '')) + '</div>';
         });
-
-        if (dayEvents.length > 3) {
-          html += '<div style="font-family:' + theme.fontMono + ';font-size:8px;color:' + theme.muted + ';">+' + (dayEvents.length - 3) + ' more</div>';
-        }
-
+        if (list.length > 4) html += '<div class="mcx-pill blue">+' + (list.length - 4) + ' more</div>';
         html += '</div>';
       }
-
+      html += '</div>';
+      if (!events.length) html += '<div class="mcx-empty-state">No projected events available.</div>';
       html += '</div>';
 
       root.innerHTML = html;
 
-      root.querySelector('[data-cal-nav="prev"]').onclick = function () {
-        hideHoverCard();
-        current = new Date(current.getFullYear(), current.getMonth() - 1, 1);
-        render();
-      };
-      root.querySelector('[data-cal-nav="next"]').onclick = function () {
-        hideHoverCard();
-        current = new Date(current.getFullYear(), current.getMonth() + 1, 1);
-        render();
-      };
-      root.querySelector('[data-cal-nav="today"]').onclick = function () {
-        hideHoverCard();
-        var now = new Date();
-        current = new Date(now.getFullYear(), now.getMonth(), 1);
-        render();
-      };
-      root.querySelector('#cal-aircraft').onchange = function (e) {
-        hideHoverCard();
-        selectedAircraft = e.target.value;
-        render();
-      };
-      root.querySelector('#cal-inspection').onchange = function (e) {
-        hideHoverCard();
-        selectedInspection = e.target.value;
-        render();
-      };
-
-      var badges = root.querySelectorAll('[data-hover-card]');
-      badges.forEach(function (badge) {
-        badge.addEventListener('mouseenter', function (e) {
-          var raw = badge.getAttribute('data-hover-card') || '{}';
-          var data;
-          try {
-            data = JSON.parse(raw);
-          } catch (_) {
-            data = {};
+      root.querySelectorAll('.mcx-btn').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          var act = btn.getAttribute('data-act');
+          if (act === 'today') {
+            var t = new Date();
+            date = new Date(t.getFullYear(), t.getMonth(), 1);
+          } else if (act === 'prev') {
+            date = new Date(date.getFullYear(), date.getMonth() - 1, 1);
+          } else if (act === 'next') {
+            date = new Date(date.getFullYear(), date.getMonth() + 1, 1);
           }
-
-          var hrsText = Number.isFinite(Number(data.hoursRemaining))
-            ? Number(data.hoursRemaining).toFixed(1) + ' hrs remaining'
-            : 'Hours remaining: n/a';
-
-          hoverCard.style.borderLeftColor = urgencyColor(data.hoursRemaining, theme);
-          hoverCard.innerHTML = ''
-            + '<div style="font-family:' + theme.fontSans + ';font-size:12px;font-weight:700;letter-spacing:1px;color:' + theme.heading + ';margin-bottom:6px;">'
-            + esc((data.registration || 'UNKNOWN') + ' · ' + (data.inspectionType || 'Inspection'))
-            + '</div>'
-            + '<div style="font-family:' + theme.fontMono + ';font-size:10px;color:' + theme.muted + ';margin-bottom:4px;">DUE DATE: ' + esc(data.dueDate || 'N/A') + '</div>'
-            + '<div style="font-family:' + theme.fontMono + ';font-size:10px;color:' + theme.text + ';margin-bottom:6px;">' + esc(hrsText) + '</div>'
-            + '<div style="font-family:' + theme.fontBody + ';font-size:11px;color:' + theme.text + ';line-height:1.4;">' + esc(data.notes || 'No notes') + '</div>';
-
-          hoverCard.style.display = 'block';
-          positionHoverCard(hoverCard, e.clientX, e.clientY);
-        });
-
-        badge.addEventListener('mousemove', function (e) {
-          if (hoverCard.style.display !== 'none') {
-            positionHoverCard(hoverCard, e.clientX, e.clientY);
-          }
-        });
-
-        badge.addEventListener('mouseleave', function () {
-          hideHoverCard();
+          render();
         });
       });
     }
