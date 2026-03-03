@@ -1,7 +1,7 @@
 {
   "last_updated": "2026-03-03T22:51:01.235281+00:00",
-  "last_checked": "2026-03-03T22:51:01.235287+00:00",
-  "live_data": true,
+  "last_checked": "2026-03-03T23:17:38.862367+00:00",
+  "live_data": false,
   "source": "airplanes.live",
   "bases": {
     "LOGAN": {
