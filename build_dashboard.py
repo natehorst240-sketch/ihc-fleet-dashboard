@@ -1247,16 +1247,22 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
     import calendar as cal_mod
 
     today = datetime.today()
+    today_iso = today.strftime('%Y-%m-%d')
 
     # Collect all projected events: {date_str: [(tail, interval, urgency), ...]}
     events = {}
     fallback_cards = []
+    react_events = []
+    aircraft_options = []
+    inspection_types = []
 
     for ac in aircraft_list:
         tail = ac['tail']
         current_hrs = ac['airframe_hrs']
         if current_hrs is None:
             continue
+
+        aircraft_options.append({'id': tail, 'registration': tail})
 
         stats = flight_hours_stats.get(tail, {})
         avg_daily = stats.get('avg_daily')
@@ -1319,6 +1325,20 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
 
             key = due_date.strftime('%Y-%m-%d')
             events.setdefault(key, []).append((tail, interval, urgency))
+
+            inspection_name = f'{interval} Hour'
+            if inspection_name not in inspection_types:
+                inspection_types.append(inspection_name)
+
+            react_events.append({
+                'id': f'{tail}-{interval}-{key}',
+                'aircraftId': tail,
+                'registration': tail,
+                'inspectionType': inspection_name,
+                'dueDate': key,
+                'hoursRemaining': round(rem_hrs, 1),
+                'notes': f'Projected from utilization as of {today_iso}'
+            })
 
     # Build 3-month calendar view
     months_html = ''
@@ -1398,6 +1418,16 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
 
     css = (
         '<style>'
+        '.cal-react-host{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:10px;margin-bottom:18px;}'
+        '.cal-react-host,.cal-react-host *{font-family:var(--body);}'
+        '.cal-react-host .mc-title,.cal-react-host .mc-header,.cal-react-host .mc-toolbar,.cal-react-host .mc-label{font-family:var(--sans);}'
+        '.cal-react-host .mc-meta,.cal-react-host .mc-date,.cal-react-host .mc-chip,.cal-react-host .mc-cell-label{font-family:var(--mono);}'
+        '.cal-react-host .mc-surface{background:var(--surface);border-color:var(--border);}'
+        '.cal-react-host .mc-surface-alt{background:var(--surface2);border-color:var(--border);}'
+        '.cal-react-host .mc-text{color:var(--text);}'
+        '.cal-react-host .mc-muted{color:var(--muted);}'
+        '.cal-react-status{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:8px;}'
+        '.cal-legacy-wrap{margin-top:22px;}'
         '.cal-months-wrap{display:flex;flex-direction:column;gap:32px;}'
         '.cal-month{width:100%;}'
         '.cal-month-title{font-family:var(--mono);font-size:11px;font-weight:700;'
@@ -1442,14 +1472,59 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
         '</style>'
     )
 
+    react_payload = json.dumps({
+        'initialDate': today_iso,
+        'initialEvents': react_events,
+        'aircraft': aircraft_options,
+        'inspectionTypes': inspection_types,
+    })
+
+    react_embed = (
+        '<div class="section-label">PROJECTED MAINTENANCE CALENDAR</div>'
+        '<div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:12px;">'
+        'React month view is shown when <code>public/maintenance-calendar-ux/calendar-island.js</code> is present. '
+        'Fallback view appears automatically if the bundle is unavailable.</div>'
+        '<div class="cal-react-host">'
+        '<div id="calendar-react-root"></div>'
+        '<div class="cal-react-status" id="calendar-react-status">Loading calendar view…</div>'
+        '</div>'
+        f'<script type="application/json" id="calendar-react-data">{react_payload}</script>'
+        '<script>'
+        '(function(){'
+        'var root=document.getElementById("calendar-react-root");'
+        'var status=document.getElementById("calendar-react-status");'
+        'var dataEl=document.getElementById("calendar-react-data");'
+        'function setStatus(msg){if(status){status.textContent=msg;}}'
+        'function render(){'
+        'if(typeof window.renderMaintenanceCalendar!=="function"){'
+        'setStatus("React bundle not found; showing legacy calendar fallback.");return;}'
+        'try{var payload=JSON.parse(dataEl.textContent||"{}");'
+        'window.renderMaintenanceCalendar(root,payload);'
+        'setStatus("React calendar loaded.");'
+        'var legacy=document.getElementById("calendar-legacy-fallback");'
+        'if(legacy){legacy.style.display="none";}'
+        '}catch(err){console.error(err);setStatus("React calendar failed to initialize; showing fallback.");}'
+        '}'
+        'if(typeof window.renderMaintenanceCalendar==="function"){render();return;}'
+        'var script=document.createElement("script");'
+        'script.src="maintenance-calendar-ux/calendar-island.js";'
+        'script.onload=render;'
+        'script.onerror=function(){setStatus("React bundle not found; showing legacy calendar fallback.");};'
+        'document.head.appendChild(script);'
+        '})();'
+        '</script>'
+    )
+
     return (
         f'{css}'
-        f'<div class="section-label">PROJECTED MAINTENANCE CALENDAR</div>'
+        f'{react_embed}'
+        f'<div id="calendar-legacy-fallback" class="cal-legacy-wrap">'
         f'<div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:16px;">'
         f'Dates projected from average daily utilization. Actual dates will vary.</div>'
         f'{legend_html}'
         f'<div class="cal-months-wrap">{months_html}</div>'
         f'{fallback_html}'
+        f'</div>'
     )
 
 
