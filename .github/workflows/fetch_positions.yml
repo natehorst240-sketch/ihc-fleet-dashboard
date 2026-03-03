@@ -26,12 +26,12 @@ jobs:
       - name: Run fetch script
         run: python scripts/fetch_positions.py
 
-      - name: Commit updated base_assignments.json
+      - name: Commit updated base assignment artifacts
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -f data/base_assignments.json
+          git pull --rebase
+          git add -A data/base_assignments.json data/base_assignment_log.txt
           git diff --cached --quiet && echo "No changes" && exit 0
           git commit -m "Update base assignments $(date -u '+%Y-%m-%d %H:%M UTC')"
-          git pull --rebase
           git push
