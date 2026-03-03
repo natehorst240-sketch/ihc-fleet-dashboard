@@ -1247,16 +1247,22 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
     import calendar as cal_mod
 
     today = datetime.today()
+    today_iso = today.strftime('%Y-%m-%d')
 
     # Collect all projected events: {date_str: [(tail, interval, urgency), ...]}
     events = {}
     fallback_cards = []
+    react_events = []
+    aircraft_options = []
+    inspection_types = []
 
     for ac in aircraft_list:
         tail = ac['tail']
         current_hrs = ac['airframe_hrs']
         if current_hrs is None:
             continue
+
+        aircraft_options.append({'id': tail, 'registration': tail})
 
         stats = flight_hours_stats.get(tail, {})
         avg_daily = stats.get('avg_daily')
@@ -1319,6 +1325,20 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
 
             key = due_date.strftime('%Y-%m-%d')
             events.setdefault(key, []).append((tail, interval, urgency))
+
+            inspection_name = f'{interval} Hour'
+            if inspection_name not in inspection_types:
+                inspection_types.append(inspection_name)
+
+            react_events.append({
+                'id': f'{tail}-{interval}-{key}',
+                'aircraftId': tail,
+                'registration': tail,
+                'inspectionType': inspection_name,
+                'dueDate': key,
+                'hoursRemaining': round(rem_hrs, 1),
+                'notes': f'Projected from utilization as of {today_iso}'
+            })
 
     # Build 3-month calendar view
     months_html = ''
@@ -1398,6 +1418,10 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
 
     css = (
         '<style>'
+        '.cal-react-host{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:14px;margin-bottom:18px;}'
+        '.cal-react-host,.cal-react-host *{font-family:var(--body);}'
+        '.cal-react-status{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:8px;}'
+        '.cal-legacy-wrap{margin-top:22px;}'
         '.cal-months-wrap{display:flex;flex-direction:column;gap:32px;}'
         '.cal-month{width:100%;}'
         '.cal-month-title{font-family:var(--mono);font-size:11px;font-weight:700;'
@@ -1442,14 +1466,81 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
         '</style>'
     )
 
+    react_payload = json.dumps({
+        'initialDate': today_iso,
+        'initialEvents': react_events,
+        'aircraft': aircraft_options,
+        'inspectionTypes': inspection_types,
+        'theme': {
+            'bg': 'var(--bg)',
+            'surface': 'var(--surface)',
+            'surface2': 'var(--surface2)',
+            'border': 'var(--border)',
+            'text': 'var(--text)',
+            'muted': 'var(--muted)',
+            'heading': 'var(--heading)',
+            'blue': 'var(--blue)',
+            'amber': 'var(--amber)',
+            'red': 'var(--red)',
+            'green': 'var(--green)',
+            'fontBody': 'var(--body)',
+            'fontSans': 'var(--sans)',
+            'fontMono': 'var(--mono)'
+        }
+    })
+
+    react_embed = (
+        '<div class="section-label">MAINTENANCE CALENDAR</div>'
+        '<div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:12px;">'
+        'React month-view calendar is shown when <code>public/maintenance-calendar-ux/calendar-island.js</code> is available. '
+        'Legacy calendar remains as fallback.</div>'
+        '<div class="cal-react-host">'
+        '<div id="calendar-react-root"></div>'
+        '<div class="cal-react-status" id="calendar-react-status">Loading calendar…</div>'
+        '</div>'
+        f'<script type="application/json" id="calendar-react-data">{react_payload}</script>'
+        '<script>'
+        '(function(){'
+        'var root=document.getElementById("calendar-react-root");'
+        'var status=document.getElementById("calendar-react-status");'
+        'var dataEl=document.getElementById("calendar-react-data");'
+        'function setStatus(msg){if(status){status.textContent=msg;}}'
+        'function resolveTheme(payload){'
+        'var cs=getComputedStyle(document.documentElement);'
+        'var pick=function(name,fallback){var v=cs.getPropertyValue(name).trim();return v||fallback;};'
+        'payload.themeResolved={bg:pick("--bg","#0a0c0f"),surface:pick("--surface","#111418"),surface2:pick("--surface2","#181c22"),border:pick("--border","#1e2530"),text:pick("--text","#cdd6e0"),muted:pick("--muted","#fff"),heading:pick("--heading","#e8edf2"),blue:pick("--blue","#29b6f6"),amber:pick("--amber","#ffab00"),red:pick("--red","#ff1744"),green:pick("--green","#00e676"),fontBody:pick("--body","Barlow, sans-serif"),fontSans:pick("--sans","Barlow Condensed, sans-serif"),fontMono:pick("--mono","Share Tech Mono, monospace")};'
+        '}'
+        'function render(){'
+        'if(typeof window.renderMaintenanceCalendar!=="function"){'
+        'setStatus("React bundle not found; showing legacy calendar fallback.");return;}'
+        'try{var payload=JSON.parse(dataEl.textContent||"{}");resolveTheme(payload);'
+        'window.renderMaintenanceCalendar(root,payload);'
+        'setStatus("React calendar loaded.");'
+        'var legacy=document.getElementById("calendar-legacy-fallback");'
+        'if(legacy){legacy.style.display="none";}'
+        '}catch(err){console.error(err);setStatus("React calendar failed to initialize; showing fallback.");}'
+        '}'
+        'if(typeof window.renderMaintenanceCalendar==="function"){render();return;}'
+        'var script=document.createElement("script");'
+        'script.src="maintenance-calendar-ux/calendar-island.js";'
+        'script.onload=render;'
+        'script.onerror=function(){setStatus("React bundle not found; showing legacy calendar fallback.");};'
+        'document.head.appendChild(script);'
+        '})();'
+        '</script>'
+    )
+
     return (
         f'{css}'
+        f'{react_embed}'
+        f'<div id="calendar-legacy-fallback" class="cal-legacy-wrap">'
         f'<div class="section-label">PROJECTED MAINTENANCE CALENDAR</div>'
         f'<div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:16px;">'
         f'Dates projected from average daily utilization. Actual dates will vary.</div>'
         f'{legend_html}'
         f'<div class="cal-months-wrap">{months_html}</div>'
         f'{fallback_html}'
+        f'</div>'
     )
 
 
