@@ -238,17 +238,17 @@ def assign_aircraft_to_bases(aircraft_status):
 def generate_base_assignments():
     assignments_path = OUTPUT_FOLDER / BASE_ASSIGNMENTS_FILE
     log_path = OUTPUT_FOLDER / "base_assignment_log.txt"
+    OUTPUT_FOLDER.mkdir(parents=True, exist_ok=True)
 
     def log(msg):
         ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
         line = f"[{ts}] {msg}"
         print(line)
-        if not os.getenv("GITHUB_ACTIONS"):
-            try:
-                with open(log_path, "a", encoding="utf-8") as f:
-                    f.write(line + "\n")
-            except Exception:
-                pass
+        try:
+            with open(log_path, "a", encoding="utf-8") as f:
+                f.write(line + "\n")
+        except Exception:
+            pass
 
     try:
         log("Base assignment generation started (airplanes.live + adsb.lol fallback)")
