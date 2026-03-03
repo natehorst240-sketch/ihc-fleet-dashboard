@@ -28,11 +28,11 @@
       '.mcx-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:0;}',
       '.mcx-dow{font-family:' + theme.fontMono + ';font-size:9px;text-align:center;letter-spacing:1px;color:' + theme.muted + ';padding:4px 0;}',
       '.mcx-empty{min-height:84px;}',
-      '.mcx-day{min-height:84px;padding:6px;border:1px solid ' + theme.border + ';border-radius:3px;background:#0d1117;overflow:hidden;}',
+      '.mcx-day{min-height:84px;padding:6px;border:1px solid ' + theme.border + ';border-radius:3px;background:#0d1117;overflow:visible;}',
       '.mcx-day.is-today{border-color:' + theme.blue + ';}',
       '.mcx-num{font-family:' + theme.fontMono + ';font-size:10px;color:' + theme.muted + ';margin-bottom:4px;}',
       '.mcx-pill{font-family:' + theme.fontMono + ';font-size:9px;border-radius:2px;padding:1px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:1px;cursor:pointer;border:none;text-align:left;width:100%;}',
-      '.mcx-pill.segment{width:calc(100% + 12px);margin-left:-6px;margin-right:-6px;border-radius:0;}',
+      '.mcx-pill.segment{position:relative;z-index:2;width:calc(100% + 14px);margin-left:-7px;margin-right:-7px;border-radius:0;}',
       '.mcx-pill.seg-start{border-top-left-radius:2px;border-bottom-left-radius:2px;}',
       '.mcx-pill.seg-end{border-top-right-radius:2px;border-bottom-right-radius:2px;}',
       '.mcx-pill.seg-single{border-radius:2px;}',
@@ -116,6 +116,26 @@
     if (interval === 400 || interval === 800) return 'blue';
     if (interval === 3200) return 'purple';
     return 'red';
+  }
+
+  function segmentClass(ev, dayKey) {
+    var spanDays = Math.max(1, Math.ceil(Number(ev.durationDays) || 1));
+    if (!ev || !ev.dueDate || spanDays <= 1) return 'seg-single';
+
+    var start = new Date(ev.dueDate + 'T00:00:00');
+    var current = new Date(dayKey + 'T00:00:00');
+    if (!isFinite(start.getTime()) || !isFinite(current.getTime())) return 'seg-single';
+
+    var end = new Date(start);
+    end.setDate(start.getDate() + spanDays - 1);
+
+    var isStart = iso(current) === iso(start);
+    var isEnd = iso(current) === iso(end);
+
+    if (isStart && isEnd) return 'seg-single';
+    if (isStart) return 'seg-start';
+    if (isEnd) return 'seg-end';
+    return 'seg-mid';
   }
 
   function parseSafe(str, fallback) {
@@ -320,7 +340,9 @@
         html += '<div class="mcx-day' + (key === iso(new Date()) ? ' is-today' : '') + '">';
         html += '<div class="mcx-num">' + day + '</div>';
         list.slice(0, 4).forEach(function (ev) {
-          html += '<button class="mcx-pill ' + colorClass(ev) + (ev.userEdited ? ' user-edited' : '') + '" data-event-id="' + esc(ev.id) + '" title="' + esc(detailTitle(ev)) + '">' + esc((ev.registration || '') + ' ' + (ev.inspectionType || '') + ' · ' + (ev.durationDays || 1) + 'd') + '</button>';
+          var segClass = segmentClass(ev, key);
+          var isSegment = segClass !== 'seg-single';
+          html += '<button class="mcx-pill ' + colorClass(ev) + (isSegment ? ' segment ' + segClass : ' seg-single') + (ev.userEdited ? ' user-edited' : '') + '" data-event-id="' + esc(ev.id) + '" title="' + esc(detailTitle(ev)) + '">' + esc((ev.registration || '') + ' ' + (ev.inspectionType || '') + ' · ' + (ev.durationDays || 1) + 'd') + '</button>';
         });
         if (list.length > 4) html += '<div class="mcx-pill blue seg-single">+' + (list.length - 4) + ' more</div>';
         html += '</div>';
