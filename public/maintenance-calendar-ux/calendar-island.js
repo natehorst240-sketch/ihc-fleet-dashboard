@@ -43,6 +43,12 @@
       '.mcx-pill.purple{background:#8e44ad;color:#fff;}',
       '.mcx-pill.user-edited{box-shadow:inset 2px 0 0 #f6ad55;}',
       '.mcx-pill:hover{opacity:0.92;}',
+      '.mcx-hovercard{position:fixed;z-index:9999;min-width:220px;max-width:300px;background:#111826;border:1px solid ' + theme.border + ';border-radius:4px;padding:8px;box-shadow:0 10px 30px rgba(0,0,0,0.45);pointer-events:none;opacity:0;transform:translateY(4px);transition:opacity .12s ease,transform .12s ease;}',
+      '.mcx-hovercard.is-visible{opacity:1;transform:translateY(0);}',
+      '.mcx-hovercard-title{font-family:' + theme.fontSans + ';font-size:11px;font-weight:700;color:' + theme.heading + ';margin-bottom:6px;}',
+      '.mcx-hovercard-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;}',
+      '.mcx-hovercard-list li{font-family:' + theme.fontMono + ';font-size:10px;color:' + theme.text + ';line-height:1.35;}',
+      '.mcx-hovercard-list li.muted{color:' + theme.muted + ';}',
       '.mcx-meta{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;font-family:' + theme.fontMono + ';font-size:10px;color:' + theme.muted + ';margin-bottom:10px;}',
       '.mcx-legend{display:flex;gap:14px;flex-wrap:wrap;font-family:' + theme.fontMono + ';font-size:10px;color:' + theme.muted + ';margin-bottom:10px;}',
       '.mcx-leg-dot{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px;vertical-align:middle;}',
@@ -82,11 +88,7 @@
         day.setDate(start.getDate() + i);
         var key = iso(day);
         if (!map[key]) map[key] = [];
-        map[key].push({
-          event: ev,
-          isStart: i === 0,
-          isEnd: i === spanDays - 1
-        });
+        map[key].push(ev);
       }
     });
     return map;
@@ -145,11 +147,23 @@
     lines.push((ev.registration || ev.aircraftId || 'Aircraft') + ' — ' + (ev.inspectionType || 'Inspection'));
     lines.push('Due: ' + (ev.dueDate || '—'));
     lines.push('Projected next due: ' + (ev.projectedDueDate || ev.dueDate || '—'));
-    lines.push('Estimated downtime: ' + formatDuration(ev.durationDays || getInspectionDurationDays(ev)) + ' day(s)');
+    lines.push('Estimated downtime: ' + (ev.durationDays || getInspectionDurationDays(ev)) + ' day(s)');
     lines.push('Hours remaining: ' + (ev.hoursRemaining != null ? ev.hoursRemaining : '—'));
     if (ev.notes) lines.push('Notes: ' + ev.notes);
     if (ev.userEdited) lines.push('User-edited from calendar tab');
     return lines.join('\n');
+  }
+
+  function hoverCardContent(ev) {
+    return [
+      '<div class="mcx-hovercard-title">' + esc((ev.registration || ev.aircraftId || 'Aircraft') + ' — ' + (ev.inspectionType || 'Inspection')) + '</div>',
+      '<ul class="mcx-hovercard-list">',
+      '<li><strong>Due:</strong> ' + esc(ev.dueDate || '—') + '</li>',
+      '<li><strong>Projected:</strong> ' + esc(ev.projectedDueDate || ev.dueDate || '—') + '</li>',
+      '<li><strong>Hours Remaining:</strong> ' + esc(ev.hoursRemaining == null ? '—' : ev.hoursRemaining) + '</li>',
+      '<li class="muted">' + esc(ev.notes || 'No notes added') + '</li>',
+      '</ul>'
+    ].join('');
   }
 
   window.renderMaintenanceCalendar = function (root, payload) {
@@ -244,6 +258,10 @@
     function render() {
       var events = mergedEvents();
       var filtered = filteredEvents(events);
+      var eventsById = {};
+      filtered.forEach(function (ev) {
+        eventsById[ev.id] = ev;
+      });
       var byDay = buildMap(filtered);
       var year = date.getFullYear();
       var month = date.getMonth();
@@ -301,11 +319,8 @@
         var list = byDay[key] || [];
         html += '<div class="mcx-day' + (key === iso(new Date()) ? ' is-today' : '') + '">';
         html += '<div class="mcx-num">' + day + '</div>';
-        list.slice(0, 4).forEach(function (segment) {
-          var ev = segment.event;
-          var segClass = segment.isStart && segment.isEnd ? ' seg-single' : (segment.isStart ? ' seg-start' : (segment.isEnd ? ' seg-end' : ''));
-          var label = segment.isStart ? ((ev.registration || '') + ' ' + (ev.inspectionType || '') + ' · ' + formatDuration(ev.durationDays || 1) + 'd') : '';
-          html += '<button class="mcx-pill segment ' + colorClass(ev) + segClass + (ev.userEdited ? ' user-edited' : '') + '" data-event-id="' + esc(ev.id) + '" title="' + esc(detailTitle(ev)) + '">' + esc(label) + '</button>';
+        list.slice(0, 4).forEach(function (ev) {
+          html += '<button class="mcx-pill ' + colorClass(ev) + (ev.userEdited ? ' user-edited' : '') + '" data-event-id="' + esc(ev.id) + '" title="' + esc(detailTitle(ev)) + '">' + esc((ev.registration || '') + ' ' + (ev.inspectionType || '') + ' · ' + (ev.durationDays || 1) + 'd') + '</button>';
         });
         if (list.length > 4) html += '<div class="mcx-pill blue seg-single">+' + (list.length - 4) + ' more</div>';
         html += '</div>';
@@ -342,6 +357,37 @@
 
       root.innerHTML = html;
 
+      var hoverCard = document.createElement('div');
+      hoverCard.className = 'mcx-hovercard';
+      root.appendChild(hoverCard);
+
+      function positionHoverCard(x, y) {
+        var pad = 12;
+        var cardRect = hoverCard.getBoundingClientRect();
+        var left = x + 14;
+        var top = y + 14;
+        if (left + cardRect.width + pad > window.innerWidth) {
+          left = Math.max(pad, x - cardRect.width - 14);
+        }
+        if (top + cardRect.height + pad > window.innerHeight) {
+          top = Math.max(pad, y - cardRect.height - 14);
+        }
+        hoverCard.style.left = left + 'px';
+        hoverCard.style.top = top + 'px';
+      }
+
+      function showHoverCard(eventId, x, y) {
+        var ev = eventsById[eventId];
+        if (!ev) return;
+        hoverCard.innerHTML = hoverCardContent(ev);
+        hoverCard.classList.add('is-visible');
+        positionHoverCard(x, y);
+      }
+
+      function hideHoverCard() {
+        hoverCard.classList.remove('is-visible');
+      }
+
       root.querySelectorAll('.mcx-btn').forEach(function (btn) {
         btn.addEventListener('click', function () {
           var act = btn.getAttribute('data-act');
@@ -377,7 +423,22 @@
       });
 
       root.querySelectorAll('[data-event-id]').forEach(function (el) {
+        var eventId = el.getAttribute('data-event-id');
+        el.addEventListener('mouseenter', function (evt) {
+          showHoverCard(eventId, evt.clientX, evt.clientY);
+        });
+        el.addEventListener('mousemove', function (evt) {
+          if (!hoverCard.classList.contains('is-visible')) return;
+          positionHoverCard(evt.clientX, evt.clientY);
+        });
+        el.addEventListener('mouseleave', hideHoverCard);
+        el.addEventListener('focus', function () {
+          var rect = el.getBoundingClientRect();
+          showHoverCard(eventId, rect.left + rect.width / 2, rect.top + rect.height / 2);
+        });
+        el.addEventListener('blur', hideHoverCard);
         el.addEventListener('click', function () {
+          hideHoverCard();
           editor.selectedId = el.getAttribute('data-event-id');
           render();
         });

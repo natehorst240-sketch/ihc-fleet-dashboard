@@ -1030,8 +1030,15 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
     }}
 
     function renderFromAssignments(payload) {{
-      var root = document.querySelector('#tab-bases .bases-grid');
-      if (!root || !payload || !payload.assignments || !payload.bases) return;
+      var tabRoot = document.getElementById('tab-bases');
+      if (!tabRoot || !payload || !payload.assignments || !payload.bases) return;
+
+      var root = tabRoot.querySelector('.bases-grid');
+      if (!root) {{
+        tabRoot.innerHTML = '<div class="bases-grid"></div>';
+        root = tabRoot.querySelector('.bases-grid');
+      }}
+      if (!root) return;
 
       var baseOrder = Object.keys(payload.bases);
       var cards = baseOrder.map(function(baseId) {{
