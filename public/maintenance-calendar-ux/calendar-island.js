@@ -33,8 +33,10 @@
       '.mcx-num{font-family:' + theme.fontMono + ';font-size:10px;color:' + theme.muted + ';margin-bottom:4px;}',
       '.mcx-pill{font-family:' + theme.fontMono + ';font-size:9px;border-radius:2px;padding:1px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px;cursor:pointer;border:none;text-align:left;width:100%;}',
       '.mcx-pill.red{background:#c0392b;color:#fff;}',
+      '.mcx-pill.green{background:#27ae60;color:#fff;}',
       '.mcx-pill.amber{background:#e67e22;color:#000;}',
       '.mcx-pill.blue{background:#2980b9;color:#fff;}',
+      '.mcx-pill.purple{background:#8e44ad;color:#fff;}',
       '.mcx-pill.user-edited{box-shadow:inset 2px 0 0 #f6ad55;}',
       '.mcx-pill:hover{opacity:0.92;}',
       '.mcx-hovercard{position:fixed;z-index:9999;min-width:220px;max-width:300px;background:#111826;border:1px solid ' + theme.border + ';border-radius:4px;padding:8px;box-shadow:0 10px 30px rgba(0,0,0,0.45);pointer-events:none;opacity:0;transform:translateY(4px);transition:opacity .12s ease,transform .12s ease;}',
@@ -74,17 +76,42 @@
     var map = {};
     events.forEach(function (ev) {
       if (!ev || !ev.dueDate) return;
-      if (!map[ev.dueDate]) map[ev.dueDate] = [];
-      map[ev.dueDate].push(ev);
+      var spanDays = Math.max(1, Math.ceil(Number(ev.durationDays) || 1));
+      var start = new Date(ev.dueDate + 'T00:00:00');
+      if (!isFinite(start.getTime())) return;
+      for (var i = 0; i < spanDays; i++) {
+        var day = new Date(start);
+        day.setDate(start.getDate() + i);
+        var key = iso(day);
+        if (!map[key]) map[key] = [];
+        map[key].push(ev);
+      }
     });
     return map;
   }
 
+  function inspectionHours(ev) {
+    var label = String((ev && ev.inspectionType) || '');
+    var match = label.match(/(\d+)/);
+    return match ? Number(match[1]) : NaN;
+  }
+
+  function getInspectionDurationDays(ev) {
+    var interval = inspectionHours(ev);
+    if (interval === 50 || interval === 100) return 1;
+    if (interval === 200) return 3.5;
+    if (interval === 400 || interval === 800) return 5;
+    if (interval === 3200) return 21;
+    return 1;
+  }
+
   function colorClass(ev) {
-    var hrs = Number(ev.hoursRemaining);
-    if (!isFinite(hrs) || hrs > 100) return 'blue';
-    if (hrs <= 50) return 'red';
-    return 'amber';
+    var interval = inspectionHours(ev);
+    if (interval === 50 || interval === 100) return 'green';
+    if (interval === 200) return 'amber';
+    if (interval === 400 || interval === 800) return 'blue';
+    if (interval === 3200) return 'purple';
+    return 'red';
   }
 
   function parseSafe(str, fallback) {
@@ -110,6 +137,7 @@
     lines.push((ev.registration || ev.aircraftId || 'Aircraft') + ' — ' + (ev.inspectionType || 'Inspection'));
     lines.push('Due: ' + (ev.dueDate || '—'));
     lines.push('Projected next due: ' + (ev.projectedDueDate || ev.dueDate || '—'));
+    lines.push('Estimated downtime: ' + (ev.durationDays || getInspectionDurationDays(ev)) + ' day(s)');
     lines.push('Hours remaining: ' + (ev.hoursRemaining != null ? ev.hoursRemaining : '—'));
     if (ev.notes) lines.push('Notes: ' + ev.notes);
     if (ev.userEdited) lines.push('User-edited from calendar tab');
@@ -154,9 +182,11 @@
       return sourceEvents.map(function (ev) {
         var merged = Object.assign({}, ev);
         merged.projectedDueDate = ev.projectedDueDate || ev.dueDate;
+        merged.durationDays = Number(ev.durationDays) || getInspectionDurationDays(ev);
         if (overrides[ev.id]) {
           merged = Object.assign(merged, overrides[ev.id], { userEdited: true });
           if (!merged.projectedDueDate) merged.projectedDueDate = ev.dueDate;
+          merged.durationDays = Number(merged.durationDays) || getInspectionDurationDays(merged);
         }
         return merged;
       });
@@ -253,9 +283,10 @@
       html += '</div>';
 
       html += '<div class="mcx-legend">'
-        + '<span><span class="mcx-leg-dot" style="background:#c0392b"></span>≤ 50 HRS</span>'
-        + '<span><span class="mcx-leg-dot" style="background:#e67e22"></span>≤ 100 HRS</span>'
-        + '<span><span class="mcx-leg-dot" style="background:#2980b9"></span>> 100 HRS</span>'
+        + '<span><span class="mcx-leg-dot" style="background:#27ae60"></span>50/100 HR · 1 day</span>'
+        + '<span><span class="mcx-leg-dot" style="background:#e67e22"></span>200 HR · 3.5 days</span>'
+        + '<span><span class="mcx-leg-dot" style="background:#2980b9"></span>400/800 HR · 5 days</span>'
+        + '<span><span class="mcx-leg-dot" style="background:#8e44ad"></span>3200 HR · 3 weeks</span>'
         + '<span><span class="mcx-leg-dot" style="background:#f6ad55"></span>User-edited</span>'
         + '</div>';
 
@@ -269,7 +300,7 @@
         html += '<div class="mcx-day' + (key === iso(new Date()) ? ' is-today' : '') + '">';
         html += '<div class="mcx-num">' + day + '</div>';
         list.slice(0, 4).forEach(function (ev) {
-          html += '<button class="mcx-pill ' + colorClass(ev) + (ev.userEdited ? ' user-edited' : '') + '" data-event-id="' + esc(ev.id) + '" title="' + esc(detailTitle(ev)) + '">' + esc((ev.registration || '') + ' ' + (ev.inspectionType || '')) + '</button>';
+          html += '<button class="mcx-pill ' + colorClass(ev) + (ev.userEdited ? ' user-edited' : '') + '" data-event-id="' + esc(ev.id) + '" title="' + esc(detailTitle(ev)) + '">' + esc((ev.registration || '') + ' ' + (ev.inspectionType || '') + ' · ' + (ev.durationDays || 1) + 'd') + '</button>';
         });
         if (list.length > 4) html += '<div class="mcx-pill blue">+' + (list.length - 4) + ' more</div>';
         html += '</div>';
