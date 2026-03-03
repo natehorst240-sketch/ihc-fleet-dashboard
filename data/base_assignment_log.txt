@@ -18,3 +18,7 @@
 [2026-03-03 10:29:53 UTC] Loaded 9 aircraft from DEFAULT_AIRCRAFT
 [2026-03-03 10:29:53 UTC] Fetching positions...
 [2026-03-03 10:29:55 UTC] WARNING: No live data from any source. Writing default structure.
+[2026-03-03 11:06:35 UTC] Base assignment generation started (airplanes.live + adsb.lol fallback)
+[2026-03-03 11:06:35 UTC] Loaded 9 aircraft from DEFAULT_AIRCRAFT
+[2026-03-03 11:06:35 UTC] Fetching positions...
+[2026-03-03 11:06:37 UTC] WARNING: No live data from any source. Writing default structure.
