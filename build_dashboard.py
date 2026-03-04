@@ -942,7 +942,7 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
     <button class="tab-btn active" onclick="switchTab('maintenance',this)">Maintenance Due List</button>
     <button class="tab-btn" onclick="switchTab('flight-hours',this)">Flight Hours Tracking</button>
     <button class="tab-btn" onclick="switchTab('calendar',this)">Calendar</button>
-    <button class="tab-btn" onclick="switchTab('bases',this)">Bases</button>
+    <button class="tab-btn" onclick="switchTab('bases',this)">Aircraft Location</button>
   </div>
 
   <!-- MAINTENANCE TAB -->
@@ -1136,16 +1136,124 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
       root.innerHTML = cards.join('');
     }}
 
-    function refreshBases() {{
-      fetch('data/base_assignments.json?ts=' + Date.now(), {{ cache: 'no-store' }})
-        .then(function(resp) {{ if (!resp.ok) throw new Error('fetch failed'); return resp.json(); }})
-        .then(renderFromAssignments)
-        .catch(function() {{ /* keep generated fallback content */ }});
-    }}
+    # ═══════════════════════════════════════════════════════════════════════════════
+    # PATCH 2 of 2 — Replace renderFromAssignments() in the JS block inside build_html()
+    # Find the existing (function() { ... renderFromAssignments ... refreshBases ... })();
+    # block and replace it entirely with the block below.
+    # ═══════════════════════════════════════════════════════════════════════════════
 
-    refreshBases();
-    setInterval(refreshBases, 60000);
-  }})();
+    LIVE_REFRESH_JS = r"""
+      // ── LIVE AIRCRAFT LOCATION REFRESH ────────────────────────────────────────
+      (function() {
+        var ALL_TAILS = ['N251HC','N261HC','N271HC','N281HC','N291HC',
+                     'N431HC','N531HC','N631HC','N731HC'];
+
+        var BASES = {
+          LOGAN:      {name:'Logan',      lat:41.7912,  lon:-111.8522},
+          MCKAY:      {name:'McKay-Dee',  lat:41.2545,  lon:-112.0126},
+          IMED:       {name:'IMed',       lat:40.2338,  lon:-111.6585},
+          PROVO:      {name:'Provo',      lat:40.2192,  lon:-111.7233},
+          ROOSEVELT:  {name:'Roosevelt',  lat:40.2765,  lon:-110.0518},
+          CEDAR_CITY: {name:'Cedar City', lat:37.7010,  lon:-113.0989},
+          ST_GEORGE:  {name:'St George',  lat:37.0365,  lon:-113.5101},
+          KSLC:       {name:'KSLC',       lat:40.7884,  lon:-111.9778},
+        };
+
+        function bearing(lat1,lon1,lat2,lon2) {
+          var dLon=(lon2-lon1)*Math.PI/180;
+          lat1=lat1*Math.PI/180; lat2=lat2*Math.PI/180;
+          var y=Math.sin(dLon)*Math.cos(lat2);
+          var x=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLon);
+          return ((Math.atan2(y,x)*180/Math.PI)+360)%360;
+        }
+        function cardinal(d) {
+          return ['N','NE','E','SE','S','SW','W','NW'][Math.round(d/45)%8];
+        }
+        function esc(t) {
+          return String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        }
+        function ageFmt(utcStr) {
+          if (!utcStr) return '';
+          var dt=new Date(utcStr), now=new Date();
+          var m=Math.round((now-dt)/60000);
+          if (isNaN(m)||m<0) return '';
+          return m<60 ? m+'m ago' : (m/60).toFixed(1)+'h ago';
+        }
+
+        function locLine(detail, bases) {
+          if (!detail) return '<span class="ac-loc-unknown">NO DATA</span>';
+          var status=(detail.status||'').toUpperCase();
+          var baseId=detail.closest_base||'';
+          var baseMeta=bases[baseId]||BASES[baseId]||{};
+          var baseName=baseMeta.name||baseId;
+          var distMi=detail.dist_miles||0;
+          var dir='';
+          if (detail.lat && detail.lon && baseMeta.lat) {
+            dir=cardinal(bearing(baseMeta.lat,baseMeta.lon,detail.lat,detail.lon));
+          }
+          if (status==='AT_BASE') {
+            return '<span class="ac-loc-base">AT '+esc(baseName.toUpperCase())+'</span>';
+          }
+          if (status==='AIRBORNE') {
+            var alt=detail.alt_ft ? parseInt(detail.alt_ft).toLocaleString()+' ft' : '';
+            var spd=detail.speed_kts ? Math.round(detail.speed_kts)+' kts' : '';
+            var pos=distMi && baseName ? (Math.round(distMi)+' mi '+(dir?dir+' of ':' from ')+baseName) : '';
+            var parts=[pos,alt,spd].filter(Boolean).join(' · ');
+            return '<span class="ac-loc-air">AIRBORNE</span>'+(parts?'<span class="ac-loc-detail"> '+esc(parts)+'</span>':'');
+          }
+          if (status==='AWAY') {
+            var pos=distMi && baseName ? (Math.round(distMi)+' mi '+(dir?dir+' of ':' from ')+baseName) : (baseName||'unknown');
+            return '<span class="ac-loc-away">AWAY</span><span class="ac-loc-detail"> · '+esc(pos)+'</span>';
+          }
+          return '<span class="ac-loc-unknown">'+esc(status||'UNKNOWN')+'</span>';
+        }
+
+        function render(payload) {
+          var grid = document.getElementById('ac-location-grid');
+          if (!grid || !payload) return;
+
+          var detail  = payload.aircraft_detail || {};
+          var bases   = payload.bases || {};
+          var acHrs   = {};
+          // pull airframe hours from table rows if available
+          document.querySelectorAll('#insp-tbody tr[data-tail]').forEach(function(tr) {
+            var tail = tr.getAttribute('data-tail');
+            var hrsEl = tr.querySelector('.airframe-hrs');
+            if (hrsEl) acHrs[tail] = hrsEl.textContent.replace(' TT','').trim();
+          });
+
+          var cards = ALL_TAILS.map(function(tail) {
+            var d = detail[tail];
+            var status = d ? (d.status||'UNKNOWN').toUpperCase() : 'NO DATA';
+            var hrs = acHrs[tail] || '';
+            var cardCls = {AT_BASE:'ac-card-base',AIRBORNE:'ac-card-air',AWAY:'ac-card-away'}[status]||'ac-card-nodata';
+            var age = d ? ageFmt(d.utc) : '';
+            return '<div class="ac-card '+cardCls+'">'
+              +'<div class="ac-card-header">'
+                +'<div class="ac-tail">'+esc(tail)+'</div>'
+                +'<div class="ac-hours">'+(hrs?esc(hrs)+' TT':'N/A')+'</div>'
+              +'</div>'
+              +'<div class="ac-card-body">'
+                +'<div class="ac-loc">'+locLine(d, bases)+'</div>'
+                +(age?'<div class="ac-age">'+esc(age)+'</div>':'')
+              +'</div>'
+            +'</div>';
+          });
+
+          grid.innerHTML = cards.join('');
+        }
+
+        function refresh() {
+          fetch('data/base_assignments.json?ts='+Date.now(), {cache:'no-store'})
+            .then(function(r){if(!r.ok)throw new Error('fetch failed');return r.json();})
+            .then(render)
+            .catch(function(){});
+        }
+
+        refresh();
+        setInterval(refresh, 60000);
+      })();
+    """
 
   // ── EDITABLE CALENDAR ─────────────────────────────────────────────────────
   (function() {{
@@ -1580,105 +1688,170 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
 
 
 
-def _build_bases_tab(aircraft_list, positions):
-    if not positions:
-        return '<div style="font-family:var(--mono);font-size:12px;color:var(--muted);padding:20px;">No position data available. Runs after fetch_positions.py completes.</div>'
+# ═══════════════════════════════════════════════════════════════════════════════
+# PATCH 1 of 2 — Replace _build_bases_tab() in build_dashboard.py
+# ═══════════════════════════════════════════════════════════════════════════════
 
-    base_buckets = {}
-    away_list    = []
-    airborne_list = []
+def _bearing_deg(lat1, lon1, lat2, lon2):
+    """Bearing FROM point1 TO point2 in degrees (0=N, 90=E, etc.)"""
+    import math
+    dlon = math.radians(lon2 - lon1)
+    lat1r, lat2r = math.radians(lat1), math.radians(lat2)
+    y = math.sin(dlon) * math.cos(lat2r)
+    x = math.cos(lat1r) * math.sin(lat2r) - math.sin(lat1r) * math.cos(lat2r) * math.cos(dlon)
+    return (math.degrees(math.atan2(y, x)) + 360) % 360
+
+
+def _cardinal(deg):
+    dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW']
+    return dirs[round(deg / 45) % 8]
+
+
+def _build_bases_tab(aircraft_list, positions):
+    ALL_TAILS = ["N251HC", "N261HC", "N271HC", "N281HC", "N291HC",
+                 "N431HC", "N531HC", "N631HC", "N731HC"]
+
     ac_hrs = {ac['tail']: ac['airframe_hrs'] for ac in aircraft_list}
 
-    for ac in aircraft_list:
-        tail    = ac['tail']
-        pos     = positions.get(tail, {})
-        status  = pos.get('status', 'UNKNOWN')
-        curr    = pos.get('current_base')
-        near    = pos.get('nearest_base')
-        hrs     = ac_hrs.get(tail)
+    # Pull bases coords from positions if available (SkyRouter format stashes them)
+    # Fallback to hardcoded for static render
+    BASES_COORDS = {
+        "LOGAN":      {"name": "Logan",      "lat": 41.7912,  "lon": -111.8522},
+        "MCKAY":      {"name": "McKay-Dee",  "lat": 41.2545,  "lon": -112.0126},
+        "IMED":       {"name": "IMed",       "lat": 40.2338,  "lon": -111.6585},
+        "PROVO":      {"name": "Provo",      "lat": 40.2192,  "lon": -111.7233},
+        "ROOSEVELT":  {"name": "Roosevelt",  "lat": 40.2765,  "lon": -110.0518},
+        "CEDAR_CITY": {"name": "Cedar City", "lat": 37.7010,  "lon": -113.0989},
+        "ST_GEORGE":  {"name": "St George",  "lat": 37.0365,  "lon": -113.5101},
+        "KSLC":       {"name": "KSLC",       "lat": 40.7884,  "lon": -111.9778},
+    }
+
+    def _location_line(tail, pos):
+        """Return a human-readable location string for an aircraft."""
+        if not pos:
+            return '<span class="ac-loc-unknown">NO DATA</span>'
+
+        status   = pos.get('status', 'UNKNOWN').upper()
+        base_id  = pos.get('closest_base') or (pos.get('current_base') or {}).get('id', '')
+        base_nm  = (pos.get('nearest_base') or pos.get('current_base') or {}).get('name', '') \
+                   or BASES_COORDS.get(base_id, {}).get('name', base_id)
+        dist_mi  = pos.get('dist_miles') or \
+                   (pos.get('nearest_base') or pos.get('current_base') or {}).get('dist_nm', None)
+
+        # Compute cardinal direction if we have lat/lon
+        direction = ''
+        lat = pos.get('lat')
+        lon = pos.get('lon')
+        if lat and lon and base_id in BASES_COORDS:
+            b = BASES_COORDS[base_id]
+            bearing = _bearing_deg(b['lat'], b['lon'], lat, lon)
+            direction = _cardinal(bearing)
+
+        if status == 'AT_BASE':
+            return (f'<span class="ac-loc-base">AT {base_nm.upper()}</span>')
 
         if status == 'AIRBORNE':
-            airborne_list.append({'tail': tail, 'hrs': hrs, 'pos': pos})
-        elif status == 'AT_BASE' and curr:
-            bid = curr.get('id', 'UNKNOWN')
-            base_buckets.setdefault(bid, {'name': curr.get('name', bid), 'aircraft': []})
-            base_buckets[bid]['aircraft'].append({'tail': tail, 'hrs': hrs, 'dist_nm': curr.get('dist_nm'), 'pos': pos})
-        else:
-            away_list.append({'tail': tail, 'hrs': hrs, 'pos': pos, 'nearest': near})
+            alt_ft  = pos.get('last_alt_ft') or pos.get('alt_ft', '')
+            spd_kts = pos.get('last_gs_kts') or pos.get('speed_kts', '')
+            alt_str = f'{int(alt_ft):,} ft' if alt_ft else ''
+            spd_str = f'{int(spd_kts)} kts' if spd_kts else ''
+            if dist_mi and base_nm:
+                dist_str = f'{dist_mi:.0f} mi {direction} of {base_nm}' if direction else f'{dist_mi:.0f} mi from {base_nm}'
+            else:
+                dist_str = ''
+            parts = [p for p in [dist_str, alt_str, spd_str] if p]
+            detail = ' · '.join(parts)
+            return (f'<span class="ac-loc-air">AIRBORNE</span>'
+                    + (f'<span class="ac-loc-detail"> {detail}</span>' if detail else ''))
 
-    base_cards_html = ''
-    for bid, bdata in sorted(base_buckets.items()):
-        count = len(bdata['aircraft'])
-        occupied_cls = 'occupied' if count else ''
-        aircraft_html = ''
-        for a in bdata['aircraft']:
-            hrs_str  = f"{a['hrs']:,.1f} TT" if a['hrs'] else 'N/A'
-            dist_str = f"{a['dist_nm']} nm" if a['dist_nm'] else ''
-            aircraft_html += f'''
-            <div class="base-aircraft">
-              <div class="base-aircraft-tail">{a['tail']}</div>
-              <span class="base-status-badge base-status-at">AT BASE</span>
-              <div class="base-aircraft-hours">{hrs_str} {dist_str}</div>
-            </div>'''
-        if not aircraft_html:
-            aircraft_html = '<div class="base-empty">No aircraft</div>'
-        base_cards_html += f'''
-        <div class="base-card {occupied_cls}">
-          <div class="base-header">
-            <div class="base-name">{bdata["name"]}</div>
-            <div class="base-capacity">{count} aircraft</div>
+        if status == 'AWAY':
+            if dist_mi and base_nm:
+                dist_str = f'{dist_mi:.0f} mi {direction} of {base_nm}' if direction else f'{dist_mi:.0f} mi from {base_nm}'
+            else:
+                dist_str = base_nm or 'unknown location'
+            return (f'<span class="ac-loc-away">AWAY</span>'
+                    f'<span class="ac-loc-detail"> · {dist_str}</span>')
+
+        return '<span class="ac-loc-unknown">UNKNOWN</span>'
+
+    # Build one card per tail
+    cards_html = ''
+    no_data_count = 0
+
+    for tail in ALL_TAILS:
+        pos     = positions.get(tail)
+        hrs     = ac_hrs.get(tail)
+        hrs_str = f'{hrs:,.1f} TT' if hrs else 'N/A'
+        status  = (pos.get('status', 'UNKNOWN').upper() if pos else 'NO DATA')
+
+        card_cls = {
+            'AT_BASE':  'ac-card-base',
+            'AIRBORNE': 'ac-card-air',
+            'AWAY':     'ac-card-away',
+        }.get(status, 'ac-card-nodata')
+
+        if status == 'NO DATA':
+            no_data_count += 1
+
+        age_str = ''
+        last_utc = pos.get('utc') or pos.get('last_updated', '') if pos else ''
+        if last_utc:
+            try:
+                from datetime import timezone
+                dt  = datetime.fromisoformat(last_utc.replace('Z', '+00:00'))
+                age = (datetime.now(timezone.utc) - dt).total_seconds() / 60
+                age_str = f'{int(age)}m ago' if age < 60 else f'{age/60:.1f}h ago'
+            except Exception:
+                pass
+
+        loc_html = _location_line(tail, pos)
+
+        cards_html += f'''
+        <div class="ac-card {card_cls}">
+          <div class="ac-card-header">
+            <div class="ac-tail">{tail}</div>
+            <div class="ac-hours">{hrs_str}</div>
           </div>
-          <div class="base-body">{aircraft_html}</div>
+          <div class="ac-card-body">
+            <div class="ac-loc">{loc_html}</div>
+            {f'<div class="ac-age">{age_str}</div>' if age_str else ''}
+          </div>
         </div>'''
 
-    airborne_html = ''
-    if airborne_list:
-        cards = ''
-        for a in airborne_list:
-            hrs_str = f"{a['hrs']:,.1f} TT" if a['hrs'] else 'N/A'
-            alt     = a['pos'].get('last_alt_ft', '')
-            gs      = a['pos'].get('last_gs_kts', '')
-            cards += f'''
-            <div class="away-card">
-              <div class="away-tail">{a['tail']}</div>
-              <div class="away-info" style="color:var(--blue);">AIRBORNE</div>
-              <div class="away-info">{hrs_str}</div>
-              <div class="away-info">{alt}ft · {gs}kts</div>
-            </div>'''
-        airborne_html = f'''
-        <div class="away-section">
-          <div class="section-label">Currently Airborne</div>
-          <div class="away-grid">{cards}</div>
-        </div>'''
+    last_checked = ''
+    if positions:
+        sample = next((v for k, v in positions.items() if isinstance(v, dict) and 'last_updated' in v), None)
+        if sample:
+            last_checked = sample.get('last_updated', '')
 
-    away_html = ''
-    if away_list:
-        cards = ''
-        for a in away_list:
-            hrs_str  = f"{a['hrs']:,.1f} TT" if a['hrs'] else 'N/A'
-            near     = a.get('nearest')
-            near_str = f"{near.get('dist_nm','?')} nm from {near.get('name','?')}" if near else 'Position unknown'
-            cards += f'''
-            <div class="away-card">
-              <div class="away-tail">{a['tail']}</div>
-              <div class="away-info" style="color:var(--amber);">AWAY FROM BASE</div>
-              <div class="away-info">{hrs_str}</div>
-              <div class="away-info">{near_str}</div>
-            </div>'''
-        away_html = f'''
-        <div class="away-section">
-          <div class="section-label">Away From Base</div>
-          <div class="away-grid">{cards}</div>
-        </div>'''
+    css = '''<style>
+      .ac-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:16px;}
+      .ac-card{background:var(--surface);border:1px solid var(--border);border-radius:4px;overflow:hidden;transition:border-color .2s;}
+      .ac-card-base {border-color:rgba(0,230,118,0.35);}
+      .ac-card-air  {border-color:rgba(41,182,246,0.4);}
+      .ac-card-away {border-color:rgba(255,171,0,0.35);}
+      .ac-card-nodata{opacity:.55;}
+      .ac-card-header{display:flex;justify-content:space-between;align-items:baseline;
+        padding:10px 14px 8px;background:var(--surface2);border-bottom:1px solid var(--border);}
+      .ac-tail{font-family:var(--sans);font-weight:900;font-size:18px;letter-spacing:1px;color:var(--heading);}
+      .ac-hours{font-family:var(--mono);font-size:10px;color:var(--muted);}
+      .ac-card-body{padding:12px 14px;}
+      .ac-loc{font-family:var(--mono);font-size:11px;line-height:1.6;}
+      .ac-loc-base  {color:var(--green);font-weight:700;letter-spacing:.5px;}
+      .ac-loc-air   {color:var(--blue);font-weight:700;letter-spacing:.5px;}
+      .ac-loc-away  {color:var(--amber);font-weight:700;letter-spacing:.5px;}
+      .ac-loc-unknown{color:var(--muted);}
+      .ac-loc-detail{color:var(--muted);font-size:10px;}
+      .ac-age{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:6px;opacity:.6;}
+    </style>'''
 
-    fetched_at = positions.get(list(positions.keys())[0], {}).get('last_updated', '') if positions else ''
-
-    return f'''
-    <div class="section-label">Aircraft Base Assignments — Live ADSB</div>
-    <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:16px;">Last updated: {fetched_at}</div>
-    <div class="bases-grid">{base_cards_html}</div>
-    {airborne_html}
-    {away_html}'''
+    return f'''{css}
+    <div class="section-label">Aircraft Location</div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:4px;">
+      Live positions via SkyRouter GPS · refreshes every 60 seconds
+      {f"· last checked {last_checked}" if last_checked else ""}
+    </div>
+    <div class="ac-grid" id="ac-location-grid">{cards_html}</div>'''
 
 
 # ── MAIN ──────────────────────────────────────────────────────────────────────
