@@ -1062,198 +1062,112 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
   }}
   {mini_charts_js}
 
-   // ── LIVE BASE ASSIGNMENTS REFRESH ────────────────────────────────────────
+// ── LIVE AIRCRAFT LOCATION REFRESH ────────────────────────────────────────
   (function() {{
-    function esc(text) {{
-      return String(text ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-    }}
-
-    function renderFromAssignments(payload) {{
-      var tabRoot = document.getElementById('tab-bases');
-      if (!tabRoot || !payload || !payload.assignments || !payload.bases) return;
-
-      var root = tabRoot.querySelector('.bases-grid');
-      if (!root) {{
-        tabRoot.innerHTML = '<div class="bases-grid"></div>';
-        root = tabRoot.querySelector('.bases-grid');
-      }}
-      if (!root) return;
-
-      var baseOrder = Object.keys(payload.bases);
-      var cards = baseOrder.map(function(baseId) {{
-        var base = payload.bases[baseId] || {{}};
-        var assignment = payload.assignments[baseId] || {{ aircraft: [] }};
-        var aircraft = Array.isArray(assignment.aircraft) ? assignment.aircraft : [];
-        var occupied = aircraft.length > 0;
-
-        var aircraftHtml = aircraft.map(function(ac) {{
-          var isAirborne = !!ac.airborne;
-          var atBase = !!ac.at_base;
-          var rowClass = isAirborne ? 'airborne' : (atBase ? '' : 'away');
-          var badgeClass = isAirborne ? 'base-status-airborne' : (atBase ? 'base-status-at' : 'base-status-away');
-          var badgeText = isAirborne ? 'AIRBORNE' : (atBase ? 'AT BASE' : 'AWAY');
-          return '<div class="base-aircraft ' + rowClass + '">' +
-            '<div class="base-aircraft-tail">' + esc(ac.tail || 'UNKNOWN') + '</div>' +
-            '<span class="base-status-badge ' + badgeClass + '">' + badgeText + '</span>' +
-            '</div>';
-        }}).join('');
-
-        if (!aircraftHtml) aircraftHtml = '<div class="base-empty">No aircraft assigned</div>';
-
-        return '<div class="base-card ' + (occupied ? 'occupied' : '') + '">' +
-          '<div class="base-header">' +
-            '<div class="base-name">' + esc(base.name || baseId) + '</div>' +
-            '<div class="base-capacity">BASE ' + esc(baseId) + '</div>' +
-          '</div>' +
-          '<div class="base-body">' + aircraftHtml + '</div>' +
-          '</div>';
-      }});
-
-      var unassigned = (payload.assignments && Array.isArray(payload.assignments.unassigned))
-        ? payload.assignments.unassigned
-        : [];
-      if (unassigned.length) {{
-        cards.push(
-          '<div class="base-card">' +
-            '<div class="base-header"><div class="base-name">UNASSIGNED</div><div class="base-capacity">LIVE TRACKING</div></div>' +
-            '<div class="base-body">' +
-              unassigned.map(function(ac) {{
-                return '<div class="base-aircraft away">' +
-                  '<div class="base-aircraft-tail">' + esc(ac.tail || 'UNKNOWN') + '</div>' +
-                  '<span class="base-status-badge base-status-away">' + (ac.airborne ? 'AIRBORNE' : 'AWAY') + '</span>' +
-                '</div>';
-              }}).join('') +
-            '</div>' +
-          '</div>'
-        );
-      }}
-
-      root.innerHTML = cards.join('');
-    }}
-
-    # ═══════════════════════════════════════════════════════════════════════════════
-    # PATCH 2 of 2 — Replace renderFromAssignments() in the JS block inside build_html()
-    # Find the existing (function() { ... renderFromAssignments ... refreshBases ... })();
-    # block and replace it entirely with the block below.
-    # ═══════════════════════════════════════════════════════════════════════════════
-
-    LIVE_REFRESH_JS = r"""
-      // ── LIVE AIRCRAFT LOCATION REFRESH ────────────────────────────────────────
-      (function() {
-        var ALL_TAILS = ['N251HC','N261HC','N271HC','N281HC','N291HC',
+    var ALL_TAILS = ['N251HC','N261HC','N271HC','N281HC','N291HC',
                      'N431HC','N531HC','N631HC','N731HC'];
 
-        var BASES = {
-          LOGAN:      {name:'Logan',      lat:41.7912,  lon:-111.8522},
-          MCKAY:      {name:'McKay-Dee',  lat:41.2545,  lon:-112.0126},
-          IMED:       {name:'IMed',       lat:40.2338,  lon:-111.6585},
-          PROVO:      {name:'Provo',      lat:40.2192,  lon:-111.7233},
-          ROOSEVELT:  {name:'Roosevelt',  lat:40.2765,  lon:-110.0518},
-          CEDAR_CITY: {name:'Cedar City', lat:37.7010,  lon:-113.0989},
-          ST_GEORGE:  {name:'St George',  lat:37.0365,  lon:-113.5101},
-          KSLC:       {name:'KSLC',       lat:40.7884,  lon:-111.9778},
-        };
+    var BASES = {{
+      LOGAN:      {{name:'Logan',      lat:41.7912,  lon:-111.8522}},
+      MCKAY:      {{name:'McKay-Dee',  lat:41.2545,  lon:-112.0126}},
+      IMED:       {{name:'IMed',       lat:40.2338,  lon:-111.6585}},
+      PROVO:      {{name:'Provo',      lat:40.2192,  lon:-111.7233}},
+      ROOSEVELT:  {{name:'Roosevelt',  lat:40.2765,  lon:-110.0518}},
+      CEDAR_CITY: {{name:'Cedar City', lat:37.7010,  lon:-113.0989}},
+      ST_GEORGE:  {{name:'St George',  lat:37.0365,  lon:-113.5101}},
+      KSLC:       {{name:'KSLC',       lat:40.7884,  lon:-111.9778}},
+    }};
 
-        function bearing(lat1,lon1,lat2,lon2) {
-          var dLon=(lon2-lon1)*Math.PI/180;
-          lat1=lat1*Math.PI/180; lat2=lat2*Math.PI/180;
-          var y=Math.sin(dLon)*Math.cos(lat2);
-          var x=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLon);
-          return ((Math.atan2(y,x)*180/Math.PI)+360)%360;
-        }
-        function cardinal(d) {
-          return ['N','NE','E','SE','S','SW','W','NW'][Math.round(d/45)%8];
-        }
-        function esc(t) {
-          return String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-        }
-        function ageFmt(utcStr) {
-          if (!utcStr) return '';
-          var dt=new Date(utcStr), now=new Date();
-          var m=Math.round((now-dt)/60000);
-          if (isNaN(m)||m<0) return '';
-          return m<60 ? m+'m ago' : (m/60).toFixed(1)+'h ago';
-        }
+    function bearing(lat1,lon1,lat2,lon2) {{
+      var dLon=(lon2-lon1)*Math.PI/180;
+      lat1=lat1*Math.PI/180; lat2=lat2*Math.PI/180;
+      var y=Math.sin(dLon)*Math.cos(lat2);
+      var x=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLon);
+      return ((Math.atan2(y,x)*180/Math.PI)+360)%360;
+    }}
+    function cardinal(d) {{
+      return ['N','NE','E','SE','S','SW','W','NW'][Math.round(d/45)%8];
+    }}
+    function esc(t) {{
+      return String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }}
+    function ageFmt(utcStr) {{
+      if (!utcStr) return '';
+      var dt=new Date(utcStr), now=new Date();
+      var m=Math.round((now-dt)/60000);
+      if (isNaN(m)||m<0) return '';
+      return m<60 ? m+'m ago' : (m/60).toFixed(1)+'h ago';
+    }}
 
-        function locLine(detail, bases) {
-          if (!detail) return '<span class="ac-loc-unknown">NO DATA</span>';
-          var status=(detail.status||'').toUpperCase();
-          var baseId=detail.closest_base||'';
-          var baseMeta=bases[baseId]||BASES[baseId]||{};
-          var baseName=baseMeta.name||baseId;
-          var distMi=detail.dist_miles||0;
-          var dir='';
-          if (detail.lat && detail.lon && baseMeta.lat) {
-            dir=cardinal(bearing(baseMeta.lat,baseMeta.lon,detail.lat,detail.lon));
-          }
-          if (status==='AT_BASE') {
-            return '<span class="ac-loc-base">AT '+esc(baseName.toUpperCase())+'</span>';
-          }
-          if (status==='AIRBORNE') {
-            var alt=detail.alt_ft ? parseInt(detail.alt_ft).toLocaleString()+' ft' : '';
-            var spd=detail.speed_kts ? Math.round(detail.speed_kts)+' kts' : '';
-            var pos=distMi && baseName ? (Math.round(distMi)+' mi '+(dir?dir+' of ':' from ')+baseName) : '';
-            var parts=[pos,alt,spd].filter(Boolean).join(' · ');
-            return '<span class="ac-loc-air">AIRBORNE</span>'+(parts?'<span class="ac-loc-detail"> '+esc(parts)+'</span>':'');
-          }
-          if (status==='AWAY') {
-            var pos=distMi && baseName ? (Math.round(distMi)+' mi '+(dir?dir+' of ':' from ')+baseName) : (baseName||'unknown');
-            return '<span class="ac-loc-away">AWAY</span><span class="ac-loc-detail"> · '+esc(pos)+'</span>';
-          }
-          return '<span class="ac-loc-unknown">'+esc(status||'UNKNOWN')+'</span>';
-        }
+    function locLine(detail, bases) {{
+      if (!detail) return '<span class="ac-loc-unknown">NO DATA</span>';
+      var status=(detail.status||'').toUpperCase();
+      var baseId=detail.closest_base||'';
+      var baseMeta=bases[baseId]||BASES[baseId]||{{}};
+      var baseName=baseMeta.name||baseId;
+      var distMi=detail.dist_miles||0;
+      var dir='';
+      if (detail.lat && detail.lon && baseMeta.lat) {{
+        dir=cardinal(bearing(baseMeta.lat,baseMeta.lon,detail.lat,detail.lon));
+      }}
+      if (status==='AT_BASE') {{
+        return '<span class="ac-loc-base">AT '+esc(baseName.toUpperCase())+'</span>';
+      }}
+      if (status==='AIRBORNE') {{
+        var alt=detail.alt_ft ? parseInt(detail.alt_ft).toLocaleString()+' ft' : '';
+        var spd=detail.speed_kts ? Math.round(detail.speed_kts)+' kts' : '';
+        var pos=distMi && baseName ? (Math.round(distMi)+' mi '+(dir?dir+' of ':' from ')+baseName) : '';
+        var parts=[pos,alt,spd].filter(Boolean).join(' \u00b7 ');
+        return '<span class="ac-loc-air">AIRBORNE</span>'+(parts?'<span class="ac-loc-detail"> '+esc(parts)+'</span>':'');
+      }}
+      if (status==='AWAY') {{
+        var pos=distMi && baseName ? (Math.round(distMi)+' mi '+(dir?dir+' of ':' from ')+baseName) : (baseName||'unknown');
+        return '<span class="ac-loc-away">AWAY</span><span class="ac-loc-detail"> \u00b7 '+esc(pos)+'</span>';
+      }}
+      return '<span class="ac-loc-unknown">'+esc(status||'UNKNOWN')+'</span>';
+    }}
 
-        function render(payload) {
-          var grid = document.getElementById('ac-location-grid');
-          if (!grid || !payload) return;
+    function render(payload) {{
+      var grid = document.getElementById('ac-location-grid');
+      if (!grid || !payload) return;
+      var detail = payload.aircraft_detail || {{}};
+      var bases  = payload.bases || {{}};
+      var acHrs  = {{}};
+      document.querySelectorAll('#insp-tbody tr[data-tail]').forEach(function(tr) {{
+        var tail = tr.getAttribute('data-tail');
+        var hrsEl = tr.querySelector('.airframe-hrs');
+        if (hrsEl) acHrs[tail] = hrsEl.textContent.replace(' TT','').trim();
+      }});
+      var cards = ALL_TAILS.map(function(tail) {{
+        var d = detail[tail];
+        var status = d ? (d.status||'UNKNOWN').toUpperCase() : 'NO DATA';
+        var hrs = acHrs[tail] || '';
+        var cardCls = {{AT_BASE:'ac-card-base',AIRBORNE:'ac-card-air',AWAY:'ac-card-away'}}[status]||'ac-card-nodata';
+        var age = d ? ageFmt(d.utc) : '';
+        return '<div class="ac-card '+cardCls+'">'
+          +'<div class="ac-card-header">'
+            +'<div class="ac-tail">'+esc(tail)+'</div>'
+            +'<div class="ac-hours">'+(hrs?esc(hrs)+' TT':'N/A')+'</div>'
+          +'</div>'
+          +'<div class="ac-card-body">'
+            +'<div class="ac-loc">'+locLine(d, bases)+'</div>'
+            +(age?'<div class="ac-age">'+esc(age)+'</div>':'')
+          +'</div>'
+        +'</div>';
+      }});
+      grid.innerHTML = cards.join('');
+    }}
 
-          var detail  = payload.aircraft_detail || {};
-          var bases   = payload.bases || {};
-          var acHrs   = {};
-          // pull airframe hours from table rows if available
-          document.querySelectorAll('#insp-tbody tr[data-tail]').forEach(function(tr) {
-            var tail = tr.getAttribute('data-tail');
-            var hrsEl = tr.querySelector('.airframe-hrs');
-            if (hrsEl) acHrs[tail] = hrsEl.textContent.replace(' TT','').trim();
-          });
+    function refresh() {{
+      fetch('data/base_assignments.json?ts='+Date.now(), {{cache:'no-store'}})
+        .then(function(r){{if(!r.ok)throw new Error('failed');return r.json();}})
+        .then(render)
+        .catch(function(){{}});
+    }}
 
-          var cards = ALL_TAILS.map(function(tail) {
-            var d = detail[tail];
-            var status = d ? (d.status||'UNKNOWN').toUpperCase() : 'NO DATA';
-            var hrs = acHrs[tail] || '';
-            var cardCls = {AT_BASE:'ac-card-base',AIRBORNE:'ac-card-air',AWAY:'ac-card-away'}[status]||'ac-card-nodata';
-            var age = d ? ageFmt(d.utc) : '';
-            return '<div class="ac-card '+cardCls+'">'
-              +'<div class="ac-card-header">'
-                +'<div class="ac-tail">'+esc(tail)+'</div>'
-                +'<div class="ac-hours">'+(hrs?esc(hrs)+' TT':'N/A')+'</div>'
-              +'</div>'
-              +'<div class="ac-card-body">'
-                +'<div class="ac-loc">'+locLine(d, bases)+'</div>'
-                +(age?'<div class="ac-age">'+esc(age)+'</div>':'')
-              +'</div>'
-            +'</div>';
-          });
-
-          grid.innerHTML = cards.join('');
-        }
-
-        function refresh() {
-          fetch('data/base_assignments.json?ts='+Date.now(), {cache:'no-store'})
-            .then(function(r){if(!r.ok)throw new Error('fetch failed');return r.json();})
-            .then(render)
-            .catch(function(){});
-        }
-
-        refresh();
-        setInterval(refresh, 60000);
-      })();
-    """
+    refresh();
+    setInterval(refresh, 60000);
+  }})();
 
   // ── EDITABLE CALENDAR ─────────────────────────────────────────────────────
   (function() {{
