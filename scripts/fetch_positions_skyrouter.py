@@ -411,7 +411,25 @@ def main():
 
     aircraft = classify_aircraft(raw_positions)
     output   = build_output(aircraft)
-    OUTPUT_PATH.write_text(json.dumps(output, indent=2))
+
+    # Only write if meaningful content has changed (ignore last_checked timestamp)
+    def _strip_timestamp(d: dict) -> dict:
+        return {k: v for k, v in d.items() if k != "last_checked"}
+
+    changed = True
+    if OUTPUT_PATH.exists():
+        try:
+            existing = json.loads(OUTPUT_PATH.read_text())
+            if _strip_timestamp(existing) == _strip_timestamp(output):
+                changed = False
+        except Exception:
+            pass  # unreadable existing file → write anyway
+
+    if changed:
+        OUTPUT_PATH.write_text(json.dumps(output, indent=2))
+        print("  Output written (data changed).")
+    else:
+        print("  No change in data — skipping write.")
 
     s = output["summary"]
     print(f"\nResult: {s['at_bases']} at base | {s['airborne']} airborne | "
