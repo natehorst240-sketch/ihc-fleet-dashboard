@@ -28,6 +28,7 @@ SKYROUTER_PASS      = os.environ["SKYROUTER_PASS"]
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_OUTPUT_PATH = REPO_ROOT / "data/base_assignments.json"
+COMPAT_OUTPUT_PATH = REPO_ROOT / "data/base_generator.json"
 RUNNER_OUTPUT_PATH = REPO_ROOT / "runner/data/base_assignments.json"
 
 if "SKYROUTER_OUTPUT_PATH" in os.environ:
@@ -38,6 +39,18 @@ else:
     OUTPUT_PATH = DEFAULT_OUTPUT_PATH
 
 SCREENSHOT_PATH = REPO_ROOT / "data/login_debug.png"
+
+
+def _write_output(payload: dict) -> None:
+    """Write main output and a compatibility mirror path for legacy callers."""
+    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    serialized = json.dumps(payload, indent=2)
+    OUTPUT_PATH.write_text(serialized)
+
+    if OUTPUT_PATH.resolve() != COMPAT_OUTPUT_PATH.resolve():
+        COMPAT_OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+        COMPAT_OUTPUT_PATH.write_text(serialized)
+        print(f"Compatibility copy written to: {COMPAT_OUTPUT_PATH}")
 
 # Hardcoded IMEI map — Id field from /assets endpoint IS the IMEI
 IHC_FLEET: dict[str, int] = {
@@ -335,7 +348,6 @@ def build_output(aircraft: dict[str, dict]) -> dict:
 def main():
     print("=== fetch_positions_skyrouter.py ===")
     print(f"Output path: {OUTPUT_PATH}")
-    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
 
     try:
         session       = skyrouter_login()
@@ -345,12 +357,12 @@ def main():
         import traceback; traceback.print_exc()
         fallback = build_output({})
         fallback["error"] = str(exc)
-        OUTPUT_PATH.write_text(json.dumps(fallback, indent=2))
+        _write_output(fallback)
         sys.exit(1)
 
     aircraft = classify_aircraft(raw_positions)
     output   = build_output(aircraft)
-    OUTPUT_PATH.write_text(json.dumps(output, indent=2))
+    _write_output(output)
 
     s = output["summary"]
     print(f"\nResult: {s['at_bases']} at base | {s['airborne']} airborne | "
