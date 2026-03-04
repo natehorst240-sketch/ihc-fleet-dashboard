@@ -31,12 +31,14 @@ jobs:
           SKYROUTER_PASS: ${{ secrets.SKYROUTER_PASS }}
         run: python scripts/fetch_positions_skyrouter.py || true  # don't fail build, we want debug artifacts committed
 
-      - name: Commit results (including debug screenshot if present)
+      - name: Commit updated base assignment artifacts
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -f data/base_assignments.json data/login_debug.png 2>/dev/null || true
+          # Pull first with autostash so local writes don't block rebase
+          git pull --rebase --autostash
+          # Force-add both artifacts (-f required for .gitignore'd paths)
+          git add -f data/base_assignments.json data/base_assignment_log.txt data/login_debug.png 2>/dev/null || true
           git diff --cached --quiet && echo "No changes" && exit 0
           git commit -m "Update base assignments $(date -u '+%Y-%m-%d %H:%M UTC')"
-          git pull --rebase
           git push
