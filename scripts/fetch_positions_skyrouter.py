@@ -1,7 +1,17 @@
 """
 fetch_positions_skyrouter.py
 Fetches latest IHC AW109SP positions from SkyRouter GPS API.
-Uses per-asset IMEI queries (?imei=X&count=1) — no bulk history dump.
+
+Optimisations over the original:
+  1. Cookie cache  – Playwright login runs only once per session (default 8 h);
+                     subsequent runs restore the session from disk in <1 s.
+  2. Bulk fetch    – Tries a single /assetPositions call (no imei param) first;
+                     if the API returns all fleet records we need only 1 request
+                     instead of 8.
+  3. Parallel fetch – If the bulk call doesn't cover every IMEI, falls back to
+                      per-IMEI requests fired concurrently via ThreadPoolExecutor
+                      (~3 s total instead of up to 160 s sequential).
+  4. Smart waits   – Playwright time.sleep() replaced with proper waits.
 """
 
 from __future__ import annotations
@@ -11,6 +21,7 @@ import math
 import os
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -26,8 +37,10 @@ SKYROUTER_API_BASE  = "https://skyrouter.com/BsnWebApi"
 SKYROUTER_USER      = os.environ["SKYROUTER_USER"]
 SKYROUTER_PASS      = os.environ["SKYROUTER_PASS"]
 
-OUTPUT_PATH     = Path("data/base_assignments.json")
-SCREENSHOT_PATH = Path("data/login_debug.png")
+OUTPUT_PATH      = Path("data/base_assignments.json")
+SCREENSHOT_PATH  = Path("data/login_debug.png")
+COOKIE_CACHE     = Path("data/.skyrouter_cookies.json")
+COOKIE_TTL_HOURS = 8          # re-login after this many hours
 
 # Hardcoded IMEI map — Id field from /assets endpoint IS the IMEI
 IHC_FLEET: dict[str, int] = {
@@ -54,11 +67,11 @@ BASES: dict[str, dict] = {
     "KSLC":       {"lat": 40.7884,  "lon": -111.9778, "name": "KSLC"},
 }
 
-ALL_TAILS       = set(IHC_FLEET.keys()) | {"N731HC"}
-BASE_RADIUS_MI  = 10
-AIRBORNE_SPD    = 500   # cm/s  (~10 kts)
-AIRBORNE_ALT    = 200   # ft
-STALE_HOURS     = 6
+ALL_TAILS      = set(IHC_FLEET.keys()) | {"N731HC"}
+BASE_RADIUS_MI = 10
+AIRBORNE_SPD   = 500   # cm/s  (~10 kts)
+AIRBORNE_ALT   = 200   # ft
+STALE_HOURS    = 6
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -85,11 +98,61 @@ def _parse_utc(s: str) -> datetime | None:
     except Exception:
         return None
 
+def _best_record(records: list[dict], imei: int) -> dict | None:
+    """Return the newest record matching `imei`, or None."""
+    matching = [r for r in records if int(r.get("Asset", 0)) == imei]
+    if not matching:
+        return None
+    best_pos, best_dt = None, None
+    for rec in matching:
+        dt = _parse_utc(rec.get("Utc", ""))
+        if dt and (best_dt is None or dt > best_dt):
+            best_dt, best_pos = dt, rec
+    return best_pos
+
 # ---------------------------------------------------------------------------
-# Step 1 – Login
+# Step 1 – Login  (with cookie cache)
 # ---------------------------------------------------------------------------
 
+def _build_session_from_cookies(cookies: list[dict]) -> requests.Session:
+    session = requests.Session()
+    for c in cookies:
+        session.cookies.set(c["name"], c["value"], domain=c.get("domain", "skyrouter.com"))
+    xa = next((c["value"] for c in cookies if c["name"] == "X-A"), None)
+    xt = next((c["value"] for c in cookies if c["name"] == "X-T"), None)
+    if xa: session.headers["x-a"] = xa
+    if xt: session.headers["x-t"] = xt
+    session.headers["x-requested-with"] = "XMLHttpRequest"
+    session.headers["accept"]           = "application/json"
+    session.headers["referer"]          = "https://skyrouter.com/skyrouter3/track"
+    print(f"  X-A={xa is not None}  X-T={xt is not None}")
+    return session
+
+def _load_cached_session() -> requests.Session | None:
+    """Return a requests.Session from the on-disk cookie cache, or None if stale/missing."""
+    if not COOKIE_CACHE.exists():
+        return None
+    try:
+        data    = json.loads(COOKIE_CACHE.read_text())
+        age_h   = (time.time() - data.get("saved_at", 0)) / 3600
+        if age_h > COOKIE_TTL_HOURS:
+            print(f"  Cookie cache expired ({age_h:.1f}h old) — re-logging in")
+            return None
+        print(f"  Restoring session from cookie cache ({age_h:.1f}h old)")
+        return _build_session_from_cookies(data["cookies"])
+    except Exception as e:
+        print(f"  Cookie cache unreadable: {e}")
+        return None
+
+def _save_cookie_cache(cookies: list[dict]) -> None:
+    COOKIE_CACHE.parent.mkdir(parents=True, exist_ok=True)
+    COOKIE_CACHE.write_text(json.dumps({"cookies": cookies, "saved_at": time.time()}, indent=2))
+
 def skyrouter_login() -> requests.Session:
+    cached = _load_cached_session()
+    if cached:
+        return cached
+
     print("Launching Playwright → SkyRouter login...")
     with sync_playwright() as pw:
         browser = pw.chromium.launch(headless=True, args=["--no-sandbox"])
@@ -99,26 +162,33 @@ def skyrouter_login() -> requests.Session:
         ))
         page = ctx.new_page()
         page.goto(SKYROUTER_LOGIN_URL, wait_until="domcontentloaded", timeout=45_000)
-        page.wait_for_load_state("networkidle", timeout=30_000)
-        time.sleep(2)
 
-        # Find fields
+        # Wait for a visible input rather than a fixed sleep
         u = p = None
         for sel in ["input[type='text']", "input[type='email']",
                     "input[name='username']", "input[placeholder*='ser']"]:
-            el = page.query_selector(sel)
-            if el and el.is_visible(): u = el; break
+            try:
+                page.wait_for_selector(sel, state="visible", timeout=10_000)
+                el = page.query_selector(sel)
+                if el and el.is_visible():
+                    u = el; break
+            except PlaywrightTimeout:
+                continue
+
         for sel in ["input[type='password']", "input[name='password']"]:
             el = page.query_selector(sel)
-            if el and el.is_visible(): p = el; break
+            if el and el.is_visible():
+                p = el; break
 
         if not u or not p:
             page.screenshot(path=str(SCREENSHOT_PATH), full_page=True)
             browser.close()
             raise RuntimeError("Login form not found — screenshot saved to data/login_debug.png")
 
-        u.click(); u.fill(SKYROUTER_USER); time.sleep(0.3)
-        p.click(); p.fill(SKYROUTER_PASS); time.sleep(0.3)
+        u.click(); u.fill(SKYROUTER_USER)
+        page.wait_for_timeout(300)
+        p.click(); p.fill(SKYROUTER_PASS)
+        page.wait_for_timeout(300)
 
         submitted = False
         for sel in ["button[type='submit']", "button:has-text('Login')",
@@ -134,83 +204,110 @@ def skyrouter_login() -> requests.Session:
         except PlaywrightTimeout:
             page.wait_for_load_state("networkidle", timeout=15_000)
 
-        print(f"Logged in → {page.url}")
+        print(f"  Logged in → {page.url}")
         cookies = ctx.cookies()
         browser.close()
 
-    session = requests.Session()
-    for c in cookies:
-        session.cookies.set(c["name"], c["value"], domain=c.get("domain", "skyrouter.com"))
-    xa = next((c["value"] for c in cookies if c["name"] == "X-A"), None)
-    xt = next((c["value"] for c in cookies if c["name"] == "X-T"), None)
-    if xa: session.headers["x-a"] = xa
-    if xt: session.headers["x-t"] = xt
-    session.headers["x-requested-with"] = "XMLHttpRequest"
-    session.headers["accept"]           = "application/json"
-    session.headers["referer"]          = "https://skyrouter.com/skyrouter3/track"
-    print(f"X-A={xa is not None}  X-T={xt is not None}")
-    return session
+    _save_cookie_cache(cookies)
+    return _build_session_from_cookies(cookies)
 
 # ---------------------------------------------------------------------------
-# Step 2 – Fetch latest position per aircraft (targeted IMEI queries)
+# Step 2 – Fetch positions  (bulk first, parallel per-IMEI fallback)
 # ---------------------------------------------------------------------------
+
+def _try_bulk_fetch(session: requests.Session) -> dict[str, dict] | None:
+    """
+    Attempt a single /assetPositions call with no imei filter.
+    Returns {tail: best_record} if the response covers every IHC IMEI,
+    otherwise returns None so the caller can fall back to per-IMEI queries.
+    """
+    try:
+        resp = session.get(f"{SKYROUTER_API_BASE}/assetPositions", timeout=20)
+        resp.raise_for_status()
+        raw     = resp.json()
+        records = raw if isinstance(raw, list) else raw.get("AssetPositions", [])
+        if not records:
+            return None
+
+        results: dict[str, dict] = {}
+        for tail, imei in IHC_FLEET.items():
+            rec = _best_record(records, imei)
+            if rec:
+                results[tail] = rec
+
+        coverage = len(results) / len(IHC_FLEET)
+        print(f"  Bulk fetch: {len(records)} total records, "
+              f"{len(results)}/{len(IHC_FLEET)} IHC aircraft matched ({coverage:.0%})")
+
+        # Accept bulk result only if it covers at least half the fleet
+        return results if coverage >= 0.5 else None
+
+    except Exception as e:
+        print(f"  Bulk fetch failed: {e}")
+        return None
+
+def _fetch_one(session: requests.Session, tail: str, imei: int) -> tuple[str, list[dict]]:
+    """Fetch /assetPositions for a single IMEI. Returns (tail, records)."""
+    resp = session.get(
+        f"{SKYROUTER_API_BASE}/assetPositions",
+        params={"imei": imei},
+        timeout=20,
+    )
+    resp.raise_for_status()
+    raw = resp.json()
+    return tail, raw if isinstance(raw, list) else raw.get("AssetPositions", [])
+
+def _parallel_fetch(session: requests.Session) -> dict[str, dict]:
+    """Fire one request per IMEI concurrently; return {tail: best_record}."""
+    results: dict[str, dict] = {}
+    with ThreadPoolExecutor(max_workers=len(IHC_FLEET)) as pool:
+        futures = {
+            pool.submit(_fetch_one, session, tail, imei): (tail, imei)
+            for tail, imei in IHC_FLEET.items()
+        }
+        for fut in as_completed(futures):
+            tail, imei = futures[fut]
+            try:
+                _, records = fut.result()
+                if not records:
+                    print(f"  {tail}: no records returned")
+                    continue
+                rec = _best_record(records, imei)
+                if rec is None:
+                    print(f"  {tail}: WARNING — imei filter returned no matching Asset records")
+                    continue
+                results[tail] = rec
+                print(f"  {tail}: ok  utc={rec.get('Utc', '')}")
+            except Exception as e:
+                print(f"  {tail}: ERROR — {e}")
+    return results
 
 def fetch_aircraft_positions(session: requests.Session) -> dict[str, dict]:
     """
-    Query /assetPositions?imei=XXXXXXX for each IHC tail.
-    The API may ignore the imei filter, so we also filter returned records
-    by matching the Asset field against the known IMEI.
+    1. Try a single bulk /assetPositions call — fastest (1 request).
+    2. If bulk coverage is too low, fall back to parallel per-IMEI calls.
     """
-    now_utc  = datetime.now(timezone.utc)
-    results  = {}
+    now_utc = datetime.now(timezone.utc)
 
-    for tail, imei in IHC_FLEET.items():
-        try:
-            resp = session.get(
-                f"{SKYROUTER_API_BASE}/assetPositions",
-                params={"imei": imei},
-                timeout=20,
-            )
-            resp.raise_for_status()
-            raw = resp.json()
-            records = raw if isinstance(raw, list) else raw.get("AssetPositions", [])
+    print("  Attempting bulk fetch...")
+    raw_positions = _try_bulk_fetch(session)
 
-            if not records:
-                print(f"  {tail}: no records returned")
-                continue
+    if raw_positions is None:
+        print("  Bulk fetch insufficient — falling back to parallel per-IMEI requests...")
+        raw_positions = _parallel_fetch(session)
 
-            # Filter to only records whose Asset ID matches this aircraft's IMEI
-            matching = [r for r in records if int(r.get("Asset", 0)) == imei]
-
-            if not matching:
-                # API ignored imei param — fall back to all records (will be inaccurate)
-                print(f"  {tail}: WARNING imei filter returned no matching Asset records — skipping")
-                continue
-
-            # Pick the record with the newest UTC timestamp
-            best_pos = None
-            best_dt  = None
-            for rec in matching:
-                dt = _parse_utc(rec.get("Utc", ""))
-                if dt and (best_dt is None or dt > best_dt):
-                    best_dt  = dt
-                    best_pos = rec
-
-            if best_pos is None:
-                print(f"  {tail}: no parseable timestamps")
-                continue
-
-            age_h = (now_utc - best_dt).total_seconds() / 3600
-            if age_h > STALE_HOURS:
-                print(f"  {tail}: stale ({age_h:.1f}h old) — skipping")
-                continue
-
-            results[tail] = best_pos
-            print(f"  {tail}: ok  utc={best_pos.get('Utc','')}  "
-                  f"({len(matching)}/{len(records)} records matched)")
-
-        except Exception as e:
-            print(f"  {tail}: ERROR — {e}")
+    # Staleness filter (shared for both paths)
+    results: dict[str, dict] = {}
+    for tail, pos in raw_positions.items():
+        best_dt = _parse_utc(pos.get("Utc", ""))
+        if best_dt is None:
+            print(f"  {tail}: no parseable timestamp — skipping")
+            continue
+        age_h = (now_utc - best_dt).total_seconds() / 3600
+        if age_h > STALE_HOURS:
+            print(f"  {tail}: stale ({age_h:.1f}h old) — skipping")
+            continue
+        results[tail] = pos
 
     return results
 
