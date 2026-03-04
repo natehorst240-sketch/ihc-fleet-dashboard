@@ -98,9 +98,9 @@ def _parse_utc(s: str) -> datetime | None:
     except Exception:
         return None
 
-def _best_record(records: list[dict], imei: int) -> dict | None:
-    """Return the newest record matching `imei`, or None."""
-    matching = [r for r in records if int(r.get("Asset", 0)) == imei]
+def _best_record(records: list[dict], imei: int | None = None) -> dict | None:
+    """Return the newest record matching imei (if given), otherwise the newest overall."""
+    matching = [r for r in records if int(r.get("Asset", 0)) == imei] if imei is not None else list(records)
     if not matching:
         return None
     best_pos, best_dt = None, None
@@ -222,7 +222,7 @@ def _try_bulk_fetch(session: requests.Session) -> dict[str, dict] | None:
     otherwise returns None so the caller can fall back to per-IMEI queries.
     """
     try:
-        resp = session.get(f"{SKYROUTER_API_BASE}/assetPositions", timeout=20)
+        resp = session.get(f"{SKYROUTER_API_BASE}/assetPositions", params={"count": 1}, timeout=20)
         resp.raise_for_status()
         raw     = resp.json()
         records = raw if isinstance(raw, list) else raw.get("AssetPositions", [])
@@ -239,11 +239,6 @@ def _try_bulk_fetch(session: requests.Session) -> dict[str, dict] | None:
         print(f"  Bulk fetch: {len(records)} total records, "
               f"{len(results)}/{len(IHC_FLEET)} IHC aircraft matched ({coverage:.0%})")
 
-        # DEBUG — print a full sample record so we can see the position record structure
-        if records:
-            import json as _json
-            print(f"  DEBUG sample position record:\n{_json.dumps(records[0], indent=2)}")
-
         # Accept bulk result only if it covers at least half the fleet
         return results if coverage >= 0.5 else None
 
@@ -255,7 +250,7 @@ def _fetch_one(session: requests.Session, tail: str, imei: int) -> tuple[str, li
     """Fetch /assetPositions for a single IMEI. Returns (tail, records)."""
     resp = session.get(
         f"{SKYROUTER_API_BASE}/assetPositions",
-        params={"imei": imei},
+        params={"imei": imei, "count": 1},
         timeout=20,
     )
     resp.raise_for_status()
@@ -277,12 +272,14 @@ def _parallel_fetch(session: requests.Session) -> dict[str, dict]:
                 if not records:
                     print(f"  {tail}: no records returned")
                     continue
-                rec = _best_record(records, imei)
+                # Don't filter by Asset — API may ignore ?imei param, so just
+                # take the newest record from whatever was returned.
+                rec = _best_record(records)
                 if rec is None:
-                    print(f"  {tail}: WARNING — imei filter returned no matching Asset records")
+                    print(f"  {tail}: no parseable records")
                     continue
                 results[tail] = rec
-                print(f"  {tail}: ok  utc={rec.get('Utc', '')}")
+                print(f"  {tail}: ok  asset={rec.get('Asset','')}  utc={rec.get('Utc', '')}")
             except Exception as e:
                 print(f"  {tail}: ERROR — {e}")
     return results
