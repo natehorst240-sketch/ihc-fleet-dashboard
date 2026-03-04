@@ -157,8 +157,8 @@ def skyrouter_login() -> requests.Session:
 
 def fetch_aircraft_positions(session: requests.Session) -> dict[str, dict]:
     """
-    Query /assetPositions?imei=XXXXXXX&count=1 for each IHC tail.
-    Returns {tail: position_record} with only the freshest record.
+    Query /assetPositions?imei=XXXXXXX for each IHC tail (no count limit).
+    API returns records oldest-first, so we scan all and keep the newest UTC.
     """
     now_utc  = datetime.now(timezone.utc)
     results  = {}
@@ -167,8 +167,8 @@ def fetch_aircraft_positions(session: requests.Session) -> dict[str, dict]:
         try:
             resp = session.get(
                 f"{SKYROUTER_API_BASE}/assetPositions",
-                params={"imei": imei, "count": 1},
-                timeout=15,
+                params={"imei": imei},
+                timeout=20,
             )
             resp.raise_for_status()
             raw = resp.json()
@@ -178,19 +178,26 @@ def fetch_aircraft_positions(session: requests.Session) -> dict[str, dict]:
                 print(f"  {tail}: no records returned")
                 continue
 
-            # Take the single record (count=1 should give latest)
-            pos     = records[0]
-            utc_str = pos.get("Utc", "")
-            pos_dt  = _parse_utc(utc_str)
+            # Find the record with the most recent UTC timestamp
+            best_pos = None
+            best_dt  = None
+            for rec in records:
+                dt = _parse_utc(rec.get("Utc", ""))
+                if dt and (best_dt is None or dt > best_dt):
+                    best_dt  = dt
+                    best_pos = rec
 
-            if pos_dt:
-                age_h = (now_utc - pos_dt).total_seconds() / 3600
-                if age_h > STALE_HOURS:
-                    print(f"  {tail}: stale ({age_h:.1f}h old) — skipping")
-                    continue
+            if best_pos is None:
+                print(f"  {tail}: no parseable timestamps")
+                continue
 
-            results[tail] = pos
-            print(f"  {tail}: ok  utc={utc_str}")
+            age_h = (now_utc - best_dt).total_seconds() / 3600
+            if age_h > STALE_HOURS:
+                print(f"  {tail}: stale ({age_h:.1f}h old) — skipping")
+                continue
+
+            results[tail] = best_pos
+            print(f"  {tail}: ok  utc={best_pos.get('Utc','')}  ({len(records)} records scanned)")
 
         except Exception as e:
             print(f"  {tail}: ERROR — {e}")
