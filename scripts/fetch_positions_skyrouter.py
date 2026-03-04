@@ -34,8 +34,8 @@ from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeo
 
 SKYROUTER_LOGIN_URL = "https://skyrouter.com/skyrouter3/"
 SKYROUTER_API_BASE  = "https://skyrouter.com/BsnWebApi"
-SKYROUTER_USER      = os.environ["SKYROUTER_USER"]
-SKYROUTER_PASS      = os.environ["SKYROUTER_PASS"]
+SKYROUTER_USER      = os.getenv("SKYROUTER_USER")
+SKYROUTER_PASS      = os.getenv("SKYROUTER_PASS")
 
 OUTPUT_PATH      = Path("data/base_assignments.json")
 SCREENSHOT_PATH  = Path("data/login_debug.png")
@@ -399,6 +399,11 @@ def main():
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
 
     try:
+        if not SKYROUTER_USER or not SKYROUTER_PASS:
+            raise RuntimeError(
+                "SkyRouter fetch blocked: missing SKYROUTER_USER and/or SKYROUTER_PASS. "
+                "Set these GitHub Action secrets to enable SkyRouter position fetches."
+            )
         session       = skyrouter_login()
         raw_positions = fetch_aircraft_positions(session)
     except Exception as exc:
