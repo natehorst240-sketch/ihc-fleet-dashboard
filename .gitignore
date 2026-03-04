@@ -1,6 +1,5 @@
 export_log.txt
-data/base_assignment_log.txt
-data/base_assignments.json
 node_modules/
 package-lock.json
 scripts/export_log.txt
+
