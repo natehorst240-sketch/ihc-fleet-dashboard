@@ -29,7 +29,7 @@ jobs:
         env:
           SKYROUTER_USER: ${{ secrets.SKYROUTER_USER }}
           SKYROUTER_PASS: ${{ secrets.SKYROUTER_PASS }}
-        run: python scripts/fetch_positions_skyrouter.py || true  # don't fail build, we want debug artifacts committed
+        run: python scripts/fetch_positions_skyrouter.py
 
       - name: Commit updated base assignment artifacts
         run: |
