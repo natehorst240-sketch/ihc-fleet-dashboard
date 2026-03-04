@@ -239,6 +239,11 @@ def _try_bulk_fetch(session: requests.Session) -> dict[str, dict] | None:
         print(f"  Bulk fetch: {len(records)} total records, "
               f"{len(results)}/{len(IHC_FLEET)} IHC aircraft matched ({coverage:.0%})")
 
+        # DEBUG — print a full sample record so we can see the position record structure
+        if records:
+            import json as _json
+            print(f"  DEBUG sample position record:\n{_json.dumps(records[0], indent=2)}")
+
         # Accept bulk result only if it covers at least half the fleet
         return results if coverage >= 0.5 else None
 
