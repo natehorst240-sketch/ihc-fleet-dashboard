@@ -26,8 +26,18 @@ SKYROUTER_API_BASE  = "https://skyrouter.com/BsnWebApi"
 SKYROUTER_USER      = os.environ["SKYROUTER_USER"]
 SKYROUTER_PASS      = os.environ["SKYROUTER_PASS"]
 
-OUTPUT_PATH     = Path("data/base_assignments.json")
-SCREENSHOT_PATH = Path("data/login_debug.png")
+REPO_ROOT = Path(__file__).resolve().parent.parent
+DEFAULT_OUTPUT_PATH = REPO_ROOT / "data/base_assignments.json"
+RUNNER_OUTPUT_PATH = REPO_ROOT / "runner/data/base_assignments.json"
+
+if "SKYROUTER_OUTPUT_PATH" in os.environ:
+    OUTPUT_PATH = Path(os.environ["SKYROUTER_OUTPUT_PATH"]).expanduser()
+elif RUNNER_OUTPUT_PATH.parent.exists():
+    OUTPUT_PATH = RUNNER_OUTPUT_PATH
+else:
+    OUTPUT_PATH = DEFAULT_OUTPUT_PATH
+
+SCREENSHOT_PATH = REPO_ROOT / "data/login_debug.png"
 
 # Hardcoded IMEI map — Id field from /assets endpoint IS the IMEI
 IHC_FLEET: dict[str, int] = {
@@ -324,6 +334,7 @@ def build_output(aircraft: dict[str, dict]) -> dict:
 
 def main():
     print("=== fetch_positions_skyrouter.py ===")
+    print(f"Output path: {OUTPUT_PATH}")
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
 
     try:
