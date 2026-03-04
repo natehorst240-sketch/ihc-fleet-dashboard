@@ -1023,8 +1023,13 @@
     }
 
     function refresh() {
-      fetch('data/base_assignments.json?ts='+Date.now(), {cache:'no-store'})
-        .then(function(r){if(!r.ok)throw new Error('failed');return r.json();})
+      var ts = Date.now();
+      fetch('data/base_assignments.json?ts='+ts, {cache:'no-store'})
+        .then(function(r){
+          if (r.ok) return r.json();
+          return fetch('data/base_assignment.json?ts='+ts, {cache:'no-store'})
+            .then(function(r2){if(!r2.ok)throw new Error('failed');return r2.json();});
+        })
         .then(render)
         .catch(function(){});
     }
