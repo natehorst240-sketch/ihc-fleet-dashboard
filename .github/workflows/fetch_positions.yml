@@ -35,9 +35,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          # Pull first with autostash so local writes don't block rebase
-          git pull --rebase --autostash
-          # Force-add both artifacts (-f required for .gitignore'd paths)
+          # Force-add artifacts (Actions does a fresh checkout each run, no pull needed)
           git add -f data/base_assignments.json data/base_assignment_log.txt data/login_debug.png 2>/dev/null || true
           git diff --cached --quiet && echo "No changes" && exit 0
           git commit -m "Update base assignments $(date -u '+%Y-%m-%d %H:%M UTC')"
