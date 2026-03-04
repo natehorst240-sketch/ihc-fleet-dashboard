@@ -1,14 +1,7 @@
 """
 fetch_positions_skyrouter.py
-Replaces the airplanes.live/adsb.lol approach entirely.
-
-Flow:
-  1. Playwright logs into SkyRouter, extracts session cookies (X-A, X-T)
-  2. GET /BsnWebApi/assets          → Asset ID → tail number map
-  3. GET /BsnWebApi/assetPositions?count=100 → latest position for every asset
-  4. Convert LatitudeMilliarcSeconds / 3,600,000 → decimal degrees
-  5. Haversine distance check against each IHC base (10 mile radius)
-  6. Write data/base_assignments.json  (same schema the dashboard reads)
+Fetches latest IHC AW109SP positions from SkyRouter GPS API.
+Uses per-asset IMEI queries (?imei=X&count=1) — no bulk history dump.
 """
 
 from __future__ import annotations
@@ -17,299 +10,303 @@ import json
 import math
 import os
 import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
 import requests
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeout
 
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
 
-SKYROUTER_URL      = "https://skyrouter.com/skyrouter3/track"
-SKYROUTER_API_BASE = "https://skyrouter.com/BsnWebApi"
-SKYROUTER_USER     = os.environ["SKYROUTER_USER"]      # GitHub secret
-SKYROUTER_PASS     = os.environ["SKYROUTER_PASS"]      # GitHub secret
+SKYROUTER_LOGIN_URL = "https://skyrouter.com/skyrouter3/"
+SKYROUTER_API_BASE  = "https://skyrouter.com/BsnWebApi"
+SKYROUTER_USER      = os.environ["SKYROUTER_USER"]
+SKYROUTER_PASS      = os.environ["SKYROUTER_PASS"]
 
-OUTPUT_PATH = Path("data/base_assignments.json")
+OUTPUT_PATH     = Path("data/base_assignments.json")
+SCREENSHOT_PATH = Path("data/login_debug.png")
 
-# Only track these tails (IHC AW109SP fleet)
-IHC_TAILS = {
-    "N251HC", "N261HC", "N271HC", "N281HC", "N291HC",
-    "N431HC", "N531HC", "N631HC", "N731HC",
+# Hardcoded IMEI map — Id field from /assets endpoint IS the IMEI
+IHC_FLEET: dict[str, int] = {
+    "N251HC": 300224010509530,
+    "N261HC": 300224010508530,
+    "N271HC": 300224010843560,
+    "N281HC": 300025010233130,
+    "N291HC": 300025010735240,
+    "N431HC": 300425060219260,
+    "N531HC": 300125010916710,
+    "N631HC": 300125010804580,
+    # N731HC tracker not yet activated in SkyRouter — uncomment when live:
+    # "N731HC": 89011004300085847284,
 }
 
-# Base definitions  (lat, lon, display name)
 BASES: dict[str, dict] = {
-    "SLC": {"lat": 40.7887,  "lon": -111.9787, "name": "Salt Lake City"},
-    "PVO": {"lat": 40.2191,  "lon": -111.6585, "name": "Provo"},
-    "LOG": {"lat": 41.7873,  "lon": -111.8527, "name": "Logan"},
-    "OGD": {"lat": 41.1960,  "lon": -112.0120, "name": "Ogden"},
-    "STG": {"lat": 37.0965,  "lon": -113.5684, "name": "St. George"},
-    "CDC": {"lat": 37.7010,  "lon": -113.0980, "name": "Cedar City"},
-    "VEL": {"lat": 40.4408,  "lon": -109.5260, "name": "Vernal"},
-    "PGU": {"lat": 37.9362,  "lon": -110.7196, "name": "Page"},
-    "EKR": {"lat": 39.0114,  "lon": -110.7296, "name": "Green River"},
+    "LOGAN":      {"lat": 41.7912,  "lon": -111.8522, "name": "Logan"},
+    "MCKAY":      {"lat": 41.2545,  "lon": -112.0126, "name": "McKay-Dee"},
+    "IMED":       {"lat": 40.2338,  "lon": -111.6585, "name": "IMed"},
+    "PROVO":      {"lat": 40.2192,  "lon": -111.7233, "name": "Provo"},
+    "ROOSEVELT":  {"lat": 40.2765,  "lon": -110.0518, "name": "Roosevelt"},
+    "CEDAR_CITY": {"lat": 37.7010,  "lon": -113.0989, "name": "Cedar City"},
+    "ST_GEORGE":  {"lat": 37.0365,  "lon": -113.5101, "name": "St George"},
+    "KSLC":       {"lat": 40.7884,  "lon": -111.9778, "name": "KSLC"},
 }
 
-BASE_RADIUS_MILES = 10          # within this → "at base"
-AIRBORNE_SPEED_CMS = 500        # > 5 m/s (~10 kts) → airborne
-STALE_HOURS = 6                 # ignore positions older than this
+ALL_TAILS       = set(IHC_FLEET.keys()) | {"N731HC"}
+BASE_RADIUS_MI  = 10
+AIRBORNE_SPD    = 500   # cm/s  (~10 kts)
+AIRBORNE_ALT    = 200   # ft
+STALE_HOURS     = 6
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _mas_to_deg(milliarcseconds: int) -> float:
-    """Milliarcseconds → decimal degrees."""
-    return milliarcseconds / 3_600_000.0
+def _mas_to_deg(mas: int) -> float:
+    return mas / 3_600_000.0
 
-
-def _haversine_miles(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-    R = 3_958.8  # Earth radius in miles
-    phi1, phi2 = math.radians(lat1), math.radians(lat2)
-    dphi = math.radians(lat2 - lat1)
-    dlam = math.radians(lon2 - lon1)
-    a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlam / 2) ** 2
+def _haversine_mi(lat1, lon1, lat2, lon2) -> float:
+    R = 3_958.8
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    dp = math.radians(lat2 - lat1)
+    dl = math.radians(lon2 - lon1)
+    a  = math.sin(dp/2)**2 + math.cos(p1)*math.cos(p2)*math.sin(dl/2)**2
     return R * 2 * math.asin(math.sqrt(a))
 
+def _closest_base(lat, lon):
+    best = min(BASES.items(), key=lambda kv: _haversine_mi(lat, lon, kv[1]["lat"], kv[1]["lon"]))
+    return best[0], _haversine_mi(lat, lon, best[1]["lat"], best[1]["lon"])
 
-def _closest_base(lat: float, lon: float) -> tuple[str, float]:
-    """Return (base_id, distance_miles) for the nearest base."""
-    best_id, best_dist = min(
-        BASES.items(),
-        key=lambda kv: _haversine_miles(lat, lon, kv[1]["lat"], kv[1]["lon"]),
-    )
-    return best_id, _haversine_miles(lat, lon, BASES[best_id]["lat"], BASES[best_id]["lon"])
-
+def _parse_utc(s: str) -> datetime | None:
+    try:
+        return datetime.fromisoformat(s.replace("Z", "+00:00"))
+    except Exception:
+        return None
 
 # ---------------------------------------------------------------------------
-# Step 1 – login with Playwright, return a requests.Session with cookies
+# Step 1 – Login
 # ---------------------------------------------------------------------------
 
 def skyrouter_login() -> requests.Session:
-    print("Launching Playwright to log in to SkyRouter...")
+    print("Launching Playwright → SkyRouter login...")
     with sync_playwright() as pw:
-        browser = pw.chromium.launch(headless=True)
-        context = browser.new_context()
-        page = context.new_page()
-
-        page.goto("https://skyrouter.com/skyrouter3/login", timeout=30_000)
+        browser = pw.chromium.launch(headless=True, args=["--no-sandbox"])
+        ctx     = browser.new_context(user_agent=(
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+        ))
+        page = ctx.new_page()
+        page.goto(SKYROUTER_LOGIN_URL, wait_until="domcontentloaded", timeout=45_000)
         page.wait_for_load_state("networkidle", timeout=30_000)
+        time.sleep(2)
 
-        # Fill credentials – adjust selectors if SkyRouter ever changes the form
-        page.fill("input[type='text'], input[name*='user'], input[id*='user']",
-                  SKYROUTER_USER)
-        page.fill("input[type='password']", SKYROUTER_PASS)
-        page.click("button[type='submit'], input[type='submit']")
+        # Find fields
+        u = p = None
+        for sel in ["input[type='text']", "input[type='email']",
+                    "input[name='username']", "input[placeholder*='ser']"]:
+            el = page.query_selector(sel)
+            if el and el.is_visible(): u = el; break
+        for sel in ["input[type='password']", "input[name='password']"]:
+            el = page.query_selector(sel)
+            if el and el.is_visible(): p = el; break
 
-        # Wait until we land on the track page (URL changes or network settles)
+        if not u or not p:
+            page.screenshot(path=str(SCREENSHOT_PATH), full_page=True)
+            browser.close()
+            raise RuntimeError("Login form not found — screenshot saved to data/login_debug.png")
+
+        u.click(); u.fill(SKYROUTER_USER); time.sleep(0.3)
+        p.click(); p.fill(SKYROUTER_PASS); time.sleep(0.3)
+
+        submitted = False
+        for sel in ["button[type='submit']", "button:has-text('Login')",
+                    "button:has-text('Sign In')", "form button"]:
+            btn = page.query_selector(sel)
+            if btn and btn.is_visible():
+                btn.click(); submitted = True; break
+        if not submitted:
+            p.press("Enter")
+
         try:
             page.wait_for_url("**/track**", timeout=20_000)
-        except Exception:
-            page.wait_for_load_state("networkidle", timeout=20_000)
+        except PlaywrightTimeout:
+            page.wait_for_load_state("networkidle", timeout=15_000)
 
-        cookies = context.cookies()
+        print(f"Logged in → {page.url}")
+        cookies = ctx.cookies()
         browser.close()
 
-    # Transfer cookies into a requests.Session
     session = requests.Session()
     for c in cookies:
         session.cookies.set(c["name"], c["value"], domain=c.get("domain", "skyrouter.com"))
-
-    # Mirror the custom headers SkyRouter expects
     xa = next((c["value"] for c in cookies if c["name"] == "X-A"), None)
     xt = next((c["value"] for c in cookies if c["name"] == "X-T"), None)
-    if xa:
-        session.headers["x-a"] = xa
-    if xt:
-        session.headers["x-t"] = xt
+    if xa: session.headers["x-a"] = xa
+    if xt: session.headers["x-t"] = xt
     session.headers["x-requested-with"] = "XMLHttpRequest"
-    session.headers["accept"] = "application/json, text/javascript, */*; q=0.01"
-    session.headers["referer"] = SKYROUTER_URL
-
-    print(f"Login OK – X-A present: {xa is not None}, X-T present: {xt is not None}")
+    session.headers["accept"]           = "application/json"
+    session.headers["referer"]          = "https://skyrouter.com/skyrouter3/track"
+    print(f"X-A={xa is not None}  X-T={xt is not None}")
     return session
 
-
 # ---------------------------------------------------------------------------
-# Step 2 – fetch asset list → {asset_id: tail}
-# ---------------------------------------------------------------------------
-
-def fetch_asset_map(session: requests.Session) -> dict[int, str]:
-    resp = session.get(f"{SKYROUTER_API_BASE}/assets", timeout=20)
-    resp.raise_for_status()
-    assets = resp.json()
-    mapping: dict[int, str] = {}
-    for a in assets:
-        tail = a.get("Registration") or a.get("Name", "")
-        if tail:
-            mapping[int(a["Id"])] = tail
-    print(f"Asset map loaded: {len(mapping)} assets")
-    return mapping
-
-
-# ---------------------------------------------------------------------------
-# Step 3 – fetch latest positions
+# Step 2 – Fetch latest position per aircraft (targeted IMEI queries)
 # ---------------------------------------------------------------------------
 
-def fetch_positions(session: requests.Session) -> list[dict]:
-    resp = session.get(
-        f"{SKYROUTER_API_BASE}/assetPositions",
-        params={"count": 200},
-        timeout=20,
-    )
-    resp.raise_for_status()
-    data = resp.json()
-    # API returns either a plain list OR {"AssetPositions": [...], "Meta": {...}}
-    if isinstance(data, list):
-        return data
-    return data.get("AssetPositions", [])
+def fetch_aircraft_positions(session: requests.Session) -> dict[str, dict]:
+    """
+    Query /assetPositions?imei=XXXXXXX for each IHC tail (no count limit).
+    API returns records oldest-first, so we scan all and keep the newest UTC.
+    """
+    now_utc  = datetime.now(timezone.utc)
+    results  = {}
 
-
-# ---------------------------------------------------------------------------
-# Step 4 – classify each IHC aircraft
-# ---------------------------------------------------------------------------
-
-def classify_aircraft(
-    positions: list[dict],
-    asset_map: dict[int, str],
-) -> dict[str, dict]:
-    """Returns {tail: {status, lat, lon, alt_ft, speed_kts, base, dist_miles, utc}}"""
-    now_utc = datetime.now(timezone.utc)
-    results: dict[str, dict] = {}
-
-    for pos in positions:
-        asset_id = int(pos.get("Asset", 0))
-        tail = asset_map.get(asset_id)
-        if not tail or tail not in IHC_TAILS:
-            continue
-
-        # Parse timestamp
-        utc_str = pos.get("Utc", "")
+    for tail, imei in IHC_FLEET.items():
         try:
-            pos_time = datetime.fromisoformat(utc_str.replace("Z", "+00:00"))
-            age_hours = (now_utc - pos_time).total_seconds() / 3600
-        except Exception:
-            age_hours = 999
+            resp = session.get(
+                f"{SKYROUTER_API_BASE}/assetPositions",
+                params={"imei": imei},
+                timeout=20,
+            )
+            resp.raise_for_status()
+            raw = resp.json()
+            records = raw if isinstance(raw, list) else raw.get("AssetPositions", [])
 
-        if age_hours > STALE_HOURS:
-            print(f"  {tail}: stale ({age_hours:.1f}h old), skipping")
-            continue
+            if not records:
+                print(f"  {tail}: no records returned")
+                continue
 
-        lat = _mas_to_deg(pos["LatitudeMilliarcSeconds"])
-        lon = _mas_to_deg(pos["LongitudeMilliarcSeconds"])
-        alt_ft = pos.get("AltitudeCentimeters", 0) / 30.48
-        speed_cms = pos.get("SpeedCms", 0)
-        speed_kts = speed_cms * 0.0194384
+            # Find the record with the most recent UTC timestamp
+            best_pos = None
+            best_dt  = None
+            for rec in records:
+                dt = _parse_utc(rec.get("Utc", ""))
+                if dt and (best_dt is None or dt > best_dt):
+                    best_dt  = dt
+                    best_pos = rec
 
-        is_airborne = speed_cms > AIRBORNE_SPEED_CMS or alt_ft > 1000
+            if best_pos is None:
+                print(f"  {tail}: no parseable timestamps")
+                continue
 
-        closest_base, dist = _closest_base(lat, lon)
-        at_base = (not is_airborne) and (dist <= BASE_RADIUS_MILES)
+            age_h = (now_utc - best_dt).total_seconds() / 3600
+            if age_h > STALE_HOURS:
+                print(f"  {tail}: stale ({age_h:.1f}h old) — skipping")
+                continue
 
-        if is_airborne:
-            status = "AIRBORNE"
-        elif at_base:
-            status = "AT_BASE"
-        else:
-            status = "AWAY"
+            results[tail] = best_pos
+            print(f"  {tail}: ok  utc={best_pos.get('Utc','')}  ({len(records)} records scanned)")
 
-        results[tail] = {
-            "tail":         tail,
-            "status":       status,
-            "lat":          round(lat, 6),
-            "lon":          round(lon, 6),
-            "alt_ft":       round(alt_ft),
-            "speed_kts":    round(speed_kts, 1),
-            "closest_base": closest_base,
-            "dist_miles":   round(dist, 1),
-            "utc":          utc_str,
-            "age_hours":    round(age_hours, 2),
-            "source":       "skyrouter",
-        }
-        print(f"  {tail}: {status} | base={closest_base} dist={dist:.1f}mi "
-              f"alt={alt_ft:.0f}ft spd={speed_kts:.0f}kts")
+        except Exception as e:
+            print(f"  {tail}: ERROR — {e}")
 
     return results
 
+# ---------------------------------------------------------------------------
+# Step 3 – Classify
+# ---------------------------------------------------------------------------
+
+def classify_aircraft(raw_positions: dict[str, dict]) -> dict[str, dict]:
+    now_utc = datetime.now(timezone.utc)
+    out     = {}
+
+    for tail, pos in raw_positions.items():
+        utc_str = pos.get("Utc", "")
+        pos_dt  = _parse_utc(utc_str)
+        age_h   = (now_utc - pos_dt).total_seconds() / 3600 if pos_dt else 999
+
+        lat    = _mas_to_deg(pos["LatitudeMilliarcSeconds"])
+        lon    = _mas_to_deg(pos["LongitudeMilliarcSeconds"])
+        alt_ft = pos.get("AltitudeCentimeters", 0) / 30.48
+        spd_cs = pos.get("SpeedCms", 0)
+        spd_kt = spd_cs * 0.0194384
+
+        is_airborne = spd_cs > AIRBORNE_SPD or alt_ft > AIRBORNE_ALT
+        base_id, dist = _closest_base(lat, lon)
+        at_base = (not is_airborne) and (dist <= BASE_RADIUS_MI)
+
+        status = "AIRBORNE" if is_airborne else ("AT_BASE" if at_base else "AWAY")
+
+        out[tail] = {
+            "tail": tail, "status": status,
+            "lat": round(lat, 6), "lon": round(lon, 6),
+            "alt_ft": round(alt_ft), "speed_kts": round(spd_kt, 1),
+            "heading": pos.get("HeadingDegrees", 0),
+            "closest_base": base_id, "dist_miles": round(dist, 1),
+            "utc": utc_str, "age_hours": round(age_h, 2),
+            "source": "skyrouter",
+        }
+        print(f"  {tail}: {status} | {base_id} {dist:.1f}mi  {alt_ft:.0f}ft  {spd_kt:.0f}kts")
+
+    return out
 
 # ---------------------------------------------------------------------------
-# Step 5 – build base_assignments.json
+# Step 4 – Build output JSON
 # ---------------------------------------------------------------------------
 
 def build_output(aircraft: dict[str, dict]) -> dict:
-    assignments: dict[str, dict] = {
-        base_id: {"aircraft": [], "status": "available"}
-        for base_id in BASES
-    }
+    assignments = {bid: {"aircraft": [], "status": "available"} for bid in BASES}
+    summary     = {"total_aircraft": len(ALL_TAILS),
+                   "at_bases": 0, "away_from_base": 0, "airborne": 0, "no_data": 0}
 
-    summary = {"total_aircraft": len(IHC_TAILS), "at_bases": 0,
-               "away_from_base": 0, "airborne": 0, "no_data": 0}
-
-    # Aircraft with data
     for tail, info in aircraft.items():
-        if info["status"] == "AT_BASE":
-            base_id = info["closest_base"]
-            assignments[base_id]["aircraft"].append(tail)
-            assignments[base_id]["status"] = "occupied"
+        st = info["status"]
+        if st == "AT_BASE":
+            bid = info["closest_base"]
+            if bid in assignments:
+                assignments[bid]["aircraft"].append(tail)
+                assignments[bid]["status"] = "occupied"
             summary["at_bases"] += 1
-        elif info["status"] == "AIRBORNE":
+        elif st == "AIRBORNE":
             summary["airborne"] += 1
         else:
             summary["away_from_base"] += 1
 
-    # Aircraft with no data
-    missing = IHC_TAILS - set(aircraft.keys())
+    missing = ALL_TAILS - set(aircraft.keys())
     summary["no_data"] = len(missing)
-    for tail in missing:
-        print(f"  {tail}: no position data")
+    for t in sorted(missing):
+        print(f"  {t}: no data")
 
     return {
-        "assignments":    assignments,
-        "bases":          {k: {"name": v["name"], "lat": v["lat"], "lon": v["lon"]}
-                           for k, v in BASES.items()},
-        "aircraft_detail": aircraft,
+        "assignments":      assignments,
+        "bases":            {k: {"name": v["name"], "lat": v["lat"], "lon": v["lon"]}
+                             for k, v in BASES.items()},
+        "aircraft_detail":  aircraft,
         "missing_aircraft": sorted(missing),
-        "summary":        summary,
-        "source":         "skyrouter",
-        "live_data":      len(aircraft) > 0,
-        "last_checked":   datetime.now(timezone.utc).isoformat(),
+        "summary":          summary,
+        "source":           "skyrouter",
+        "live_data":        len(aircraft) > 0,
+        "last_checked":     datetime.now(timezone.utc).isoformat(),
     }
-
 
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
-def main() -> None:
+def main():
     print("=== fetch_positions_skyrouter.py ===")
+    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
 
     try:
-        session    = skyrouter_login()
-        asset_map  = fetch_asset_map(session)
-        positions  = fetch_positions(session)
+        session       = skyrouter_login()
+        raw_positions = fetch_aircraft_positions(session)
     except Exception as exc:
-        print(f"ERROR fetching from SkyRouter: {exc}")
-        # Write a fallback so git add doesn't fail
-        OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+        print(f"ERROR: {exc}")
+        import traceback; traceback.print_exc()
         fallback = build_output({})
         fallback["error"] = str(exc)
-        OUTPUT_PATH.write_text(json.dumps(fallback, indent=2), encoding="utf-8")
+        OUTPUT_PATH.write_text(json.dumps(fallback, indent=2))
         sys.exit(1)
 
-    print(f"Positions returned: {len(positions)}")
-    aircraft = classify_aircraft(positions, asset_map)
+    aircraft = classify_aircraft(raw_positions)
     output   = build_output(aircraft)
-
-    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    OUTPUT_PATH.write_text(json.dumps(output, indent=2), encoding="utf-8")
+    OUTPUT_PATH.write_text(json.dumps(output, indent=2))
 
     s = output["summary"]
-    print(f"\nDone: {s['at_bases']} at base | {s['airborne']} airborne | "
+    print(f"\nResult: {s['at_bases']} at base | {s['airborne']} airborne | "
           f"{s['away_from_base']} away | {s['no_data']} no data")
-
 
 if __name__ == "__main__":
     main()
