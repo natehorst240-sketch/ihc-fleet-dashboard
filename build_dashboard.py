@@ -276,34 +276,7 @@ def load_positions(positions_path):
         return {}
 
     # ── NEW FORMAT: SkyRouter (aircraft_detail present) ───────────────────────
-    if 'aircraft_detail' in data:
-        aircraft_positions = {}
-        bases_meta   = data.get('bases', {})
-        last_checked = data.get('last_checked', '')
-
-        for tail, detail in data.get('aircraft_detail', {}).items():
-            status          = detail.get('status', 'UNKNOWN')   # AT_BASE | AIRBORNE | AWAY
-            closest_base_id = detail.get('closest_base')
-            dist_miles      = detail.get('dist_miles')
-            dist_nm         = round(dist_miles * 0.868976, 1) if dist_miles is not None else None
-            base_name       = (bases_meta.get(closest_base_id, {}).get('name', closest_base_id)
-                               if closest_base_id else None)
-
-            nearest = ({'id': closest_base_id, 'name': base_name, 'dist_nm': dist_nm}
-                       if closest_base_id else None)
-
-            aircraft_positions[tail] = {
-                'status':                status,
-                'current_base':          nearest if status == 'AT_BASE' else None,
-                'nearest_base':          nearest,
-                'last_alt_ft':           detail.get('alt_ft', ''),
-                'last_gs_kts':           detail.get('speed_kts', ''),
-                'last_updated':          last_checked,
-                'flights_today':         [],
-                'total_flight_hrs_today': 0.0,
-            }
-
-        return aircraft_positions
+    # SkyRouter support disabled; ignore this format for now.
 
     # ── OLD FORMAT: ADS-B / airplanes.live ───────────────────────────────────
     assignments  = data.get('assignments', {})
