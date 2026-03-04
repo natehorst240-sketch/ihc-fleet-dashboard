@@ -29,6 +29,7 @@ SKYROUTER_PASS      = os.environ["SKYROUTER_PASS"]
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_OUTPUT_PATH = REPO_ROOT / "data/base_assignments.json"
 COMPAT_OUTPUT_PATH = REPO_ROOT / "data/base_generator.json"
+LEGACY_OUTPUT_PATH = REPO_ROOT / "data/base_assignment.json"
 RUNNER_OUTPUT_PATH = REPO_ROOT / "runner/data/base_assignments.json"
 
 if "SKYROUTER_OUTPUT_PATH" in os.environ:
@@ -42,15 +43,20 @@ SCREENSHOT_PATH = REPO_ROOT / "data/login_debug.png"
 
 
 def _write_output(payload: dict) -> None:
-    """Write main output and a compatibility mirror path for legacy callers."""
-    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    """Write output to primary and all compatibility artifact paths."""
     serialized = json.dumps(payload, indent=2)
-    OUTPUT_PATH.write_text(serialized)
+    targets = {
+        OUTPUT_PATH.resolve(),
+        DEFAULT_OUTPUT_PATH.resolve(),
+        COMPAT_OUTPUT_PATH.resolve(),
+        LEGACY_OUTPUT_PATH.resolve(),
+    }
 
-    if OUTPUT_PATH.resolve() != COMPAT_OUTPUT_PATH.resolve():
-        COMPAT_OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-        COMPAT_OUTPUT_PATH.write_text(serialized)
-        print(f"Compatibility copy written to: {COMPAT_OUTPUT_PATH}")
+    for target in sorted(targets, key=str):
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(serialized)
+        if target != OUTPUT_PATH.resolve():
+            print(f"Compatibility copy written to: {target}")
 
 # Hardcoded IMEI map — Id field from /assets endpoint IS the IMEI
 IHC_FLEET: dict[str, int] = {

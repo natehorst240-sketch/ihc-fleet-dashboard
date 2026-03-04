@@ -35,8 +35,8 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          # Force-add both artifacts (-f required for .gitignore'd paths)
-          git add -f data/base_assignments.json data/base_assignment_log.txt data/login_debug.png 2>/dev/null || true
+          # Force-add generated artifacts (-f required for .gitignore'd paths)
+          git add -f data/base_assignments.json data/base_assignment.json data/base_generator.json data/base_assignment_log.txt data/login_debug.png 2>/dev/null || true
           git diff --cached --quiet && echo "No changes" && exit 0
           git commit -m "Update base assignments $(date -u '+%Y-%m-%d %H:%M UTC')"
           git push
