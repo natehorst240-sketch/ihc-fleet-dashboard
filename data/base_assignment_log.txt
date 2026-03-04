@@ -26,6 +26,7 @@
 [2026-03-03 11:51:49 UTC] Loaded 9 aircraft from DEFAULT_AIRCRAFT
 [2026-03-03 11:51:49 UTC] Fetching positions...
 [2026-03-03 11:51:50 UTC] WARNING: No live data from any source. Writing default structure.
+<<<<<<< Updated upstream
 [2026-03-03 12:34:57 UTC] Base assignment generation started (airplanes.live + adsb.lol fallback)
 [2026-03-03 12:34:57 UTC] Loaded 9 aircraft from DEFAULT_AIRCRAFT
 [2026-03-03 12:34:57 UTC] Fetching positions...
@@ -103,3 +104,87 @@
 [2026-03-04 01:10:33 UTC] Saved to data/base_assignments.json
 [2026-03-04 01:10:33 UTC]   N281HC — AIRBORNE | alt:5725 gs:131.1 | closest: IMed 6.31 mi
 [2026-03-04 01:10:33 UTC] Base assignment generation completed successfully
+=======
+[2026-03-03 06:27:37 -0700] Base assignment generation started (ADSB.lol)
+[2026-03-03 06:27:37 -0700] Loaded 9 aircraft ICAO mappings from embedded DEFAULT_AIRCRAFT
+[2026-03-03 06:27:37 -0700] Loading ADSB.lol positions...
+[2026-03-03 06:27:39 -0700] WARNING: No live ADSB.lol data available. Preserving previous assignments.
+[2026-03-03 06:27:39 -0700] Previous assignments preserved.
+[2026-03-03 06:27:39 -0700] Base assignment generation completed (no live data).
+[2026-03-03 06:30:01 -0700] Base assignment generation started (ADSB.lol)
+[2026-03-03 06:30:01 -0700] Loaded 9 aircraft ICAO mappings from embedded DEFAULT_AIRCRAFT
+[2026-03-03 06:30:01 -0700] Loading ADSB.lol positions...
+[2026-03-03 06:30:04 -0700] WARNING: No live ADSB.lol data available. Preserving previous assignments.
+[2026-03-03 06:30:04 -0700] Previous assignments preserved.
+[2026-03-03 06:30:04 -0700] Base assignment generation completed (no live data).
+[2026-03-03 07:00:01 -0700] Base assignment generation started (ADSB.lol)
+[2026-03-03 07:00:01 -0700] Loaded 9 aircraft ICAO mappings from embedded DEFAULT_AIRCRAFT
+[2026-03-03 07:00:01 -0700] Loading ADSB.lol positions...
+[2026-03-03 07:00:04 -0700] WARNING: No live ADSB.lol data available. Preserving previous assignments.
+[2026-03-03 07:00:04 -0700] Previous assignments preserved.
+[2026-03-03 07:00:04 -0700] Base assignment generation completed (no live data).
+[2026-03-03 18:30:02 -0700] Base assignment generation started (ADSB.lol)
+[2026-03-03 18:30:02 -0700] Loaded 9 aircraft ICAO mappings from embedded DEFAULT_AIRCRAFT
+[2026-03-03 18:30:02 -0700] Loading ADSB.lol positions...
+[2026-03-03 18:30:04 -0700] Loaded position data for 1 aircraft
+[2026-03-03 18:30:04 -0700] Calculating base assignments...
+[2026-03-03 18:30:04 -0700] Base assignments saved to C:\Users\nateh\Documents\ihc-fleet-dashboard\data\base_assignments.json
+[2026-03-03 18:30:04 -0700]   Logan: 0 aircraft
+[2026-03-03 18:30:04 -0700]   McKay: 0 aircraft
+[2026-03-03 18:30:04 -0700]   IMed: 0 aircraft
+[2026-03-03 18:30:04 -0700]   Provo: 0 aircraft
+[2026-03-03 18:30:04 -0700]   Roosevelt: 0 aircraft
+[2026-03-03 18:30:04 -0700]   Cedar City: 0 aircraft
+[2026-03-03 18:30:04 -0700]   St George: 0 aircraft
+[2026-03-03 18:30:04 -0700]   KSLC: 0 aircraft
+[2026-03-03 18:30:04 -0700]   Unassigned/Airborne: 1 aircraft
+[2026-03-03 18:30:04 -0700]     N271HC — AIRBORNE | alt:7250 gs:147.0 | closest: IMed 13.99 mi
+[2026-03-03 18:30:04 -0700] Base assignment generation completed successfully
+[2026-03-03 19:00:02 -0700] Base assignment generation started (ADSB.lol)
+[2026-03-03 19:00:02 -0700] Loaded 9 aircraft ICAO mappings from embedded DEFAULT_AIRCRAFT
+[2026-03-03 19:00:02 -0700] Loading ADSB.lol positions...
+[2026-03-03 19:00:04 -0700] WARNING: No live ADSB.lol data available. Preserving previous assignments.
+[2026-03-03 19:00:04 -0700] Previous assignments preserved.
+[2026-03-03 19:00:04 -0700] Base assignment generation completed (no live data).
+[2026-03-03 19:30:02 -0700] Base assignment generation started (ADSB.lol)
+[2026-03-03 19:30:02 -0700] Loaded 9 aircraft ICAO mappings from embedded DEFAULT_AIRCRAFT
+[2026-03-03 19:30:02 -0700] Loading ADSB.lol positions...
+[2026-03-03 19:30:04 -0700] WARNING: No live ADSB.lol data available. Preserving previous assignments.
+[2026-03-03 19:30:04 -0700] Previous assignments preserved.
+[2026-03-03 19:30:04 -0700] Base assignment generation completed (no live data).
+[2026-03-03 20:00:02 -0700] Base assignment generation started (ADSB.lol)
+[2026-03-03 20:00:02 -0700] Loaded 9 aircraft ICAO mappings from embedded DEFAULT_AIRCRAFT
+[2026-03-03 20:00:02 -0700] Loading ADSB.lol positions...
+[2026-03-03 20:00:04 -0700] WARNING: No live ADSB.lol data available. Preserving previous assignments.
+[2026-03-03 20:00:04 -0700] Previous assignments preserved.
+[2026-03-03 20:00:04 -0700] Base assignment generation completed (no live data).
+[2026-03-03 20:30:02 -0700] Base assignment generation started (ADSB.lol)
+[2026-03-03 20:30:02 -0700] Loaded 9 aircraft ICAO mappings from embedded DEFAULT_AIRCRAFT
+[2026-03-03 20:30:02 -0700] Loading ADSB.lol positions...
+[2026-03-03 20:30:04 -0700] WARNING: No live ADSB.lol data available. Preserving previous assignments.
+[2026-03-03 20:30:04 -0700] Previous assignments preserved.
+[2026-03-03 20:30:04 -0700] Base assignment generation completed (no live data).
+[2026-03-03 21:00:02 -0700] Base assignment generation started (ADSB.lol)
+[2026-03-03 21:00:02 -0700] Loaded 9 aircraft ICAO mappings from embedded DEFAULT_AIRCRAFT
+[2026-03-03 21:00:02 -0700] Loading ADSB.lol positions...
+[2026-03-03 21:00:04 -0700] Loaded position data for 1 aircraft
+[2026-03-03 21:00:04 -0700] Calculating base assignments...
+[2026-03-03 21:00:04 -0700] Base assignments saved to C:\Users\nateh\Documents\ihc-fleet-dashboard\data\base_assignments.json
+[2026-03-03 21:00:04 -0700]   Logan: 0 aircraft
+[2026-03-03 21:00:04 -0700]   McKay: 0 aircraft
+[2026-03-03 21:00:04 -0700]   IMed: 0 aircraft
+[2026-03-03 21:00:04 -0700]   Provo: 0 aircraft
+[2026-03-03 21:00:04 -0700]   Roosevelt: 0 aircraft
+[2026-03-03 21:00:04 -0700]   Cedar City: 0 aircraft
+[2026-03-03 21:00:04 -0700]   St George: 0 aircraft
+[2026-03-03 21:00:04 -0700]   KSLC: 0 aircraft
+[2026-03-03 21:00:04 -0700]   Unassigned/Airborne: 1 aircraft
+[2026-03-03 21:00:04 -0700]     N281HC — AIRBORNE | alt:6300 gs:134.2 | closest: Provo 14.19 mi
+[2026-03-03 21:00:04 -0700] Base assignment generation completed successfully
+[2026-03-03 21:30:02 -0700] Base assignment generation started (ADSB.lol)
+[2026-03-03 21:30:02 -0700] Loaded 9 aircraft ICAO mappings from embedded DEFAULT_AIRCRAFT
+[2026-03-03 21:30:02 -0700] Loading ADSB.lol positions...
+[2026-03-03 21:30:04 -0700] WARNING: No live ADSB.lol data available. Preserving previous assignments.
+[2026-03-03 21:30:04 -0700] Previous assignments preserved.
+[2026-03-03 21:30:04 -0700] Base assignment generation completed (no live data).
+>>>>>>> Stashed changes
