@@ -157,8 +157,9 @@ def skyrouter_login() -> requests.Session:
 
 def fetch_aircraft_positions(session: requests.Session) -> dict[str, dict]:
     """
-    Query /assetPositions?imei=XXXXXXX for each IHC tail (no count limit).
-    API returns records oldest-first, so we scan all and keep the newest UTC.
+    Query /assetPositions?imei=XXXXXXX for each IHC tail.
+    The API may ignore the imei filter, so we also filter returned records
+    by matching the Asset field against the known IMEI.
     """
     now_utc  = datetime.now(timezone.utc)
     results  = {}
@@ -178,10 +179,18 @@ def fetch_aircraft_positions(session: requests.Session) -> dict[str, dict]:
                 print(f"  {tail}: no records returned")
                 continue
 
-            # Find the record with the most recent UTC timestamp
+            # Filter to only records whose Asset ID matches this aircraft's IMEI
+            matching = [r for r in records if int(r.get("Asset", 0)) == imei]
+
+            if not matching:
+                # API ignored imei param — fall back to all records (will be inaccurate)
+                print(f"  {tail}: WARNING imei filter returned no matching Asset records — skipping")
+                continue
+
+            # Pick the record with the newest UTC timestamp
             best_pos = None
             best_dt  = None
-            for rec in records:
+            for rec in matching:
                 dt = _parse_utc(rec.get("Utc", ""))
                 if dt and (best_dt is None or dt > best_dt):
                     best_dt  = dt
@@ -197,7 +206,8 @@ def fetch_aircraft_positions(session: requests.Session) -> dict[str, dict]:
                 continue
 
             results[tail] = best_pos
-            print(f"  {tail}: ok  utc={best_pos.get('Utc','')}  ({len(records)} records scanned)")
+            print(f"  {tail}: ok  utc={best_pos.get('Utc','')}  "
+                  f"({len(matching)}/{len(records)} records matched)")
 
         except Exception as e:
             print(f"  {tail}: ERROR — {e}")
