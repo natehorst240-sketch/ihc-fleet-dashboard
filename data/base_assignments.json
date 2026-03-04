@@ -1,7 +1,7 @@
 {
-  "last_updated": "2026-03-03T22:51:01.235281+00:00",
-  "last_checked": "2026-03-03T23:47:06.107567+00:00",
-  "live_data": false,
+  "last_updated": "2026-03-04T01:10:33.724368+00:00",
+  "last_checked": "2026-03-04T01:10:33.724374+00:00",
+  "live_data": true,
   "source": "airplanes.live",
   "bases": {
     "LOGAN": {
@@ -93,11 +93,11 @@
         "at_base": false,
         "airborne": true,
         "seen_seconds_ago": 0.2,
-        "altitude": 5425,
-        "ground_speed": 133.7,
-        "track": 133.48,
-        "distance_miles": 12.59,
-        "closest_base": "Provo"
+        "altitude": 5725,
+        "ground_speed": 131.1,
+        "track": 152.26,
+        "distance_miles": 6.31,
+        "closest_base": "IMed"
       }
     ]
   },

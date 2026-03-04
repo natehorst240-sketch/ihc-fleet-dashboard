@@ -96,3 +96,10 @@
 [2026-03-03 23:47:04 UTC] Loaded 9 aircraft from DEFAULT_AIRCRAFT
 [2026-03-03 23:47:04 UTC] Fetching positions...
 [2026-03-03 23:47:06 UTC] WARNING: No live data from any source. Writing default structure.
+[2026-03-04 01:10:32 UTC] Base assignment generation started (airplanes.live + adsb.lol fallback)
+[2026-03-04 01:10:32 UTC] Loaded 9 aircraft from DEFAULT_AIRCRAFT
+[2026-03-04 01:10:32 UTC] Fetching positions...
+[2026-03-04 01:10:33 UTC] Got positions for 1 aircraft
+[2026-03-04 01:10:33 UTC] Saved to data/base_assignments.json
+[2026-03-04 01:10:33 UTC]   N281HC — AIRBORNE | alt:5725 gs:131.1 | closest: IMed 6.31 mi
+[2026-03-04 01:10:33 UTC] Base assignment generation completed successfully
