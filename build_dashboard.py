@@ -238,6 +238,14 @@ def calculate_flight_hours_stats(history_data, aircraft_list):
 
 # ── POSITIONS (ADSB) ──────────────────────────────────────────────────────────
 
+###############################################################################
+# DROP-IN REPLACEMENT for load_positions() in build_dashboard.py
+#
+# Handles TWO formats:
+#   1. NEW — SkyRouter: aircraft_detail dict keyed by tail, aircraft[] = strings
+#   2. OLD — ADS-B:     aircraft[] = dicts with tail/at_base/airborne fields
+###############################################################################
+
 def load_positions(positions_path):
     """
     Load positions from base_assignments.json and normalize into a
@@ -247,7 +255,7 @@ def load_positions(positions_path):
       {
         'status': 'AT_BASE' | 'AWAY' | 'AIRBORNE' | 'UNKNOWN',
         'current_base': {'id': str, 'name': str, 'dist_nm': float} | None,
-        'nearest_base':  {'id': str, 'name': str, 'dist_nm': float} | None,
+        'nearest_base': {'id': str, 'name': str, 'dist_nm': float} | None,
         'last_alt_ft': int | '',
         'last_gs_kts': int | '',
         'last_updated': str,
@@ -263,56 +271,92 @@ def load_positions(positions_path):
     except Exception:
         return {}
 
+    # ── NEW FORMAT: SkyRouter (aircraft_detail present) ───────────────────────
+    if 'aircraft_detail' in data:
+        aircraft_positions = {}
+        bases_meta   = data.get('bases', {})
+        last_checked = data.get('last_checked', '')
+
+        for tail, detail in data.get('aircraft_detail', {}).items():
+            status          = detail.get('status', 'UNKNOWN')   # AT_BASE | AIRBORNE | AWAY
+            closest_base_id = detail.get('closest_base')
+            dist_miles      = detail.get('dist_miles')
+            dist_nm         = round(dist_miles * 0.868976, 1) if dist_miles is not None else None
+            base_name       = (bases_meta.get(closest_base_id, {}).get('name', closest_base_id)
+                               if closest_base_id else None)
+
+            nearest = ({'id': closest_base_id, 'name': base_name, 'dist_nm': dist_nm}
+                       if closest_base_id else None)
+
+            aircraft_positions[tail] = {
+                'status':                status,
+                'current_base':          nearest if status == 'AT_BASE' else None,
+                'nearest_base':          nearest,
+                'last_alt_ft':           detail.get('alt_ft', ''),
+                'last_gs_kts':           detail.get('speed_kts', ''),
+                'last_updated':          last_checked,
+                'flights_today':         [],
+                'total_flight_hrs_today': 0.0,
+            }
+
+        return aircraft_positions
+
+    # ── OLD FORMAT: ADS-B / airplanes.live ───────────────────────────────────
     assignments  = data.get('assignments', {})
     bases_meta   = data.get('bases', {})
     last_updated = data.get('last_updated', '')
     aircraft_positions = {}
 
-    # Walk every base and collect assigned aircraft
     for base_id, base_data in assignments.items():
         if base_id == 'unassigned':
             ac_list = base_data if isinstance(base_data, list) else []
             for ac in ac_list:
+                if isinstance(ac, str):
+                    # Shouldn't happen in old format, but guard anyway
+                    continue
                 tail = ac.get('tail') or ac.get('registration', '')
                 if not tail:
                     continue
                 status = 'AIRBORNE' if ac.get('airborne') else 'AWAY'
                 aircraft_positions[tail] = {
-                    'status': status,
-                    'current_base': None,
-                    'nearest_base': None,
-                    'last_alt_ft': ac.get('altitude', ''),
-                    'last_gs_kts': ac.get('ground_speed', ''),
-                    'last_updated': last_updated,
-                    'flights_today': [],
+                    'status':                status,
+                    'current_base':          None,
+                    'nearest_base':          None,
+                    'last_alt_ft':           ac.get('altitude', ''),
+                    'last_gs_kts':           ac.get('ground_speed', ''),
+                    'last_updated':          last_updated,
+                    'flights_today':         [],
                     'total_flight_hrs_today': 0.0,
                 }
         else:
-            ac_list = base_data.get('aircraft', []) if isinstance(base_data, dict) else []
+            ac_list   = base_data.get('aircraft', []) if isinstance(base_data, dict) else []
             base_name = bases_meta.get(base_id, {}).get('name', base_id)
             for ac in ac_list:
+                if isinstance(ac, str):
+                    # New-format string accidentally in old-format path — skip
+                    continue
                 tail = ac.get('tail') or ac.get('registration', '')
                 if not tail:
                     continue
                 status_raw = str(ac.get('status', '')).upper()
                 if 'AIRBORNE' in status_raw or 'IN_FLIGHT' in status_raw:
-                    status = 'AIRBORNE'
+                    status    = 'AIRBORNE'
                     curr_base = None
                 else:
-                    status = 'AT_BASE'
+                    status    = 'AT_BASE'
                     curr_base = {
-                        'id': base_id,
-                        'name': base_name,
+                        'id':      base_id,
+                        'name':    base_name,
                         'dist_nm': round(ac.get('distance_miles', 0) * 0.868976, 1),
                     }
                 aircraft_positions[tail] = {
-                    'status': status,
-                    'current_base': curr_base,
-                    'nearest_base': None,
-                    'last_alt_ft': ac.get('altitude', ''),
-                    'last_gs_kts': ac.get('ground_speed', ''),
-                    'last_updated': last_updated,
-                    'flights_today': [],
+                    'status':                status,
+                    'current_base':          curr_base,
+                    'nearest_base':          None,
+                    'last_alt_ft':           ac.get('altitude', ''),
+                    'last_gs_kts':           ac.get('ground_speed', ''),
+                    'last_updated':          last_updated,
+                    'flights_today':         [],
                     'total_flight_hrs_today': 0.0,
                 }
 
