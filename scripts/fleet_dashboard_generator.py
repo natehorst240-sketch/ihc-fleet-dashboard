@@ -1,8 +1,8 @@
 """
 Fleet Maintenance Dashboard Generator (CSV)
 ==========================================
-Reads Due-List_Latest_aw109sp.csv and Due-List_BIG_WEEKLY_aw109sp.csv
-from the data/ folder and writes data/fleet_dashboard.html.
+Reads Due-List_BIG_WEEKLY_aw109sp.csv from the data/ folder and writes
+data/fleet_dashboard.html.
 
 Run via GitHub Actions after CSV files are pushed to repo.
 """
@@ -18,7 +18,6 @@ from pathlib import Path
 
 OUTPUT_FOLDER = "data"
 
-INPUT_FILENAME     = "Due-List_Latest_aw109sp.csv"
 WEEKLY_FILENAME    = "Due-List_BIG_WEEKLY_aw109sp.csv"
 OUTPUT_FILENAME    = "fleet_dashboard.html"
 HISTORY_FILENAME   = "flight_hours_history.json"
@@ -415,9 +414,18 @@ def parse_due_list(daily_path, weekly_path=None):
     daily_meta, daily_raw, daily_components, daily_rpt_dt = parse_due_list_parts(daily_path)
     weekly_meta = {}
     weekly_raw  = {}
+    weekly_components = {}
     weekly_rpt_dt = None
     if weekly_path and Path(weekly_path).exists():
-        weekly_meta, weekly_raw, _, weekly_rpt_dt = parse_due_list_parts(weekly_path)
+        if Path(weekly_path).resolve() == Path(daily_path).resolve():
+            weekly_meta, weekly_raw, weekly_components, weekly_rpt_dt = (
+                daily_meta,
+                daily_raw,
+                daily_components,
+                daily_rpt_dt,
+            )
+        else:
+            weekly_meta, weekly_raw, weekly_components, weekly_rpt_dt = parse_due_list_parts(weekly_path)
 
     merged_raw = merge_inspections(weekly_raw, daily_raw)
     all_regs   = sorted(set(weekly_meta.keys()) | set(daily_meta.keys()))
@@ -451,12 +459,12 @@ def parse_due_list(daily_path, weekly_path=None):
     else:
         report_date_str = datetime.today().strftime("%d %b %Y").upper()
 
-    return report_date_str, aircraft_list, daily_components
+    return report_date_str, aircraft_list, (daily_components or weekly_components)
 
 
 # ── BUILD HTML ────────────────────────────────────────────────────────────────
 
-def build_html(report_date, aircraft_list, components, flight_hours_stats, positions):
+def build_html(report_date, aircraft_list, components, flight_hours_stats, positions, source_filename):
 
     def fmt_hrs(val_dict):
         if val_dict is None:
@@ -880,7 +888,7 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
   </div>
 </main>
 <footer>
-  <span>SOURCE: VERYON MAINTENANCE TRACKING &nbsp;|&nbsp; {INPUT_FILENAME}</span>
+  <span>SOURCE: VERYON MAINTENANCE TRACKING &nbsp;|&nbsp; {source_filename}</span>
   <span>IHC HEALTH SERVICES — AVIATION MAINTENANCE</span>
 </footer>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -1044,7 +1052,6 @@ def _build_bases_tab(aircraft_list, positions):
 # ── MAIN ──────────────────────────────────────────────────────────────────────
 
 def main():
-    input_path     = Path(OUTPUT_FOLDER) / INPUT_FILENAME
     weekly_path    = Path(OUTPUT_FOLDER) / WEEKLY_FILENAME
     output_path    = Path(OUTPUT_FOLDER) / OUTPUT_FILENAME
     history_path   = Path(OUTPUT_FOLDER) / HISTORY_FILENAME
@@ -1063,26 +1070,18 @@ def main():
 
     log("Dashboard generator started.")
 
-    if not input_path.exists():
-        if weekly_path.exists():
-            log(f"WARNING: Input file not found: {input_path}")
-            log(f"Falling back to weekly file for this run: {weekly_path}")
-            input_path = weekly_path
-        else:
-            log(f"WARNING: Input file not found: {input_path}")
-            log("Previous dashboard left in place. Will retry next run.")
-            sys.exit(0)
+    if not weekly_path.exists():
+        log(f"WARNING: Input file not found: {weekly_path}")
+        log("Previous dashboard left in place. Will retry next run.")
+        sys.exit(0)
 
-    file_age_hrs = (datetime.now().timestamp() - input_path.stat().st_mtime) / 3600
+    file_age_hrs = (datetime.now().timestamp() - weekly_path.stat().st_mtime) / 3600
     if file_age_hrs > 36:
         log(f"WARNING: Input file is {file_age_hrs:.1f} hours old. May not be today's data.")
 
-    if not weekly_path.exists():
-        log(f"WARNING: Weekly file not found: {weekly_path} (long-range inspections will stay blank)")
-
     try:
-        log(f"Parsing {input_path} ...")
-        report_date, aircraft_list, components = parse_due_list(input_path, weekly_path)
+        log(f"Parsing {weekly_path} ...")
+        report_date, aircraft_list, components = parse_due_list(weekly_path, weekly_path)
         log(f"Parsed {len(aircraft_list)} aircraft.")
 
         log("Loading flight hours history...")
@@ -1100,7 +1099,14 @@ def main():
         else:
             log("No positions data (fetch_positions.py may not have run yet).")
 
-        html = build_html(report_date, aircraft_list, components, flight_hours_stats, positions)
+        html = build_html(
+            report_date,
+            aircraft_list,
+            components,
+            flight_hours_stats,
+            positions,
+            weekly_path.name,
+        )
 
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(html)
