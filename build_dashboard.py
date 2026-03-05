@@ -24,6 +24,10 @@ WEEKLY_FALLBACKS   = ["Due-List_BIG_WEEKLY_aw109sp.csv"]
 OUTPUT_FILENAME    = "index.html"
 HISTORY_FILENAME   = "flight_hours_history.json"
 POSITIONS_FILENAME = "base_assignments.json"
+POSITIONS_FALLBACK_FILENAMES = [
+    POSITIONS_FILENAME,
+    "base_assignment.json",  # Legacy singular filename
+]
 
 # Phase inspection intervals to track (hours)
 TARGET_INTERVALS = [50, 100, 200, 400, 800, 2400, 3200]
@@ -272,34 +276,7 @@ def load_positions(positions_path):
         return {}
 
     # ── NEW FORMAT: SkyRouter (aircraft_detail present) ───────────────────────
-    if 'aircraft_detail' in data:
-        aircraft_positions = {}
-        bases_meta   = data.get('bases', {})
-        last_checked = data.get('last_checked', '')
-
-        for tail, detail in data.get('aircraft_detail', {}).items():
-            status          = detail.get('status', 'UNKNOWN')   # AT_BASE | AIRBORNE | AWAY
-            closest_base_id = detail.get('closest_base')
-            dist_miles      = detail.get('dist_miles')
-            dist_nm         = round(dist_miles * 0.868976, 1) if dist_miles is not None else None
-            base_name       = (bases_meta.get(closest_base_id, {}).get('name', closest_base_id)
-                               if closest_base_id else None)
-
-            nearest = ({'id': closest_base_id, 'name': base_name, 'dist_nm': dist_nm}
-                       if closest_base_id else None)
-
-            aircraft_positions[tail] = {
-                'status':                status,
-                'current_base':          nearest if status == 'AT_BASE' else None,
-                'nearest_base':          nearest,
-                'last_alt_ft':           detail.get('alt_ft', ''),
-                'last_gs_kts':           detail.get('speed_kts', ''),
-                'last_updated':          last_checked,
-                'flights_today':         [],
-                'total_flight_hrs_today': 0.0,
-            }
-
-        return aircraft_positions
+    # SkyRouter support disabled; ignore this format for now.
 
     # ── OLD FORMAT: ADS-B / airplanes.live ───────────────────────────────────
     assignments  = data.get('assignments', {})
@@ -361,6 +338,15 @@ def load_positions(positions_path):
                 }
 
     return aircraft_positions
+
+
+def resolve_positions_path(output_dir):
+    """Return the first available positions file path (supports legacy filename)."""
+    for filename in POSITIONS_FALLBACK_FILENAMES:
+        candidate = Path(output_dir) / filename
+        if candidate.exists():
+            return candidate
+    return Path(output_dir) / POSITIONS_FILENAME
 
 
 def get_location_badge(tail, positions):
@@ -1159,8 +1145,13 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
     }}
 
     function refresh() {{
-      fetch('data/base_assignments.json?ts='+Date.now(), {{cache:'no-store'}})
-        .then(function(r){{if(!r.ok)throw new Error('failed');return r.json();}})
+      var ts = Date.now();
+      fetch('data/base_assignments.json?ts='+ts, {{cache:'no-store'}})
+        .then(function(r){{
+          if (r.ok) return r.json();
+          return fetch('data/base_assignment.json?ts='+ts, {{cache:'no-store'}})
+            .then(function(r2){{if(!r2.ok)throw new Error('failed');return r2.json();}});
+        }})
         .then(render)
         .catch(function(){{}});
     }}
@@ -1775,7 +1766,7 @@ def main():
     weekly_path    = data_dir / WEEKLY_FILENAME
     output_path    = Path("public") / OUTPUT_FILENAME
     history_path   = Path(OUTPUT_FOLDER) / HISTORY_FILENAME
-    positions_path = Path(OUTPUT_FOLDER) / POSITIONS_FILENAME
+    positions_path = resolve_positions_path(OUTPUT_FOLDER)
     log_path       = Path(__file__).with_name("dashboard_log.txt")
 
     def log(msg):
@@ -1843,8 +1834,9 @@ def main():
         public_data_dir = output_path.parent / "data"
         public_data_dir.mkdir(parents=True, exist_ok=True)
         if positions_path.exists():
-            shutil.copy2(positions_path, public_data_dir / POSITIONS_FILENAME)
-            log(f"Copied {positions_path} to {public_data_dir / POSITIONS_FILENAME}")
+            target_positions_path = public_data_dir / POSITIONS_FILENAME
+            shutil.copy2(positions_path, target_positions_path)
+            log(f"Copied {positions_path} to {target_positions_path}")
         else:
             log(f"WARNING: Positions file missing, could not copy: {positions_path}")
         log("Done.")
