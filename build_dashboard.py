@@ -535,7 +535,7 @@ def parse_due_list(weekly_path):
 
 # ── BUILD HTML ────────────────────────────────────────────────────────────────
 
-def build_html(report_date, aircraft_list, components, flight_hours_stats, positions, source_filename):
+def build_html(report_date, aircraft_list, components, flight_hours_stats, positions, source_filename, dashboard_version):
 
     def fmt_hrs(val_dict):
         if val_dict is None:
@@ -580,6 +580,7 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
 
     airborne_count = sum(1 for t in aircraft_list if positions.get(t['tail'], {}).get('status') == 'AIRBORNE')
     at_base_count  = sum(1 for t in aircraft_list if positions.get(t['tail'], {}).get('status') == 'AT_BASE')
+    has_positions_feed = 'true' if positions else 'false'
 
     table_rows_html = ''
     for ac in aircraft_list:
@@ -783,7 +784,11 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>IHC Health Services — Fleet Due List</title>
+<link rel="icon" href="data:,">
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root {{
@@ -994,6 +999,24 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 <script>
+  const DASHBOARD_VERSION = "{dashboard_version}";
+
+  (function checkForFreshDashboard() {{
+    const versionUrl = 'data/dashboard_version.json?ts=' + Date.now();
+    fetch(versionUrl, {{ cache: 'no-store' }})
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {{
+        if (!data || !data.version || data.version === DASHBOARD_VERSION) return;
+
+        const nextUrl = new URL(window.location.href);
+        if (nextUrl.searchParams.get('v') === data.version) return;
+
+        nextUrl.searchParams.set('v', data.version);
+        window.location.replace(nextUrl.toString());
+      }})
+      .catch(() => {{}});
+  }})();
+
   function switchTab(tabName, btn) {{
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
@@ -1050,6 +1073,9 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
 
 // ── LIVE AIRCRAFT LOCATION REFRESH ────────────────────────────────────────
   (function() {{
+    var HAS_POSITIONS_FEED = {has_positions_feed};
+    if (!HAS_POSITIONS_FEED) return;
+
     var ALL_TAILS = ['N251HC','N261HC','N271HC','N281HC','N291HC',
                      'N431HC','N531HC','N631HC','N731HC'];
 
@@ -1147,11 +1173,7 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
     function refresh() {{
       var ts = Date.now();
       fetch('data/base_assignments.json?ts='+ts, {{cache:'no-store'}})
-        .then(function(r){{
-          if (r.ok) return r.json();
-          return fetch('data/base_assignment.json?ts='+ts, {{cache:'no-store'}})
-            .then(function(r2){{if(!r2.ok)throw new Error('failed');return r2.json();}});
-        }})
+        .then(function(r){{ if(!r.ok) throw new Error('failed'); return r.json(); }})
         .then(render)
         .catch(function(){{}});
     }}
@@ -1229,41 +1251,57 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
       renderUserEvents();
     }}
 
-    // Attach click handlers to all cal-day cells
-    document.querySelectorAll('.cal-day').forEach(function(cell) {{
-      cell.style.cursor = 'pointer';
-      cell.addEventListener('click', function() {{
-        var dateKey = cell.getAttribute('data-date');
-        if (dateKey) openModal(dateKey);
+    function initCalendarEditor() {{
+      var modal = document.getElementById('cal-modal');
+      var saveBtn = document.getElementById('cal-modal-save');
+      var clearBtn = document.getElementById('cal-modal-clear');
+      var cancelBtn = document.getElementById('cal-modal-cancel');
+      var labelInput = document.getElementById('cal-modal-label');
+      var textInput = document.getElementById('cal-modal-text');
+      if (!modal || !saveBtn || !clearBtn || !cancelBtn || !labelInput || !textInput) return;
+
+      // Attach click handlers to all cal-day cells
+      document.querySelectorAll('.cal-day').forEach(function(cell) {{
+        cell.style.cursor = 'pointer';
+        cell.addEventListener('click', function() {{
+          var dateKey = cell.getAttribute('data-date');
+          if (dateKey) openModal(dateKey);
+        }});
       }});
-    }});
 
-    document.getElementById('cal-modal-save').addEventListener('click', saveModal);
-    document.getElementById('cal-modal-clear').addEventListener('click', clearModal);
-    document.getElementById('cal-modal-cancel').addEventListener('click', closeModal);
-    document.getElementById('cal-modal').addEventListener('click', function(e) {{
-      if (e.target === this) closeModal();
-    }});
+      saveBtn.addEventListener('click', saveModal);
+      clearBtn.addEventListener('click', clearModal);
+      cancelBtn.addEventListener('click', closeModal);
+      modal.addEventListener('click', function(e) {{
+        if (e.target === this) closeModal();
+      }});
 
-    document.getElementById('cal-modal').addEventListener('keydown', function(e) {{
-      if (e.key === 'Escape') {{
-        e.preventDefault();
-        closeModal();
-      }}
-      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {{
-        e.preventDefault();
-        saveModal();
-      }}
-    }});
+      modal.addEventListener('keydown', function(e) {{
+        if (e.key === 'Escape') {{
+          e.preventDefault();
+          closeModal();
+        }}
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {{
+          e.preventDefault();
+          saveModal();
+        }}
+      }});
 
-    document.getElementById('cal-modal-label').addEventListener('keydown', function(e) {{
-      if (e.key === 'Enter') {{
-        e.preventDefault();
-        document.getElementById('cal-modal-text').focus();
-      }}
-    }});
-    
-    renderUserEvents();
+      labelInput.addEventListener('keydown', function(e) {{
+        if (e.key === 'Enter') {{
+          e.preventDefault();
+          textInput.focus();
+        }}
+      }});
+
+      renderUserEvents();
+    }}
+
+    if (document.readyState === 'loading') {{
+      document.addEventListener('DOMContentLoaded', initCalendarEditor, {{ once: true }});
+    }} else {{
+      initCalendarEditor();
+    }}
   }})();
 </script>
 
@@ -1818,6 +1856,8 @@ def main():
         else:
             log("No positions data (fetch_positions.py may not have run yet).")
 
+        dashboard_version = datetime.now().strftime('%Y%m%d%H%M%S')
+
         html = build_html(
             report_date,
             aircraft_list,
@@ -1825,6 +1865,7 @@ def main():
             flight_hours_stats,
             positions,
             weekly_path.name,
+            dashboard_version,
         )
 
         with open(output_path, 'w', encoding='utf-8') as f:
@@ -1833,6 +1874,12 @@ def main():
 
         public_data_dir = output_path.parent / "data"
         public_data_dir.mkdir(parents=True, exist_ok=True)
+
+        version_path = public_data_dir / "dashboard_version.json"
+        with open(version_path, 'w', encoding='utf-8') as vf:
+            json.dump({'version': dashboard_version}, vf)
+        log(f"Wrote dashboard version file: {version_path}")
+
         if positions_path.exists():
             target_positions_path = public_data_dir / POSITIONS_FILENAME
             shutil.copy2(positions_path, target_positions_path)
