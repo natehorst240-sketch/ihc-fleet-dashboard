@@ -2,4 +2,13 @@ export_log.txt
 node_modules/
 scripts/export_log.txt
 
-
+# Browser automation / Playwright artifacts
+playwright-report/
+test-results/
+.playwright/
+.cache/ms-playwright/
+artifacts/
+screenshots/
+videos/
+logs/
+tmp/
