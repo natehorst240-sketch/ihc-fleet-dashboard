@@ -18,7 +18,7 @@ from pathlib import Path
 
 OUTPUT_FOLDER = "data"
 
-INPUT_FILENAME     = "Due-List_BIG_WEEKLY_aw109sp.csv"
+INPUT_FILENAME     = "Due-List_Latest_aw109sp.csv"
 WEEKLY_FILENAME    = "Due-List_BIG_WEEKLY_aw109sp.csv"
 OUTPUT_FILENAME    = "fleet_dashboard.html"
 HISTORY_FILENAME   = "flight_hours_history.json"
@@ -1052,9 +1052,14 @@ def main():
     log("Dashboard generator started.")
 
     if not input_path.exists():
-        log(f"WARNING: Input file not found: {input_path}")
-        log("Previous dashboard left in place. Will retry next run.")
-        sys.exit(0)
+        if weekly_path.exists():
+            log(f"WARNING: Input file not found: {input_path}")
+            log(f"Falling back to weekly file for this run: {weekly_path}")
+            input_path = weekly_path
+        else:
+            log(f"WARNING: Input file not found: {input_path}")
+            log("Previous dashboard left in place. Will retry next run.")
+            sys.exit(0)
 
     file_age_hrs = (datetime.now().timestamp() - input_path.stat().st_mtime) / 3600
     if file_age_hrs > 36:
