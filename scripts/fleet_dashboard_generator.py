@@ -328,10 +328,22 @@ def parse_due_list_parts(filepath):
         airframe_hrs = safe_float(row[COL_AIRFRAME_HRS])
         rpt_date_dt  = parse_report_date(row[COL_AIRFRAME_RPT])
 
-        if reg not in aircraft_meta:
+        existing_meta = aircraft_meta.get(reg)
+        if existing_meta is None:
             aircraft_meta[reg] = {'airframe_hrs': airframe_hrs, 'report_date': rpt_date_dt}
-            if report_date_dt is None and rpt_date_dt:
-                report_date_dt = rpt_date_dt
+        else:
+            # Keep the most recent row's data so displayed TT updates when new exports arrive.
+            existing_date = existing_meta.get('report_date')
+            should_replace = False
+            if rpt_date_dt and (existing_date is None or rpt_date_dt >= existing_date):
+                should_replace = True
+            elif existing_date is None and airframe_hrs is not None and existing_meta.get('airframe_hrs') is None:
+                should_replace = True
+            if should_replace:
+                aircraft_meta[reg] = {'airframe_hrs': airframe_hrs, 'report_date': rpt_date_dt}
+
+        if rpt_date_dt and (report_date_dt is None or rpt_date_dt > report_date_dt):
+            report_date_dt = rpt_date_dt
 
         ata_text  = row[COL_ATA].strip()       if row[COL_ATA]       else ""
         item_type = row[COL_ITEM_TYPE].strip()  if row[COL_ITEM_TYPE] else ""
@@ -496,7 +508,7 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
     table_rows_html = ''
     for ac in aircraft_list:
         tail = ac['tail']
-        ah   = f"{ac['airframe_hrs']:,.1f}" if ac['airframe_hrs'] else 'N/A'
+        ah   = f"{ac['airframe_hrs']:,.1f}" if ac['airframe_hrs'] is not None else 'N/A'
         location_badge = get_location_badge(tail, positions)
         hrs_today = get_hours_today(tail, positions)
         hrs_today_str = f'<div class="airframe-today">{hrs_today:.1f} hrs today</div>' if hrs_today else ''
@@ -516,7 +528,7 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
         comps = components.get(reg, [])
         if not comps:
             continue
-        ah = f"{ac['airframe_hrs']:.1f}" if ac['airframe_hrs'] else 'N/A'
+        ah = f"{ac['airframe_hrs']:.1f}" if ac['airframe_hrs'] is not None else 'N/A'
         rows_html = ''
         for c in comps:
             rem     = c['rem_hrs']
