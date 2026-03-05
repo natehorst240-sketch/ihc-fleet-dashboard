@@ -1,14 +1,21 @@
 export_log.txt
 node_modules/
 scripts/export_log.txt
+# runtime outputs
+data/runtime/
+public/data/*.json
+public/data/*.csv
 
-# Browser automation / Playwright artifacts
+# playwright
 playwright-report/
 test-results/
-.playwright/
-.cache/ms-playwright/
-artifacts/
-screenshots/
-videos/
-logs/
-tmp/
+*.har
+*.trace
+**/login_debug.png
+
+# node/python
+node_modules/
+dist/
+.venv/
+__pycache__/
+*.pyc
