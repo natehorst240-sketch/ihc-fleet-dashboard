@@ -78,6 +78,23 @@ git commit -m "Update data"
 git push
 ```
 
+## 🧹 Clean-Slate Reset (Bots / Runners / Playwright)
+
+If local automation artifacts are cluttering the repo, run:
+
+```bash
+python scripts/clean_slate.py --dry-run
+python scripts/clean_slate.py --delete
+```
+
+Optional: disable all GitHub Actions workflows (renames workflow files to `*.disabled`):
+
+```bash
+python scripts/clean_slate.py --delete --remove-actions
+```
+
+This cleanup script only targets common generated folders and keeps source folders intact (`data/`, `public/`, `scripts/`, `.git/`).
+
 ## 🔧 Configuration
 
 **Base coordinates:** Edit `scripts/base_assignment_generator.py`
