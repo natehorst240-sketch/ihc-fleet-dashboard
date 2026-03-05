@@ -1,12 +1,11 @@
+# logs
 export_log.txt
-node_modules/
 scripts/export_log.txt
-# runtime outputs
-data/runtime/
-public/data/*.json
-public/data/*.csv
 
-# playwright
+# runtime outputs (temporary)
+data/runtime/
+
+# Playwright artifacts
 playwright-report/
 test-results/
 *.har
@@ -19,3 +18,10 @@ dist/
 .venv/
 __pycache__/
 *.pyc
+
+# --- IMPORTANT ---
+# If your dashboard needs committed data under public/data,
+# DO NOT ignore it globally. Instead ignore only temp/generated subsets.
+# (remove the next two lines if you need public/data tracked)
+# public/data/*.json
+# public/data/*.csv
