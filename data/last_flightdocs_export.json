@@ -1,7 +1,7 @@
 {
-  "ran_at_local": "Wed 03/04/2026 21:53:44.19",
-  "branch": "rebuild/skyrouter-clean-slate",
-  "csv_bytes": 666753,
+  "ran_at_local": "Wed 03/04/2026 22:45:21.02",
+  "branch": "main",
+  "csv_bytes": 666750,
   "csv_hash_working_bytes": "",
   "csv_hash_head_blob": ""
 }
