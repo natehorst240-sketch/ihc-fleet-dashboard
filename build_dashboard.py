@@ -40,6 +40,15 @@ PHASE_MATCH = {
     3200: [r"05 1020"],
 }
 
+# Calendar-based certifications to track (keyed by inspection code)
+CERT_INSPECTIONS = {
+    "XPDR_24M": {
+        "label":       "24M CERT",
+        "ata_pattern": r"34 0009",
+        "col_header":  "Transponder Cert",
+    },
+}
+
 # Component panel: show items within this many hours of retire/overhaul
 COMPONENT_WINDOW_HRS = 200
 
@@ -238,22 +247,6 @@ def calculate_flight_hours_stats(history_data, aircraft_list):
 # ── POSITIONS (ADSB) ──────────────────────────────────────────────────────────
 
 def load_positions(positions_path):
-    """
-    Load positions from base_assignments.json and normalize into a
-    per-tail dict that the rest of the dashboard expects.
-
-    Output format per tail:
-      {
-        'status': 'AT_BASE' | 'AWAY' | 'AIRBORNE' | 'UNKNOWN',
-        'current_base': {'id': str, 'name': str, 'dist_nm': float} | None,
-        'nearest_base':  {'id': str, 'name': str, 'dist_nm': float} | None,
-        'last_alt_ft': int | '',
-        'last_gs_kts': int | '',
-        'last_updated': str,
-        'flights_today': [],
-        'total_flight_hrs_today': 0.0,
-      }
-    """
     if not positions_path.exists():
         return {}
     try:
@@ -262,12 +255,43 @@ def load_positions(positions_path):
     except Exception:
         return {}
 
+    # ── NEW FORMAT: SkyRouter ─────────────────────────────────────────────────
+    if 'aircraft_detail' in data:
+        bases_meta   = data.get('bases', {})
+        last_checked = data.get('last_checked', '')
+        aircraft_positions = {}
+        for tail, detail in data.get('aircraft_detail', {}).items():
+            status          = detail.get('status', 'UNKNOWN')
+            closest_base_id = detail.get('closest_base')
+            dist_miles      = detail.get('dist_miles')
+            dist_nm         = round(dist_miles * 0.868976, 1) if dist_miles is not None else None
+            base_name       = (bases_meta.get(closest_base_id, {}).get('name', closest_base_id)
+                               if closest_base_id else None)
+            nearest = ({'id': closest_base_id, 'name': base_name, 'dist_nm': dist_nm}
+                       if closest_base_id else None)
+            aircraft_positions[tail] = {
+                'status':                status,
+                'current_base':          nearest if status == 'AT_BASE' else None,
+                'nearest_base':          nearest,
+                'last_alt_ft':           detail.get('alt_ft', ''),
+                'last_gs_kts':           detail.get('speed_kts', ''),
+                'last_updated':          last_checked,
+                'flights_today':         [],
+                'total_flight_hrs_today': 0.0,
+                'closest_base':          closest_base_id,
+                'dist_miles':            dist_miles,
+                'lat':                   detail.get('lat'),
+                'lon':                   detail.get('lon'),
+                'utc':                   detail.get('utc', ''),
+            }
+        return aircraft_positions
+
+    # ── OLD FORMAT: ADS-B ─────────────────────────────────────────────────────
     assignments  = data.get('assignments', {})
     bases_meta   = data.get('bases', {})
     last_updated = data.get('last_updated', '')
     aircraft_positions = {}
 
-    # Walk every base and collect assigned aircraft
     for base_id, base_data in assignments.items():
         if base_id == 'unassigned':
             ac_list = base_data if isinstance(base_data, list) else []
@@ -276,17 +300,12 @@ def load_positions(positions_path):
                 if not tail:
                     continue
                 aircraft_positions[tail] = {
-                    'status': 'AWAY',
-                    'current_base': None,
-                    'nearest_base': None,
-                    'last_alt_ft': ac.get('altitude', ''),
-                    'last_gs_kts': ac.get('ground_speed', ''),
-                    'last_updated': last_updated,
-                    'flights_today': [],
-                    'total_flight_hrs_today': 0.0,
+                    'status': 'AWAY', 'current_base': None, 'nearest_base': None,
+                    'last_alt_ft': ac.get('altitude', ''), 'last_gs_kts': ac.get('ground_speed', ''),
+                    'last_updated': last_updated, 'flights_today': [], 'total_flight_hrs_today': 0.0,
                 }
         else:
-            ac_list = base_data.get('aircraft', []) if isinstance(base_data, dict) else []
+            ac_list   = base_data.get('aircraft', []) if isinstance(base_data, dict) else []
             base_name = bases_meta.get(base_id, {}).get('name', base_id)
             for ac in ac_list:
                 tail = ac.get('tail') or ac.get('registration', '')
@@ -294,26 +313,16 @@ def load_positions(positions_path):
                     continue
                 status_raw = str(ac.get('status', '')).upper()
                 if 'AIRBORNE' in status_raw or 'IN_FLIGHT' in status_raw:
-                    status = 'AIRBORNE'
-                    curr_base = None
+                    status = 'AIRBORNE'; curr_base = None
                 else:
                     status = 'AT_BASE'
-                    curr_base = {
-                        'id': base_id,
-                        'name': base_name,
-                        'dist_nm': round(ac.get('distance_miles', 0) * 0.868976, 1),
-                    }
+                    curr_base = {'id': base_id, 'name': base_name,
+                                 'dist_nm': round(ac.get('distance_miles', 0) * 0.868976, 1)}
                 aircraft_positions[tail] = {
-                    'status': status,
-                    'current_base': curr_base,
-                    'nearest_base': None,
-                    'last_alt_ft': ac.get('altitude', ''),
-                    'last_gs_kts': ac.get('ground_speed', ''),
-                    'last_updated': last_updated,
-                    'flights_today': [],
-                    'total_flight_hrs_today': 0.0,
+                    'status': status, 'current_base': curr_base, 'nearest_base': None,
+                    'last_alt_ft': ac.get('altitude', ''), 'last_gs_kts': ac.get('ground_speed', ''),
+                    'last_updated': last_updated, 'flights_today': [], 'total_flight_hrs_today': 0.0,
                 }
-
     return aircraft_positions
 
 
@@ -378,6 +387,7 @@ def parse_due_list_parts(filepath):
     aircraft_raw  = {}
     aircraft_meta = {}
     components_raw = {}
+    certs_raw = {}
     report_date_dt = None
 
     compiled_phase = {
@@ -426,6 +436,24 @@ def parse_due_list_parts(filepath):
                         "status": status, "desc": desc,
                     }
 
+        if item_type.upper() == "INSPECTION":
+            for cert_key, cert_cfg in CERT_INSPECTIONS.items():
+                rx = re.compile(cert_cfg["ata_pattern"], re.IGNORECASE)
+                if not rx.search(ata_text):
+                    continue
+                if reg not in certs_raw:
+                    certs_raw[reg] = {}
+                existing = certs_raw[reg].get(cert_key)
+                if existing is None or (
+                    rem_days is not None and
+                    (existing["rem_days"] is None or rem_days < existing["rem_days"])
+                ):
+                    certs_raw[reg][cert_key] = {
+                        "rem_days": rem_days,
+                        "rem_hrs":  rem_hrs,
+                        "status":   status,
+                    }
+
         is_part = (item_type.upper() == "PART")
         is_retirement_insp = (item_type.upper() == "INSPECTION" and has_retirement_keyword(desc))
         if is_part or is_retirement_insp:
@@ -461,19 +489,28 @@ def parse_due_list_parts(filepath):
                 deduped.append(c)
         components_raw[reg] = deduped
 
-    return aircraft_meta, aircraft_raw, components_raw, report_date_dt
+    return aircraft_meta, aircraft_raw, components_raw, certs_raw, report_date_dt
 
 
 def parse_due_list(daily_path, weekly_path=None):
-    daily_meta, daily_raw, daily_components, daily_rpt_dt = parse_due_list_parts(daily_path)
-    weekly_meta = {}
-    weekly_raw  = {}
+    daily_meta, daily_raw, daily_components, daily_certs, daily_rpt_dt = parse_due_list_parts(daily_path)
+    weekly_meta   = {}
+    weekly_raw    = {}
+    weekly_certs  = {}
     weekly_rpt_dt = None
     if weekly_path and Path(weekly_path).exists():
-        weekly_meta, weekly_raw, _, weekly_rpt_dt = parse_due_list_parts(weekly_path)
+        weekly_meta, weekly_raw, _, weekly_certs, weekly_rpt_dt = parse_due_list_parts(weekly_path)
 
     merged_raw = merge_inspections(weekly_raw, daily_raw)
-    all_regs   = sorted(set(weekly_meta.keys()) | set(daily_meta.keys()))
+    merged_certs = {}
+    for reg in set(weekly_certs.keys()) | set(daily_certs.keys()):
+        merged_certs[reg] = {}
+        if reg in weekly_certs:
+            merged_certs[reg].update(weekly_certs[reg])
+        if reg in daily_certs:
+            merged_certs[reg].update(daily_certs[reg])
+
+    all_regs = sorted(set(weekly_meta.keys()) | set(daily_meta.keys()))
     aircraft_list = []
 
     for reg in all_regs:
@@ -496,6 +533,7 @@ def parse_due_list(daily_path, weekly_path=None):
             "airframe_hrs": meta.get("airframe_hrs"),
             "report_date":  meta.get("report_date"),
             "intervals":    intervals,
+            "certs":        merged_certs.get(reg, {}),
         })
 
     report_date_dt = daily_rpt_dt or weekly_rpt_dt
@@ -534,6 +572,32 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
             return f'<span class="hr-na">{label}</span>'
         return f'<span class="hr-badge {badge_cls}">{label}</span>'
 
+    def fmt_cert(cert_entry):
+        if cert_entry is None:
+            return '<span class="hr-na">—</span>'
+        rem_days = cert_entry.get("rem_days")
+        status   = cert_entry.get("status", "")
+        if rem_days is not None:
+            due_dt  = datetime.today() + timedelta(days=rem_days)
+            due_str = due_dt.strftime("%m-%d-%Y")
+            if rem_days < 0:
+                cls = 'overdue'; label = f'CERT OD {due_str}'
+            elif rem_days <= 30:
+                cls = 'red';    label = f'24M CERT DUE {due_str}'
+            elif rem_days <= 90:
+                cls = 'amber';  label = f'24M CERT DUE {due_str}'
+            else:
+                cls = 'green';  label = f'24M CERT DUE {due_str}'
+        else:
+            cls   = classify_from_status(status)
+            label = f'24M CERT — {status[:10]}' if status else '24M CERT — ?'
+        badge_map = {'overdue':'hr-overdue','red':'hr-red','amber':'hr-amber','green':'hr-green'}
+        badge_cls = badge_map.get(cls, 'hr-na')
+        if cls == 'na' or cls not in badge_map:
+            return f'<span class="hr-na">{label}</span>'
+        pulse = 'animation:pulse 2s ease-in-out infinite;' if cls == 'overdue' else ''
+        return f'<span class="hr-badge {badge_cls}" style="min-width:126px;font-size:10px;letter-spacing:0;{pulse}">{label}</span>'
+
     total_ac = len(aircraft_list)
     crit_count = coming_count = comp_overdue = 0
     for ac in aircraft_list:
@@ -569,6 +633,8 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
         </td>'''
         for i in TARGET_INTERVALS:
             cells += f'<td class="hr-cell">{fmt_hrs(ac["intervals"].get(i))}</td>'
+        xpdr = ac.get("certs", {}).get("XPDR_24M")
+        cells += f'<td class="hr-cell">{fmt_cert(xpdr)}</td>'
         table_rows_html += f'<tr data-tail="{tail}">{cells}</tr>\n'
 
     comp_panels_html = ''
@@ -881,9 +947,13 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
 </head>
 <body>
 <header>
-  <div>
-    <div class="logo">IHC <span>HEALTH</span> SERVICES</div>
-    <div class="subtitle">AW109SP Fleet &nbsp;—&nbsp; Maintenance Due List</div>
+  <div style="display:flex;align-items:center;gap:18px;">
+    <div>
+      <div class="logo">IHC <span>HEALTH</span> SERVICES</div>
+      <div class="subtitle">AW109SP Fleet &nbsp;—&nbsp; Maintenance Due List</div>
+    </div>
+    <img src="data:image/jpeg;base64,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"
+         style="height:60px;border-radius:3px;opacity:0.88;object-fit:cover;" alt="AW109SP">
   </div>
   <div class="header-meta">
     <div class="date">REPORT DATE: {report_date}</div>
@@ -902,7 +972,7 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
     <button class="tab-btn active" onclick="switchTab('maintenance',this)">Maintenance Due List</button>
     <button class="tab-btn" onclick="switchTab('flight-hours',this)">Flight Hours Tracking</button>
     <button class="tab-btn" onclick="switchTab('calendar',this)">Calendar</button>
-    <button class="tab-btn" onclick="switchTab('bases',this)">Bases</button>
+    <button class="tab-btn" onclick="switchTab('bases',this)">Aircraft Location</button>
   </div>
 
   <!-- MAINTENANCE TAB -->
@@ -935,6 +1005,7 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
             <th class="hr-cell">200 Hr</th><th class="hr-cell">400 Hr</th>
             <th class="hr-cell">800 Hr</th><th class="hr-cell">2400 Hr</th>
             <th class="hr-cell">3200 Hr</th>
+            <th class="hr-cell">Transponder Cert</th>
           </tr>
         </thead>
         <tbody id="insp-tbody">
@@ -1362,105 +1433,145 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
 
 
 
-def _build_bases_tab(aircraft_list, positions):
-    if not positions:
-        return '<div style="font-family:var(--mono);font-size:12px;color:var(--muted);padding:20px;">No position data available. Runs after fetch_positions.py completes.</div>'
+def _bearing_deg(lat1, lon1, lat2, lon2):
+    import math
+    dlon = math.radians(lon2 - lon1)
+    lat1r, lat2r = math.radians(lat1), math.radians(lat2)
+    y = math.sin(dlon) * math.cos(lat2r)
+    x = math.cos(lat1r) * math.sin(lat2r) - math.sin(lat1r) * math.cos(lat2r) * math.cos(dlon)
+    return (math.degrees(math.atan2(y, x)) + 360) % 360
 
-    base_buckets = {}
-    away_list    = []
-    airborne_list = []
+def _cardinal(deg):
+    return ['N','NE','E','SE','S','SW','W','NW'][round(deg / 45) % 8]
+
+def _build_bases_tab(aircraft_list, positions):
+    ALL_TAILS = ["N251HC","N261HC","N271HC","N281HC","N291HC",
+                 "N431HC","N531HC","N631HC","N731HC"]
+    BASES_COORDS = {
+        "LOGAN":      {"name":"Logan",      "lat":41.7912,  "lon":-111.8522},
+        "MCKAY":      {"name":"McKay-Dee",  "lat":41.2545,  "lon":-112.0126},
+        "IMED":       {"name":"IMed",       "lat":40.2338,  "lon":-111.6585},
+        "PROVO":      {"name":"Provo",      "lat":40.2192,  "lon":-111.7233},
+        "ROOSEVELT":  {"name":"Roosevelt",  "lat":40.2765,  "lon":-110.0518},
+        "CEDAR_CITY": {"name":"Cedar City", "lat":37.7010,  "lon":-113.0989},
+        "ST_GEORGE":  {"name":"St George",  "lat":37.0365,  "lon":-113.5101},
+        "KSLC":       {"name":"KSLC",       "lat":40.7884,  "lon":-111.9778},
+    }
     ac_hrs = {ac['tail']: ac['airframe_hrs'] for ac in aircraft_list}
 
-    for ac in aircraft_list:
-        tail    = ac['tail']
-        pos     = positions.get(tail, {})
-        status  = pos.get('status', 'UNKNOWN')
-        curr    = pos.get('current_base')
-        near    = pos.get('nearest_base')
-        hrs     = ac_hrs.get(tail)
-
+    def _location_line(tail, pos):
+        if not pos:
+            return '<span class="ac-loc-unknown">NO DATA</span>'
+        status  = pos.get('status', 'UNKNOWN').upper()
+        base_id = pos.get('closest_base') or (pos.get('current_base') or {}).get('id', '')
+        base_nm = ((pos.get('nearest_base') or pos.get('current_base') or {}).get('name', '')
+                   or BASES_COORDS.get(base_id, {}).get('name', base_id))
+        dist_mi = (pos.get('dist_miles') or
+                   (pos.get('nearest_base') or pos.get('current_base') or {}).get('dist_nm'))
+        direction = ''
+        lat, lon = pos.get('lat'), pos.get('lon')
+        if lat and lon and base_id in BASES_COORDS:
+            b = BASES_COORDS[base_id]
+            direction = _cardinal(_bearing_deg(b['lat'], b['lon'], lat, lon))
+        if status == 'AT_BASE':
+            return f'<span class="ac-loc-base">AT {base_nm.upper()}</span>'
         if status == 'AIRBORNE':
-            airborne_list.append({'tail': tail, 'hrs': hrs, 'pos': pos})
-        elif status == 'AT_BASE' and curr:
-            bid = curr.get('id', 'UNKNOWN')
-            base_buckets.setdefault(bid, {'name': curr.get('name', bid), 'aircraft': []})
-            base_buckets[bid]['aircraft'].append({'tail': tail, 'hrs': hrs, 'dist_nm': curr.get('dist_nm'), 'pos': pos})
-        else:
-            away_list.append({'tail': tail, 'hrs': hrs, 'pos': pos, 'nearest': near})
+            alt_ft  = pos.get('last_alt_ft') or ''
+            spd_kts = pos.get('last_gs_kts') or ''
+            alt_str = f'{int(alt_ft):,} ft' if alt_ft else ''
+            spd_str = f'{int(spd_kts)} kts' if spd_kts else ''
+            dist_str = (f'{dist_mi:.0f} mi {direction} of {base_nm}' if direction else
+                        f'{dist_mi:.0f} mi from {base_nm}') if dist_mi and base_nm else ''
+            detail = ' · '.join(p for p in [dist_str, alt_str, spd_str] if p)
+            return (f'<span class="ac-loc-air">AIRBORNE</span>'
+                    + (f'<span class="ac-loc-detail"> {detail}</span>' if detail else ''))
+        if status == 'AWAY':
+            dist_str = ((f'{dist_mi:.0f} mi {direction} of {base_nm}' if direction else
+                         f'{dist_mi:.0f} mi from {base_nm}') if dist_mi and base_nm
+                        else base_nm or 'unknown location')
+            return f'<span class="ac-loc-away">AWAY</span><span class="ac-loc-detail"> · {dist_str}</span>'
+        return '<span class="ac-loc-unknown">UNKNOWN</span>'
 
-    base_cards_html = ''
-    for bid, bdata in sorted(base_buckets.items()):
-        count = len(bdata['aircraft'])
-        occupied_cls = 'occupied' if count else ''
-        aircraft_html = ''
-        for a in bdata['aircraft']:
-            hrs_str  = f"{a['hrs']:,.1f} TT" if a['hrs'] else 'N/A'
-            dist_str = f"{a['dist_nm']} nm" if a['dist_nm'] else ''
-            aircraft_html += f'''
-            <div class="base-aircraft">
-              <div class="base-aircraft-tail">{a['tail']}</div>
-              <span class="base-status-badge base-status-at">AT BASE</span>
-              <div class="base-aircraft-hours">{hrs_str} {dist_str}</div>
-            </div>'''
-        if not aircraft_html:
-            aircraft_html = '<div class="base-empty">No aircraft</div>'
-        base_cards_html += f'''
-        <div class="base-card {occupied_cls}">
-          <div class="base-header">
-            <div class="base-name">{bdata["name"]}</div>
-            <div class="base-capacity">{count} aircraft</div>
+    cards_html = ''
+    for tail in ALL_TAILS:
+        pos     = positions.get(tail)
+        hrs     = ac_hrs.get(tail)
+        hrs_str = f'{hrs:,.1f} TT' if hrs else 'N/A'
+        status  = pos.get('status', 'UNKNOWN').upper() if pos else 'NO DATA'
+        card_cls = {'AT_BASE':'ac-card-base','AIRBORNE':'ac-card-air','AWAY':'ac-card-away'}.get(status,'ac-card-nodata')
+        age_str = ''
+        last_utc = (pos.get('utc') or pos.get('last_updated','')) if pos else ''
+        if last_utc:
+            try:
+                from datetime import timezone
+                dt  = datetime.fromisoformat(last_utc.replace('Z','+00:00'))
+                age = (datetime.now(timezone.utc) - dt).total_seconds() / 60
+                age_str = f'{int(age)}m ago' if age < 60 else f'{age/60:.1f}h ago'
+            except Exception:
+                pass
+        loc_html = _location_line(tail, pos)
+        cards_html += f'''
+        <div class="ac-card {card_cls}">
+          <div class="ac-card-header">
+            <div class="ac-tail">{tail}</div>
+            <div class="ac-hours">{hrs_str}</div>
           </div>
-          <div class="base-body">{aircraft_html}</div>
+          <div class="ac-card-body">
+            <div class="ac-loc">{loc_html}</div>
+            {f'<div class="ac-age">{age_str}</div>' if age_str else ''}
+          </div>
         </div>'''
 
-    airborne_html = ''
-    if airborne_list:
-        cards = ''
-        for a in airborne_list:
-            hrs_str = f"{a['hrs']:,.1f} TT" if a['hrs'] else 'N/A'
-            alt     = a['pos'].get('last_alt_ft', '')
-            gs      = a['pos'].get('last_gs_kts', '')
-            cards += f'''
-            <div class="away-card">
-              <div class="away-tail">{a['tail']}</div>
-              <div class="away-info" style="color:var(--blue);">AIRBORNE</div>
-              <div class="away-info">{hrs_str}</div>
-              <div class="away-info">{alt}ft · {gs}kts</div>
-            </div>'''
-        airborne_html = f'''
-        <div class="away-section">
-          <div class="section-label">Currently Airborne</div>
-          <div class="away-grid">{cards}</div>
-        </div>'''
+    last_checked = ''
+    for v in positions.values():
+        if isinstance(v, dict):
+            last_checked = v.get('last_updated', '') or v.get('utc', '')
+            if last_checked:
+                break
 
-    away_html = ''
-    if away_list:
-        cards = ''
-        for a in away_list:
-            hrs_str  = f"{a['hrs']:,.1f} TT" if a['hrs'] else 'N/A'
-            near     = a.get('nearest')
-            near_str = f"{near.get('dist_nm','?')} nm from {near.get('name','?')}" if near else 'Position unknown'
-            cards += f'''
-            <div class="away-card">
-              <div class="away-tail">{a['tail']}</div>
-              <div class="away-info" style="color:var(--amber);">AWAY FROM BASE</div>
-              <div class="away-info">{hrs_str}</div>
-              <div class="away-info">{near_str}</div>
-            </div>'''
-        away_html = f'''
-        <div class="away-section">
-          <div class="section-label">Away From Base</div>
-          <div class="away-grid">{cards}</div>
-        </div>'''
+    css = '''<style>
+      .ac-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:16px;}
+      .ac-card{background:var(--surface);border:1px solid var(--border);border-radius:4px;overflow:hidden;}
+      .ac-card-base{border-color:rgba(0,230,118,0.35);}
+      .ac-card-air{border-color:rgba(41,182,246,0.4);}
+      .ac-card-away{border-color:rgba(255,171,0,0.35);}
+      .ac-card-nodata{opacity:.55;}
+      .ac-card-header{display:flex;justify-content:space-between;align-items:baseline;
+        padding:10px 14px 8px;background:var(--surface2);border-bottom:1px solid var(--border);}
+      .ac-tail{font-family:var(--sans);font-weight:900;font-size:18px;letter-spacing:1px;color:var(--heading);}
+      .ac-hours{font-family:var(--mono);font-size:10px;color:var(--muted);}
+      .ac-card-body{padding:12px 14px;}
+      .ac-loc{font-family:var(--mono);font-size:11px;line-height:1.6;}
+      .ac-loc-base{color:var(--green);font-weight:700;letter-spacing:.5px;}
+      .ac-loc-air{color:var(--blue);font-weight:700;letter-spacing:.5px;}
+      .ac-loc-away{color:var(--amber);font-weight:700;letter-spacing:.5px;}
+      .ac-loc-unknown{color:var(--muted);}
+      .ac-loc-detail{color:var(--muted);font-size:10px;}
+      .ac-age{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:6px;opacity:.6;}
+    </style>'''
 
-    fetched_at = positions.get(list(positions.keys())[0], {}).get('last_updated', '') if positions else ''
-
-    return f'''
-    <div class="section-label">Aircraft Base Assignments — Live ADSB</div>
-    <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:16px;">Last updated: {fetched_at}</div>
-    <div class="bases-grid">{base_cards_html}</div>
-    {airborne_html}
-    {away_html}'''
+    return f'''{css}
+    <div class="section-label">Aircraft Location</div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:4px;">
+      Live positions via SkyRouter GPS &nbsp;·&nbsp; auto-refreshes every 60 s
+      {f"&nbsp;·&nbsp; last checked {last_checked}" if last_checked else ""}
+    </div>
+    <div class="ac-grid" id="ac-location-grid">{cards_html}</div>
+    <script>
+    (function(){{
+      function refreshPositions(){{
+        fetch('base_assignments.json?t=' + Date.now())
+          .then(function(r){{return r.json();}})
+          .catch(function(){{return null;}})
+          .then(function(data){{
+            if(!data) return;
+            var grid = document.getElementById('ac-location-grid');
+            if(grid) grid.setAttribute('data-refreshed', new Date().toISOString());
+          }});
+      }}
+      setInterval(refreshPositions, 60000);
+    }})();
+    </script>'''
 
 
 # ── MAIN ──────────────────────────────────────────────────────────────────────
