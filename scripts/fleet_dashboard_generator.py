@@ -22,7 +22,7 @@ INPUT_FILENAME     = "Due-List_Latest_aw109sp.csv"
 WEEKLY_FILENAME    = "Due-List_BIG_WEEKLY_aw109sp.csv"
 INPUT_FALLBACKS    = ["Due-List_Latest.csv"]
 WEEKLY_FALLBACKS   = ["Due-List_BIG_WEEKLY.csv"]
-OUTPUT_FILENAME    = "fleet_dashboard.html"
+OUTPUT_FILENAME    = "index.html"
 HISTORY_FILENAME   = "flight_hours_history.json"
 POSITIONS_FILENAME = "base_assignments.json"
 
