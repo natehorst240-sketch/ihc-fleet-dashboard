@@ -18,10 +18,8 @@ from pathlib import Path
 
 OUTPUT_FOLDER = "data"
 
-INPUT_FILENAME     = "Due-List_Latest_aw109sp.csv"
-WEEKLY_FILENAME    = "Due-List_BIG_WEEKLY_aw109sp.csv"
-INPUT_FALLBACKS    = ["Due-List_Latest.csv"]
-WEEKLY_FALLBACKS   = ["Due-List_BIG_WEEKLY.csv"]
+INPUT_FILENAME     = "Due-List_BIG_WEEKLY_aw109sp.csv"
+INPUT_FALLBACKS    = ["Due-List_BIG_WEEKLY.csv"]
 OUTPUT_FILENAME    = "index.html"
 HISTORY_FILENAME   = "flight_hours_history.json"
 POSITIONS_FILENAME = "base_assignments.json"
@@ -464,21 +462,14 @@ def parse_due_list_parts(filepath):
     return aircraft_meta, aircraft_raw, components_raw, report_date_dt
 
 
-def parse_due_list(daily_path, weekly_path=None):
-    daily_meta, daily_raw, daily_components, daily_rpt_dt = parse_due_list_parts(daily_path)
-    weekly_meta = {}
-    weekly_raw  = {}
-    weekly_rpt_dt = None
-    if weekly_path and Path(weekly_path).exists():
-        weekly_meta, weekly_raw, _, weekly_rpt_dt = parse_due_list_parts(weekly_path)
-
-    merged_raw = merge_inspections(weekly_raw, daily_raw)
-    all_regs   = sorted(set(weekly_meta.keys()) | set(daily_meta.keys()))
+def parse_due_list(input_path):
+    meta_map, raw, components, rpt_dt = parse_due_list_parts(input_path)
+    all_regs = sorted(meta_map.keys())
     aircraft_list = []
 
     for reg in all_regs:
-        meta = daily_meta.get(reg) or weekly_meta.get(reg) or {"airframe_hrs": None, "report_date": None}
-        insp = merged_raw.get(reg, {})
+        meta = meta_map.get(reg) or {"airframe_hrs": None, "report_date": None}
+        insp = raw.get(reg, {})
         intervals = {}
         for i in TARGET_INTERVALS:
             key = f"{i:.2f}"
@@ -498,13 +489,13 @@ def parse_due_list(daily_path, weekly_path=None):
             "intervals":    intervals,
         })
 
-    report_date_dt = daily_rpt_dt or weekly_rpt_dt
+    report_date_dt = rpt_dt
     if isinstance(report_date_dt, datetime):
         report_date_str = report_date_dt.strftime("%d %b %Y").upper()
     else:
         report_date_str = datetime.today().strftime("%d %b %Y").upper()
 
-    return report_date_str, aircraft_list, daily_components
+    return report_date_str, aircraft_list, components
 
 
 # ── BUILD HTML ────────────────────────────────────────────────────────────────
@@ -1445,7 +1436,6 @@ def _build_bases_tab(aircraft_list, positions):
 def main():
     data_dir       = Path(OUTPUT_FOLDER)
     input_path     = data_dir / INPUT_FILENAME
-    weekly_path    = data_dir / WEEKLY_FILENAME
     output_path    = Path(OUTPUT_FOLDER) / OUTPUT_FILENAME
     history_path   = Path(OUTPUT_FOLDER) / HISTORY_FILENAME
     positions_path = Path(OUTPUT_FOLDER) / POSITIONS_FILENAME
@@ -1480,20 +1470,9 @@ def main():
     if file_age_hrs > 36:
         log(f"WARNING: Input file is {file_age_hrs:.1f} hours old. May not be today's data.")
 
-    if not weekly_path.exists():
-        for fallback in WEEKLY_FALLBACKS:
-            candidate = data_dir / fallback
-            if candidate.exists():
-                weekly_path = candidate
-                log(f"Primary weekly file missing. Using fallback file: {weekly_path}")
-                break
-
-    if not weekly_path.exists():
-        log(f"WARNING: Weekly file not found: {weekly_path} (long-range inspections will stay blank)")
-
     try:
         log(f"Parsing {input_path} ...")
-        report_date, aircraft_list, components = parse_due_list(input_path, weekly_path)
+        report_date, aircraft_list, components = parse_due_list(input_path)
         log(f"Parsed {len(aircraft_list)} aircraft.")
 
         log("Loading flight hours history...")
