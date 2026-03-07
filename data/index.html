@@ -3,17 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
 <title>IHC Health Services — Fleet Due List</title>
-<link rel="icon" href="data:,">
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg:#0a0c0f; --surface:#111418; --surface2:#181c22; --border:#1e2530;
     --green:#00e676; --amber:#ffab00; --red:#ff1744; --overdue:#ff6d00;
-    --blue:#29b6f6; --text:#cdd6e0; --muted:#fff; --heading:#e8edf2;
+    --blue:#29b6f6; --text:#cdd6e0; --muted:#4a5568; --heading:#e8edf2;
     --mono:'Share Tech Mono',monospace;
     --sans:'Barlow Condensed',sans-serif;
     --body:'Barlow',sans-serif;
@@ -137,7 +133,7 @@
   </div>
   <div class="header-meta">
     <div class="date">REPORT DATE: 04 MAR 2026</div>
-    <div>FLEET: 9 AIRCRAFT &nbsp;|&nbsp; 0 AIRBORNE &nbsp;|&nbsp; 0 AT BASE &nbsp;|&nbsp; GENERATED: 05 MAR 2026 07:54</div>
+    <div>FLEET: 9 AIRCRAFT &nbsp;|&nbsp; 0 AIRBORNE &nbsp;|&nbsp; 0 AT BASE &nbsp;|&nbsp; GENERATED: 07 MAR 2026 13:08</div>
   </div>
 </header>
 <div class="legend">
@@ -152,7 +148,7 @@
     <button class="tab-btn active" onclick="switchTab('maintenance',this)">Maintenance Due List</button>
     <button class="tab-btn" onclick="switchTab('flight-hours',this)">Flight Hours Tracking</button>
     <button class="tab-btn" onclick="switchTab('calendar',this)">Calendar</button>
-    <button class="tab-btn" onclick="switchTab('bases',this)">Aircraft Location</button>
+    <button class="tab-btn" onclick="switchTab('bases',this)">Bases</button>
   </div>
 
   <!-- MAINTENANCE TAB -->
@@ -161,7 +157,7 @@
       <div class="summary-stat"><div class="stat-value" style="color:var(--blue)">9</div><div class="divider-line" style="background:var(--blue)"></div><div class="stat-label">Aircraft</div></div>
       <div class="summary-stat"><div class="stat-value" style="color:var(--blue)">0</div><div class="divider-line" style="background:var(--blue)"></div><div class="stat-label">Airborne</div></div>
       <div class="summary-stat"><div class="stat-value" style="color:var(--red)">7</div><div class="divider-line" style="background:var(--red)"></div><div class="stat-label">Insp. Critical / OD</div></div>
-      <div class="summary-stat"><div class="stat-value" style="color:var(--amber)">16</div><div class="divider-line" style="background:var(--amber)"></div><div class="stat-label">Insp. Coming Due</div></div>
+      <div class="summary-stat"><div class="stat-value" style="color:var(--amber)">15</div><div class="divider-line" style="background:var(--amber)"></div><div class="stat-label">Insp. Coming Due</div></div>
       <div class="summary-stat"><div class="stat-value" style="color:var(--overdue)">4</div><div class="divider-line" style="background:var(--overdue)"></div><div class="stat-label">Components Overdue</div></div>
     </div>
     <div class="chart-card">
@@ -192,7 +188,7 @@
           <div class="tail-number">N251HC</div>
           <div class="airframe-hrs">6,053.0 TT</div>
           
-        </td><td class="hr-cell"><span class="hr-badge hr-amber">47.6</span></td><td class="hr-cell"><span class="hr-badge hr-amber">87.6</span></td><td class="hr-cell"><span class="hr-badge hr-amber">90.2</span></td><td class="hr-cell"><span class="hr-badge hr-green">290.2</span></td><td class="hr-cell"><span class="hr-badge hr-green">300.9</span></td><td class="hr-cell"><span class="hr-badge hr-green">1103.1</span></td><td class="hr-cell"><span class="hr-badge hr-green">282.6</span></td></tr>
+        </td><td class="hr-cell"><span class="hr-na">—</span></td><td class="hr-cell"><span class="hr-badge hr-amber">87.6</span></td><td class="hr-cell"><span class="hr-badge hr-amber">90.2</span></td><td class="hr-cell"><span class="hr-badge hr-green">290.2</span></td><td class="hr-cell"><span class="hr-badge hr-green">300.9</span></td><td class="hr-cell"><span class="hr-badge hr-green">1103.1</span></td><td class="hr-cell"><span class="hr-badge hr-green">282.6</span></td></tr>
 <tr data-tail="N261HC"><td>
           <div class="tail-number">N261HC</div>
           <div class="airframe-hrs">6,078.2 TT</div>
@@ -561,11 +557,11 @@
         </div>
         <div class="hours-card-body">
           <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div>
-            <div class="hours-stat-value">1.74 hrs</div></div>
+            <div class="hours-stat-value">1.30 hrs</div></div>
           <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div>
-            <div class="hours-stat-value">12.2 hrs</div></div>
+            <div class="hours-stat-value">9.1 hrs</div></div>
           <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div>
-            <div class="hours-stat-value">52.3 hrs</div></div>
+            <div class="hours-stat-value">39.0 hrs</div></div>
         </div>
       </div>
       <div class="hours-card">
@@ -575,11 +571,11 @@
         </div>
         <div class="hours-card-body">
           <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div>
-            <div class="hours-stat-value">1.21 hrs</div></div>
+            <div class="hours-stat-value">0.64 hrs</div></div>
           <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div>
-            <div class="hours-stat-value">8.5 hrs</div></div>
+            <div class="hours-stat-value">4.5 hrs</div></div>
           <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div>
-            <div class="hours-stat-value">36.4 hrs</div></div>
+            <div class="hours-stat-value">19.3 hrs</div></div>
         </div>
       </div>
       <div class="hours-card">
@@ -589,11 +585,11 @@
         </div>
         <div class="hours-card-body">
           <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div>
-            <div class="hours-stat-value">0.36 hrs</div></div>
+            <div class="hours-stat-value">0.13 hrs</div></div>
           <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div>
-            <div class="hours-stat-value">2.5 hrs</div></div>
+            <div class="hours-stat-value">0.9 hrs</div></div>
           <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div>
-            <div class="hours-stat-value">10.7 hrs</div></div>
+            <div class="hours-stat-value">3.9 hrs</div></div>
         </div>
       </div>
       <div class="hours-card">
@@ -603,11 +599,11 @@
         </div>
         <div class="hours-card-body">
           <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div>
-            <div class="hours-stat-value">1.03 hrs</div></div>
+            <div class="hours-stat-value">0.71 hrs</div></div>
           <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div>
-            <div class="hours-stat-value">7.2 hrs</div></div>
+            <div class="hours-stat-value">5.0 hrs</div></div>
           <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div>
-            <div class="hours-stat-value">30.9 hrs</div></div>
+            <div class="hours-stat-value">21.4 hrs</div></div>
         </div>
       </div>
       <div class="hours-card">
@@ -617,11 +613,11 @@
         </div>
         <div class="hours-card-body">
           <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div>
-            <div class="hours-stat-value">0.67 hrs</div></div>
+            <div class="hours-stat-value">0.50 hrs</div></div>
           <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div>
-            <div class="hours-stat-value">4.7 hrs</div></div>
+            <div class="hours-stat-value">3.5 hrs</div></div>
           <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div>
-            <div class="hours-stat-value">20.1 hrs</div></div>
+            <div class="hours-stat-value">15.0 hrs</div></div>
         </div>
       </div>
       <div class="hours-card">
@@ -645,11 +641,11 @@
         </div>
         <div class="hours-card-body">
           <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div>
-            <div class="hours-stat-value">0.83 hrs</div></div>
+            <div class="hours-stat-value">0.49 hrs</div></div>
           <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div>
-            <div class="hours-stat-value">5.8 hrs</div></div>
+            <div class="hours-stat-value">3.4 hrs</div></div>
           <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div>
-            <div class="hours-stat-value">24.9 hrs</div></div>
+            <div class="hours-stat-value">14.6 hrs</div></div>
         </div>
       </div>
       <div class="hours-card">
@@ -684,127 +680,12 @@
 
   <!-- CALENDAR TAB -->
   <div id="tab-calendar" class="tab-content">
-<style>.cal-react-host{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:10px;margin-bottom:18px;}.cal-react-host,.cal-react-host *{font-family:var(--body);}.cal-react-host .mc-title,.cal-react-host .mc-header,.cal-react-host .mc-toolbar,.cal-react-host .mc-label{font-family:var(--sans);}.cal-react-host .mc-meta,.cal-react-host .mc-date,.cal-react-host .mc-chip,.cal-react-host .mc-cell-label{font-family:var(--mono);}.cal-react-host .mc-surface{background:var(--surface);border-color:var(--border);}.cal-react-host .mc-surface-alt{background:var(--surface2);border-color:var(--border);}.cal-react-host .mc-text{color:var(--text);}.cal-react-host .mc-muted{color:var(--muted);}.cal-react-status{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:8px;}.cal-legacy-wrap{margin-top:22px;}.cal-months-wrap{display:flex;flex-direction:column;gap:32px;}.cal-month{width:100%;}.cal-month-title{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--cyan);letter-spacing:2px;margin-bottom:8px;}.cal-grid-days{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}.cal-dow{font-family:var(--mono);font-size:9px;color:var(--muted);text-align:center;padding:4px 0;letter-spacing:1px;}.cal-empty{background:transparent;min-height:60px;}.cal-day{background:#0d1117;border:1px solid #1e2533;border-radius:3px;min-height:60px;padding:4px;position:relative;overflow:hidden;}.cal-day-num{font-family:var(--mono);font-size:9px;color:var(--muted);margin-bottom:2px;}.cal-today{border-color:var(--cyan)!important;}.cal-today .cal-day-num{color:var(--cyan);font-weight:700;}.cal-past{opacity:0.4;}.cal-day-overdue{background:#2a0a0a;border-color:#c0392b;}.cal-day-urgent{background:#1a1200;border-color:#e67e22;}.cal-day-soon{background:#0d1a0d;border-color:#f39c12;}.cal-day-ok{background:#0a1520;border-color:#2980b9;}.cal-ev{font-family:var(--mono);font-size:8px;padding:1px 3px;border-radius:2px;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}.cal-ev-overdue{background:#c0392b;color:#fff;}.cal-ev-urgent{background:#e67e22;color:#000;}.cal-ev-soon{background:#f39c12;color:#000;}.cal-ev-ok{background:#2980b9;color:#fff;}.cal-legend{display:flex;gap:20px;margin-bottom:20px;font-family:var(--mono);font-size:10px;color:var(--muted);flex-wrap:wrap;}.cal-leg-item{display:flex;align-items:center;gap:6px;}.cal-leg-dot{width:10px;height:10px;border-radius:2px;display:inline-block;}.cal-fb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;}.cal-fb-card{background:#0d1117;border:1px solid #1e2533;border-radius:4px;padding:12px;}.cal-fb-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;border-bottom:1px solid #1e2533;padding-bottom:6px;}.cal-fb-tail{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--cyan);}.cal-fb-hrs{font-family:var(--mono);font-size:9px;color:var(--muted);}.cal-fb-row{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;padding:3px 0;border-bottom:1px solid #161c25;}.cal-fb-insp{color:var(--muted);}.cal-fb-val{font-weight:700;}.cal-user-ev{font-family:var(--mono);font-size:8px;padding:2px 4px;border-radius:2px;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:#2d3748;color:#e2e8f0;border-left:3px solid #f6ad55;}</style><div class="section-label">PROJECTED MAINTENANCE CALENDAR</div><div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:12px;">React month view is shown when <code>public/maintenance-calendar-ux/calendar-island.js</code> is present. Fallback view appears automatically if the bundle is unavailable.</div><div class="cal-react-host"><div id="calendar-react-root"></div><div class="cal-react-status" id="calendar-react-status">Loading calendar view…</div></div><script type="application/json" id="calendar-react-data">{"initialDate": "2026-03-05", "initialEvents": [{"id": "N251HC-50-2026-04-01", "aircraftId": "N251HC", "registration": "N251HC", "inspectionType": "50 Hour", "dueDate": "2026-04-01", "hoursRemaining": 47.6, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N251HC-100-2026-04-24", "aircraftId": "N251HC", "registration": "N251HC", "inspectionType": "100 Hour", "dueDate": "2026-04-24", "hoursRemaining": 87.6, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N251HC-200-2026-04-26", "aircraftId": "N251HC", "registration": "N251HC", "inspectionType": "200 Hour", "dueDate": "2026-04-26", "hoursRemaining": 90.2, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N251HC-400-2026-08-18", "aircraftId": "N251HC", "registration": "N251HC", "inspectionType": "400 Hour", "dueDate": "2026-08-18", "hoursRemaining": 290.2, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N251HC-800-2026-08-24", "aircraftId": "N251HC", "registration": "N251HC", "inspectionType": "800 Hour", "dueDate": "2026-08-24", "hoursRemaining": 300.9, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N251HC-2400-2027-11-28", "aircraftId": "N251HC", "registration": "N251HC", "inspectionType": "2400 Hour", "dueDate": "2027-11-28", "hoursRemaining": 1103.1, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N251HC-3200-2026-08-14", "aircraftId": "N251HC", "registration": "N251HC", "inspectionType": "3200 Hour", "dueDate": "2026-08-14", "hoursRemaining": 282.6, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N261HC-50-2026-03-12", "aircraftId": "N261HC", "registration": "N261HC", "inspectionType": "50 Hour", "dueDate": "2026-03-12", "hoursRemaining": 9.2, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N261HC-100-2026-04-23", "aircraftId": "N261HC", "registration": "N261HC", "inspectionType": "100 Hour", "dueDate": "2026-04-23", "hoursRemaining": 59.2, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N261HC-200-2026-04-21", "aircraftId": "N261HC", "registration": "N261HC", "inspectionType": "200 Hour", "dueDate": "2026-04-21", "hoursRemaining": 57.7, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N261HC-400-2026-10-03", "aircraftId": "N261HC", "registration": "N261HC", "inspectionType": "400 Hour", "dueDate": "2026-10-03", "hoursRemaining": 257.7, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N261HC-800-2026-09-29", "aircraftId": "N261HC", "registration": "N261HC", "inspectionType": "800 Hour", "dueDate": "2026-09-29", "hoursRemaining": 253.0, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N261HC-2400-2028-07-26", "aircraftId": "N261HC", "registration": "N261HC", "inspectionType": "2400 Hour", "dueDate": "2028-07-26", "hoursRemaining": 1062.0, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N261HC-3200-2026-11-04", "aircraftId": "N261HC", "registration": "N261HC", "inspectionType": "3200 Hour", "dueDate": "2026-11-04", "hoursRemaining": 296.1, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N271HC-50-2026-07-09", "aircraftId": "N271HC", "registration": "N271HC", "inspectionType": "50 Hour", "dueDate": "2026-07-09", "hoursRemaining": 44.9, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N271HC-100-2026-07-09", "aircraftId": "N271HC", "registration": "N271HC", "inspectionType": "100 Hour", "dueDate": "2026-07-09", "hoursRemaining": 45.0, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N271HC-200-2027-04-15", "aircraftId": "N271HC", "registration": "N271HC", "inspectionType": "200 Hour", "dueDate": "2027-04-15", "hoursRemaining": 145.0, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N271HC-400-2027-07-02", "aircraftId": "N271HC", "registration": "N271HC", "inspectionType": "400 Hour", "dueDate": "2027-07-02", "hoursRemaining": 173.0, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N271HC-800-2027-07-28", "aircraftId": "N271HC", "registration": "N271HC", "inspectionType": "800 Hour", "dueDate": "2027-07-28", "hoursRemaining": 182.3, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N271HC-2400-2027-06-18", "aircraftId": "N271HC", "registration": "N271HC", "inspectionType": "2400 Hour", "dueDate": "2027-06-18", "hoursRemaining": 167.8, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N271HC-3200-2045-12-20", "aircraftId": "N271HC", "registration": "N271HC", "inspectionType": "3200 Hour", "dueDate": "2045-12-20", "hoursRemaining": 2582.3, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N281HC-50-2026-03-27", "aircraftId": "N281HC", "registration": "N281HC", "inspectionType": "50 Hour", "dueDate": "2026-03-27", "hoursRemaining": 23.1, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N281HC-100-2026-03-29", "aircraftId": "N281HC", "registration": "N281HC", "inspectionType": "100 Hour", "dueDate": "2026-03-29", "hoursRemaining": 24.5, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N281HC-200-2026-03-25", "aircraftId": "N281HC", "registration": "N281HC", "inspectionType": "200 Hour", "dueDate": "2026-03-25", "hoursRemaining": 20.6, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N281HC-400-2026-10-05", "aircraftId": "N281HC", "registration": "N281HC", "inspectionType": "400 Hour", "dueDate": "2026-10-05", "hoursRemaining": 220.6, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N281HC-800-2027-10-29", "aircraftId": "N281HC", "registration": "N281HC", "inspectionType": "800 Hour", "dueDate": "2027-10-29", "hoursRemaining": 620.6, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N281HC-2400-2026-10-09", "aircraftId": "N281HC", "registration": "N281HC", "inspectionType": "2400 Hour", "dueDate": "2026-10-09", "hoursRemaining": 224.1, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N281HC-3200-2034-03-20", "aircraftId": "N281HC", "registration": "N281HC", "inspectionType": "3200 Hour", "dueDate": "2034-03-20", "hoursRemaining": 3020.6, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N291HC-50-2026-03-25", "aircraftId": "N291HC", "registration": "N291HC", "inspectionType": "50 Hour", "dueDate": "2026-03-25", "hoursRemaining": 13.5, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N291HC-100-2026-06-07", "aircraftId": "N291HC", "registration": "N291HC", "inspectionType": "100 Hour", "dueDate": "2026-06-07", "hoursRemaining": 63.5, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N291HC-200-2026-06-08", "aircraftId": "N291HC", "registration": "N291HC", "inspectionType": "200 Hour", "dueDate": "2026-06-08", "hoursRemaining": 64.2, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N291HC-400-2026-06-15", "aircraftId": "N291HC", "registration": "N291HC", "inspectionType": "400 Hour", "dueDate": "2026-06-15", "hoursRemaining": 68.6, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N291HC-800-2028-02-01", "aircraftId": "N291HC", "registration": "N291HC", "inspectionType": "800 Hour", "dueDate": "2028-02-01", "hoursRemaining": 468.6, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N291HC-2400-2031-05-14", "aircraftId": "N291HC", "registration": "N291HC", "inspectionType": "2400 Hour", "dueDate": "2031-05-14", "hoursRemaining": 1273.1, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N291HC-3200-2028-02-18", "aircraftId": "N291HC", "registration": "N291HC", "inspectionType": "3200 Hour", "dueDate": "2028-02-18", "hoursRemaining": 480.2, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N431HC-50-2027-01-24", "aircraftId": "N431HC", "registration": "N431HC", "inspectionType": "50 Hour", "dueDate": "2027-01-24", "hoursRemaining": 32.5, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N431HC-100-2028-06-07", "aircraftId": "N431HC", "registration": "N431HC", "inspectionType": "100 Hour", "dueDate": "2028-06-07", "hoursRemaining": 82.5, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N431HC-200-2031-03-04", "aircraftId": "N431HC", "registration": "N431HC", "inspectionType": "200 Hour", "dueDate": "2031-03-04", "hoursRemaining": 182.5, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N431HC-400-2036-08-24", "aircraftId": "N431HC", "registration": "N431HC", "inspectionType": "400 Hour", "dueDate": "2036-08-24", "hoursRemaining": 382.5, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N431HC-800-2036-10-31", "aircraftId": "N431HC", "registration": "N431HC", "inspectionType": "800 Hour", "dueDate": "2036-10-31", "hoursRemaining": 389.3, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N431HC-2400-2037-02-21", "aircraftId": "N431HC", "registration": "N431HC", "inspectionType": "2400 Hour", "dueDate": "2037-02-21", "hoursRemaining": 400.6, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N431HC-3200-2059-01-17", "aircraftId": "N431HC", "registration": "N431HC", "inspectionType": "3200 Hour", "dueDate": "2059-01-17", "hoursRemaining": 1200.6, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N531HC-50-2026-03-14", "aircraftId": "N531HC", "registration": "N531HC", "inspectionType": "50 Hour", "dueDate": "2026-03-14", "hoursRemaining": 7.2, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N531HC-100-2026-03-11", "aircraftId": "N531HC", "registration": "N531HC", "inspectionType": "100 Hour", "dueDate": "2026-03-11", "hoursRemaining": 5.4, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N531HC-200-2026-07-10", "aircraftId": "N531HC", "registration": "N531HC", "inspectionType": "200 Hour", "dueDate": "2026-07-10", "hoursRemaining": 105.4, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N531HC-400-2026-07-13", "aircraftId": "N531HC", "registration": "N531HC", "inspectionType": "400 Hour", "dueDate": "2026-07-13", "hoursRemaining": 107.8, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N531HC-800-2027-11-08", "aircraftId": "N531HC", "registration": "N531HC", "inspectionType": "800 Hour", "dueDate": "2027-11-08", "hoursRemaining": 507.8, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N531HC-2400-2030-10-19", "aircraftId": "N531HC", "registration": "N531HC", "inspectionType": "2400 Hour", "dueDate": "2030-10-19", "hoursRemaining": 1399.6, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N531HC-3200-2035-10-13", "aircraftId": "N531HC", "registration": "N531HC", "inspectionType": "3200 Hour", "dueDate": "2035-10-13", "hoursRemaining": 2907.8, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N631HC-50-2028-07-20", "aircraftId": "N631HC", "registration": "N631HC", "inspectionType": "50 Hour", "dueDate": "2028-07-20", "hoursRemaining": 49.6, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N631HC-100-2030-02-14", "aircraftId": "N631HC", "registration": "N631HC", "inspectionType": "100 Hour", "dueDate": "2030-02-14", "hoursRemaining": 82.4, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N631HC-200-2033-05-28", "aircraftId": "N631HC", "registration": "N631HC", "inspectionType": "200 Hour", "dueDate": "2033-05-28", "hoursRemaining": 150.9, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N631HC-400-2033-06-07", "aircraftId": "N631HC", "registration": "N631HC", "inspectionType": "400 Hour", "dueDate": "2033-06-07", "hoursRemaining": 151.5, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N631HC-800-2052-08-06", "aircraftId": "N631HC", "registration": "N631HC", "inspectionType": "800 Hour", "dueDate": "2052-08-06", "hoursRemaining": 551.5, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N631HC-2400-2052-08-24", "aircraftId": "N631HC", "registration": "N631HC", "inspectionType": "2400 Hour", "dueDate": "2052-08-24", "hoursRemaining": 552.5, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N631HC-3200-2090-12-23", "aircraftId": "N631HC", "registration": "N631HC", "inspectionType": "3200 Hour", "dueDate": "2090-12-23", "hoursRemaining": 1352.5, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N731HC-50-2026-03-26", "aircraftId": "N731HC", "registration": "N731HC", "inspectionType": "50 Hour", "dueDate": "2026-03-26", "hoursRemaining": 29.4, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N731HC-100-2026-05-02", "aircraftId": "N731HC", "registration": "N731HC", "inspectionType": "100 Hour", "dueDate": "2026-05-02", "hoursRemaining": 79.4, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N731HC-200-2026-07-15", "aircraftId": "N731HC", "registration": "N731HC", "inspectionType": "200 Hour", "dueDate": "2026-07-15", "hoursRemaining": 179.4, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N731HC-400-2026-12-09", "aircraftId": "N731HC", "registration": "N731HC", "inspectionType": "400 Hour", "dueDate": "2026-12-09", "hoursRemaining": 379.4, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N731HC-800-2027-09-30", "aircraftId": "N731HC", "registration": "N731HC", "inspectionType": "800 Hour", "dueDate": "2027-09-30", "hoursRemaining": 779.4, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N731HC-2400-2030-12-22", "aircraftId": "N731HC", "registration": "N731HC", "inspectionType": "2400 Hour", "dueDate": "2030-12-22", "hoursRemaining": 2379.4, "notes": "Projected from utilization as of 2026-03-05"}, {"id": "N731HC-3200-2032-08-03", "aircraftId": "N731HC", "registration": "N731HC", "inspectionType": "3200 Hour", "dueDate": "2032-08-03", "hoursRemaining": 3179.4, "notes": "Projected from utilization as of 2026-03-05"}], "aircraft": [{"id": "N251HC", "registration": "N251HC"}, {"id": "N261HC", "registration": "N261HC"}, {"id": "N271HC", "registration": "N271HC"}, {"id": "N281HC", "registration": "N281HC"}, {"id": "N291HC", "registration": "N291HC"}, {"id": "N431HC", "registration": "N431HC"}, {"id": "N531HC", "registration": "N531HC"}, {"id": "N631HC", "registration": "N631HC"}, {"id": "N731HC", "registration": "N731HC"}], "inspectionTypes": ["50 Hour", "100 Hour", "200 Hour", "400 Hour", "800 Hour", "2400 Hour", "3200 Hour"]}</script><script>(function(){var root=document.getElementById("calendar-react-root");var status=document.getElementById("calendar-react-status");var dataEl=document.getElementById("calendar-react-data");function setStatus(msg){if(status){status.textContent=msg;}}function render(){if(typeof window.renderMaintenanceCalendar!=="function"){setStatus("React bundle not found; showing legacy calendar fallback.");return;}try{var payload=JSON.parse(dataEl.textContent||"{}");window.renderMaintenanceCalendar(root,payload);setStatus("React calendar loaded.");var legacy=document.getElementById("calendar-legacy-fallback");if(legacy){legacy.style.display="none";}}catch(err){console.error(err);setStatus("React calendar failed to initialize; showing fallback.");}}if(typeof window.renderMaintenanceCalendar==="function"){render();return;}var script=document.createElement("script");script.src="maintenance-calendar-ux/calendar-island.js";script.onload=render;script.onerror=function(){setStatus("React bundle not found; showing legacy calendar fallback.");};document.head.appendChild(script);})();</script><div id="calendar-legacy-fallback" class="cal-legacy-wrap"><div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:16px;">Dates projected from average daily utilization. Actual dates will vary.</div><div class="cal-legend"><span class="cal-leg-item"><span class="cal-leg-dot cal-ev-overdue"></span>OVERDUE</span><span class="cal-leg-item"><span class="cal-leg-dot cal-ev-urgent"></span>DUE &le;30 DAYS</span><span class="cal-leg-item"><span class="cal-leg-dot cal-ev-soon"></span>DUE &le;90 DAYS</span><span class="cal-leg-item"><span class="cal-leg-dot cal-ev-ok"></span>SCHEDULED</span></div><div class="cal-months-wrap"><div class="cal-month"><div class="cal-month-title">MARCH 2026</div><div class="cal-grid-days"><div class="cal-dow">MON</div><div class="cal-dow">TUE</div><div class="cal-dow">WED</div><div class="cal-dow">THU</div><div class="cal-dow">FRI</div><div class="cal-dow">SAT</div><div class="cal-dow">SUN</div><div class="cal-empty"></div><div class="cal-empty"></div><div class="cal-empty"></div><div class="cal-empty"></div><div class="cal-empty"></div><div class="cal-empty"></div><div class="cal-day cal-past" data-date="2026-03-01"><div class="cal-day-num">1</div></div><div class="cal-day cal-past" data-date="2026-03-02"><div class="cal-day-num">2</div></div><div class="cal-day cal-past" data-date="2026-03-03"><div class="cal-day-num">3</div></div><div class="cal-day cal-past" data-date="2026-03-04"><div class="cal-day-num">4</div></div><div class="cal-day cal-today" data-date="2026-03-05"><div class="cal-day-num">5</div></div><div class="cal-day" data-date="2026-03-06"><div class="cal-day-num">6</div></div><div class="cal-day" data-date="2026-03-07"><div class="cal-day-num">7</div></div><div class="cal-day" data-date="2026-03-08"><div class="cal-day-num">8</div></div><div class="cal-day" data-date="2026-03-09"><div class="cal-day-num">9</div></div><div class="cal-day" data-date="2026-03-10"><div class="cal-day-num">10</div></div><div class="cal-day cal-day-urgent" data-date="2026-03-11"><div class="cal-day-num">11</div><div class="cal-ev cal-ev-urgent">N531HC 100h</div></div><div class="cal-day cal-day-urgent" data-date="2026-03-12"><div class="cal-day-num">12</div><div class="cal-ev cal-ev-urgent">N261HC 50h</div></div><div class="cal-day" data-date="2026-03-13"><div class="cal-day-num">13</div></div><div class="cal-day cal-day-urgent" data-date="2026-03-14"><div class="cal-day-num">14</div><div class="cal-ev cal-ev-urgent">N531HC 50h</div></div><div class="cal-day" data-date="2026-03-15"><div class="cal-day-num">15</div></div><div class="cal-day" data-date="2026-03-16"><div class="cal-day-num">16</div></div><div class="cal-day" data-date="2026-03-17"><div class="cal-day-num">17</div></div><div class="cal-day" data-date="2026-03-18"><div class="cal-day-num">18</div></div><div class="cal-day" data-date="2026-03-19"><div class="cal-day-num">19</div></div><div class="cal-day" data-date="2026-03-20"><div class="cal-day-num">20</div></div><div class="cal-day" data-date="2026-03-21"><div class="cal-day-num">21</div></div><div class="cal-day" data-date="2026-03-22"><div class="cal-day-num">22</div></div><div class="cal-day" data-date="2026-03-23"><div class="cal-day-num">23</div></div><div class="cal-day" data-date="2026-03-24"><div class="cal-day-num">24</div></div><div class="cal-day cal-day-urgent" data-date="2026-03-25"><div class="cal-day-num">25</div><div class="cal-ev cal-ev-urgent">N281HC 200h</div><div class="cal-ev cal-ev-urgent">N291HC 50h</div></div><div class="cal-day cal-day-urgent" data-date="2026-03-26"><div class="cal-day-num">26</div><div class="cal-ev cal-ev-urgent">N731HC 50h</div></div><div class="cal-day cal-day-urgent" data-date="2026-03-27"><div class="cal-day-num">27</div><div class="cal-ev cal-ev-urgent">N281HC 50h</div></div><div class="cal-day" data-date="2026-03-28"><div class="cal-day-num">28</div></div><div class="cal-day cal-day-urgent" data-date="2026-03-29"><div class="cal-day-num">29</div><div class="cal-ev cal-ev-urgent">N281HC 100h</div></div><div class="cal-day" data-date="2026-03-30"><div class="cal-day-num">30</div></div><div class="cal-day" data-date="2026-03-31"><div class="cal-day-num">31</div></div></div></div><div class="cal-month"><div class="cal-month-title">APRIL 2026</div><div class="cal-grid-days"><div class="cal-dow">MON</div><div class="cal-dow">TUE</div><div class="cal-dow">WED</div><div class="cal-dow">THU</div><div class="cal-dow">FRI</div><div class="cal-dow">SAT</div><div class="cal-dow">SUN</div><div class="cal-empty"></div><div class="cal-empty"></div><div class="cal-day cal-day-urgent" data-date="2026-04-01"><div class="cal-day-num">1</div><div class="cal-ev cal-ev-urgent">N251HC 50h</div></div><div class="cal-day" data-date="2026-04-02"><div class="cal-day-num">2</div></div><div class="cal-day" data-date="2026-04-03"><div class="cal-day-num">3</div></div><div class="cal-day" data-date="2026-04-04"><div class="cal-day-num">4</div></div><div class="cal-day" data-date="2026-04-05"><div class="cal-day-num">5</div></div><div class="cal-day" data-date="2026-04-06"><div class="cal-day-num">6</div></div><div class="cal-day" data-date="2026-04-07"><div class="cal-day-num">7</div></div><div class="cal-day" data-date="2026-04-08"><div class="cal-day-num">8</div></div><div class="cal-day" data-date="2026-04-09"><div class="cal-day-num">9</div></div><div class="cal-day" data-date="2026-04-10"><div class="cal-day-num">10</div></div><div class="cal-day" data-date="2026-04-11"><div class="cal-day-num">11</div></div><div class="cal-day" data-date="2026-04-12"><div class="cal-day-num">12</div></div><div class="cal-day" data-date="2026-04-13"><div class="cal-day-num">13</div></div><div class="cal-day" data-date="2026-04-14"><div class="cal-day-num">14</div></div><div class="cal-day" data-date="2026-04-15"><div class="cal-day-num">15</div></div><div class="cal-day" data-date="2026-04-16"><div class="cal-day-num">16</div></div><div class="cal-day" data-date="2026-04-17"><div class="cal-day-num">17</div></div><div class="cal-day" data-date="2026-04-18"><div class="cal-day-num">18</div></div><div class="cal-day" data-date="2026-04-19"><div class="cal-day-num">19</div></div><div class="cal-day" data-date="2026-04-20"><div class="cal-day-num">20</div></div><div class="cal-day cal-day-soon" data-date="2026-04-21"><div class="cal-day-num">21</div><div class="cal-ev cal-ev-soon">N261HC 200h</div></div><div class="cal-day" data-date="2026-04-22"><div class="cal-day-num">22</div></div><div class="cal-day cal-day-soon" data-date="2026-04-23"><div class="cal-day-num">23</div><div class="cal-ev cal-ev-soon">N261HC 100h</div></div><div class="cal-day cal-day-soon" data-date="2026-04-24"><div class="cal-day-num">24</div><div class="cal-ev cal-ev-soon">N251HC 100h</div></div><div class="cal-day" data-date="2026-04-25"><div class="cal-day-num">25</div></div><div class="cal-day cal-day-soon" data-date="2026-04-26"><div class="cal-day-num">26</div><div class="cal-ev cal-ev-soon">N251HC 200h</div></div><div class="cal-day" data-date="2026-04-27"><div class="cal-day-num">27</div></div><div class="cal-day" data-date="2026-04-28"><div class="cal-day-num">28</div></div><div class="cal-day" data-date="2026-04-29"><div class="cal-day-num">29</div></div><div class="cal-day" data-date="2026-04-30"><div class="cal-day-num">30</div></div></div></div><div class="cal-month"><div class="cal-month-title">MAY 2026</div><div class="cal-grid-days"><div class="cal-dow">MON</div><div class="cal-dow">TUE</div><div class="cal-dow">WED</div><div class="cal-dow">THU</div><div class="cal-dow">FRI</div><div class="cal-dow">SAT</div><div class="cal-dow">SUN</div><div class="cal-empty"></div><div class="cal-empty"></div><div class="cal-empty"></div><div class="cal-empty"></div><div class="cal-day" data-date="2026-05-01"><div class="cal-day-num">1</div></div><div class="cal-day cal-day-soon" data-date="2026-05-02"><div class="cal-day-num">2</div><div class="cal-ev cal-ev-soon">N731HC 100h</div></div><div class="cal-day" data-date="2026-05-03"><div class="cal-day-num">3</div></div><div class="cal-day" data-date="2026-05-04"><div class="cal-day-num">4</div></div><div class="cal-day" data-date="2026-05-05"><div class="cal-day-num">5</div></div><div class="cal-day" data-date="2026-05-06"><div class="cal-day-num">6</div></div><div class="cal-day" data-date="2026-05-07"><div class="cal-day-num">7</div></div><div class="cal-day" data-date="2026-05-08"><div class="cal-day-num">8</div></div><div class="cal-day" data-date="2026-05-09"><div class="cal-day-num">9</div></div><div class="cal-day" data-date="2026-05-10"><div class="cal-day-num">10</div></div><div class="cal-day" data-date="2026-05-11"><div class="cal-day-num">11</div></div><div class="cal-day" data-date="2026-05-12"><div class="cal-day-num">12</div></div><div class="cal-day" data-date="2026-05-13"><div class="cal-day-num">13</div></div><div class="cal-day" data-date="2026-05-14"><div class="cal-day-num">14</div></div><div class="cal-day" data-date="2026-05-15"><div class="cal-day-num">15</div></div><div class="cal-day" data-date="2026-05-16"><div class="cal-day-num">16</div></div><div class="cal-day" data-date="2026-05-17"><div class="cal-day-num">17</div></div><div class="cal-day" data-date="2026-05-18"><div class="cal-day-num">18</div></div><div class="cal-day" data-date="2026-05-19"><div class="cal-day-num">19</div></div><div class="cal-day" data-date="2026-05-20"><div class="cal-day-num">20</div></div><div class="cal-day" data-date="2026-05-21"><div class="cal-day-num">21</div></div><div class="cal-day" data-date="2026-05-22"><div class="cal-day-num">22</div></div><div class="cal-day" data-date="2026-05-23"><div class="cal-day-num">23</div></div><div class="cal-day" data-date="2026-05-24"><div class="cal-day-num">24</div></div><div class="cal-day" data-date="2026-05-25"><div class="cal-day-num">25</div></div><div class="cal-day" data-date="2026-05-26"><div class="cal-day-num">26</div></div><div class="cal-day" data-date="2026-05-27"><div class="cal-day-num">27</div></div><div class="cal-day" data-date="2026-05-28"><div class="cal-day-num">28</div></div><div class="cal-day" data-date="2026-05-29"><div class="cal-day-num">29</div></div><div class="cal-day" data-date="2026-05-30"><div class="cal-day-num">30</div></div><div class="cal-day" data-date="2026-05-31"><div class="cal-day-num">31</div></div></div></div></div></div>
+<style>.cal-wrap{font-family:var(--mono)}.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}.cal-nav-btn{background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:var(--sans);font-weight:700;font-size:14px;letter-spacing:2px;padding:8px 20px;border-radius:3px;cursor:pointer}.cal-nav-btn:hover{border-color:var(--blue);color:var(--blue)}.cal-month-label{font-family:var(--sans);font-weight:900;font-size:22px;letter-spacing:3px;color:var(--heading)}.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}.cal-dow-hdr{font-family:var(--mono);font-size:10px;color:var(--muted);text-align:center;padding:6px 0;letter-spacing:2px}.cal-cell{background:var(--surface);border:1px solid var(--border);border-radius:4px;min-height:110px;padding:6px;cursor:pointer;transition:border-color .15s}.cal-cell:hover{border-color:var(--blue)}.cal-cell.other-month{opacity:.25}.cal-cell.is-today{border-color:var(--blue)!important;border-width:2px}.cal-cell.is-past{opacity:.5}.cal-cell.has-overdue{background:#1c0a0a;border-color:#c0392b}.cal-cell.has-urgent{background:#1a1200;border-color:#e67e22}.cal-cell.has-soon{background:#0d1a0d;border-color:#27ae60}.cal-cell.has-ok{background:#0a1520;border-color:#2980b9}.cal-day-num{font-family:var(--sans);font-weight:700;font-size:16px;color:var(--muted);margin-bottom:5px;line-height:1}.cal-cell.is-today .cal-day-num{color:var(--blue)}.cal-ev-bar{font-size:11px;font-weight:700;padding:3px 7px;border-radius:3px;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.3px;cursor:default}.ev-overdue{background:#c0392b;color:#fff}.ev-urgent{background:#e67e22;color:#000}.ev-soon{background:#27ae60;color:#fff}.ev-ok{background:#2980b9;color:#fff}.cal-user-note{font-size:10px;padding:3px 6px;border-radius:2px;margin-bottom:2px;background:#2d3748;color:#e2e8f0;border-left:3px solid #f6ad55;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cal-legend{display:flex;gap:16px;margin-bottom:16px;flex-wrap:wrap;align-items:center}.cal-leg{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--muted)}.cal-leg-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}</style><div class="section-label">PROJECTED MAINTENANCE CALENDAR</div><div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:14px;">Dates projected from average daily utilization &nbsp;&middot;&nbsp; Click any day to add a note</div><div class="cal-legend"><div class="cal-leg"><div class="cal-leg-dot ev-overdue"></div>OVERDUE</div><div class="cal-leg"><div class="cal-leg-dot ev-urgent"></div>DUE &le;30 DAYS</div><div class="cal-leg"><div class="cal-leg-dot ev-soon"></div>DUE &le;90 DAYS</div><div class="cal-leg"><div class="cal-leg-dot ev-ok"></div>SCHEDULED</div><div style="margin-left:auto;font-size:10px;color:var(--muted);">Click any day to add a note</div></div><div class="cal-wrap"><div class="cal-nav"><button class="cal-nav-btn" id="cal-prev">&#8592; PREV</button><div class="cal-month-label" id="cal-month-label"></div><button class="cal-nav-btn" id="cal-next">NEXT &#8594;</button></div><div class="cal-grid"><div class="cal-dow-hdr">MON</div><div class="cal-dow-hdr">TUE</div><div class="cal-dow-hdr">WED</div><div class="cal-dow-hdr">THU</div><div class="cal-dow-hdr">FRI</div><div class="cal-dow-hdr">SAT</div><div class="cal-dow-hdr">SUN</div><div id="cal-grid-body" style="display:contents"></div></div></div><script>(function(){var EVENTS={"2026-05-13": [["N251HC", 100, "soon", 87.6]], "2026-05-15": [["N251HC", 200, "soon", 90.2]], "2026-10-16": [["N251HC", 400, "ok", 290.2]], "2026-10-25": [["N251HC", 800, "ok", 300.9]], "2028-07-03": [["N251HC", 2400, "ok", 1103.1]], "2026-10-10": [["N251HC", 3200, "ok", 282.6], ["N531HC", 200, "ok", 105.4]], "2026-03-21": [["N261HC", 50, "urgent", 9.2]], "2026-06-07": [["N261HC", 100, "ok", 59.2]], "2026-06-05": [["N261HC", 200, "soon", 57.7]], "2027-04-12": [["N261HC", 400, "ok", 257.7]], "2027-04-05": [["N261HC", 800, "ok", 253.0]], "2030-09-14": [["N261HC", 2400, "ok", 1062.0]], "2027-06-11": [["N261HC", 3200, "ok", 296.1]], "2027-02-19": [["N271HC", 50, "ok", 44.9]], "2027-02-20": [["N271HC", 100, "ok", 45.0]], "2029-04-08": [["N271HC", 200, "ok", 145.0]], "2029-11-12": [["N271HC", 400, "ok", 173.0]], "2030-01-23": [["N271HC", 800, "ok", 182.3]], "2029-10-02": [["N271HC", 2400, "ok", 167.8]], "2081-03-03": [["N271HC", 3200, "ok", 2582.3]], "2026-04-08": [["N281HC", 50, "soon", 23.1]], "2026-04-10": [["N281HC", 100, "soon", 24.5]], "2026-04-05": [["N281HC", 200, "urgent", 20.6]], "2027-01-10": [["N281HC", 400, "ok", 220.6]], "2028-07-23": [["N281HC", 800, "ok", 620.6]], "2027-01-15": [["N281HC", 2400, "ok", 224.1]], "2037-10-04": [["N281HC", 3200, "ok", 3020.6]], "2026-04-03": [["N291HC", 50, "urgent", 13.5]], "2026-07-12": [["N291HC", 100, "ok", 63.5]], "2026-07-13": [["N291HC", 200, "ok", 64.2]], "2026-07-22": [["N291HC", 400, "ok", 68.6]], "2028-09-29": [["N291HC", 800, "ok", 468.6]], "2033-02-24": [["N291HC", 2400, "ok", 1273.1]], "2028-10-22": [["N291HC", 3200, "ok", 480.2]], "2027-01-26": [["N431HC", 50, "ok", 32.5]], "2028-06-09": [["N431HC", 100, "ok", 82.5]], "2031-03-06": [["N431HC", 200, "ok", 182.5]], "2036-08-26": [["N431HC", 400, "ok", 382.5]], "2036-11-02": [["N431HC", 800, "ok", 389.3]], "2037-02-23": [["N431HC", 2400, "ok", 400.6]], "2059-01-19": [["N431HC", 3200, "ok", 1200.6]], "2026-03-22": [["N531HC", 50, "urgent", 7.2]], "2026-03-18": [["N531HC", 100, "urgent", 5.4]], "2026-10-15": [["N531HC", 400, "ok", 107.8]], "2029-01-16": [["N531HC", 800, "ok", 507.8]], "2034-01-26": [["N531HC", 2400, "ok", 1399.6]], "2042-07-28": [["N531HC", 3200, "ok", 2907.8]], "2028-07-22": [["N631HC", 50, "ok", 49.6]], "2030-02-16": [["N631HC", 100, "ok", 82.4]], "2033-05-30": [["N631HC", 200, "ok", 150.9]], "2033-06-09": [["N631HC", 400, "ok", 151.5]], "2052-08-08": [["N631HC", 800, "ok", 551.5]], "2052-08-26": [["N631HC", 2400, "ok", 552.5]], "2090-12-25": [["N631HC", 3200, "ok", 1352.5]], "2026-03-29": [["N731HC", 50, "urgent", 29.4]], "2026-05-05": [["N731HC", 100, "soon", 79.4]], "2026-07-17": [["N731HC", 200, "ok", 179.4]], "2026-12-12": [["N731HC", 400, "ok", 379.4]], "2027-10-02": [["N731HC", 800, "ok", 779.4]], "2030-12-24": [["N731HC", 2400, "ok", 2379.4]], "2032-08-05": [["N731HC", 3200, "ok", 3179.4]]};var curYear=2026,curMonth=2;var NOTES_KEY='ihc_cal_notes_v2';function loadNotes(){try{return JSON.parse(localStorage.getItem(NOTES_KEY)||'{}');}catch(e){return {};}}function saveNotes(n){localStorage.setItem(NOTES_KEY,JSON.stringify(n));}function fmt(y,m,d){return y+'-'+(m<9?'0':'')+(m+1)+'-'+(d<10?'0':'')+d;}function render(){var today=new Date();var td=fmt(today.getFullYear(),today.getMonth(),today.getDate());var notes=loadNotes();var daysInMonth=new Date(curYear,curMonth+1,0).getDate();var startDow=(new Date(curYear,curMonth,1).getDay()+6)%7;var MNAMES=['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];document.getElementById('cal-month-label').textContent=MNAMES[curMonth]+' '+curYear;var grid=document.getElementById('cal-grid-body');grid.innerHTML='';for(var b=0;b<startDow;b++){var bl=document.createElement('div');bl.className='cal-cell other-month';grid.appendChild(bl);}for(var d=1;d<=daysInMonth;d++){var key=fmt(curYear,curMonth,d);var evs=EVENTS[key]||[];var note=notes[key];var cell=document.createElement('div');cell.className='cal-cell';cell.setAttribute('data-date',key);if(key===td)cell.classList.add('is-today');else if(key<td)cell.classList.add('is-past');var urg=evs.map(function(e){return e[2];});if(urg.indexOf('overdue')>=0)cell.classList.add('has-overdue');else if(urg.indexOf('urgent')>=0)cell.classList.add('has-urgent');else if(urg.indexOf('soon')>=0)cell.classList.add('has-soon');else if(urg.length)cell.classList.add('has-ok');var num=document.createElement('div');num.className='cal-day-num';num.textContent=d;cell.appendChild(num);evs.forEach(function(ev){var bar=document.createElement('div');var cls={overdue:'ev-overdue',urgent:'ev-urgent',soon:'ev-soon',ok:'ev-ok'}[ev[2]]||'ev-ok';bar.className='cal-ev-bar '+cls;bar.textContent=ev[0]+' '+ev[1]+'h';bar.title=ev[0]+' '+ev[1]+' Hr — '+(ev[3]<0?'OVERDUE '+Math.abs(ev[3]).toFixed(0)+' hrs past':ev[3].toFixed(1)+' hrs remaining');cell.appendChild(bar);});if(note&&(note.label||note.text)){var nd=document.createElement('div');nd.className='cal-user-note';nd.textContent=(note.label||'NOTE')+(note.text?': '+note.text:'');cell.appendChild(nd);}cell.addEventListener('click',function(){openModal(this.getAttribute('data-date'),loadNotes());}.bind(cell));grid.appendChild(cell);}}function openModal(dateKey,notes){var ex=notes[dateKey]||{};document.getElementById('cal-modal-date').textContent=dateKey;document.getElementById('cal-modal-label').value=ex.label||'';document.getElementById('cal-modal-text').value=ex.text||'';document.getElementById('cal-modal-color').value=ex.color||'#f6ad55';document.getElementById('cal-modal').style.display='flex';document.getElementById('cal-modal-text').focus();}function closeModal(){document.getElementById('cal-modal').style.display='none';}document.getElementById('cal-prev').addEventListener('click',function(){curMonth--;if(curMonth<0){curMonth=11;curYear--;}render();});document.getElementById('cal-next').addEventListener('click',function(){curMonth++;if(curMonth>11){curMonth=0;curYear++;}render();});document.getElementById('cal-modal-save').addEventListener('click',function(){var dk=document.getElementById('cal-modal-date').textContent;var label=document.getElementById('cal-modal-label').value.trim();var text=document.getElementById('cal-modal-text').value.trim();var color=document.getElementById('cal-modal-color').value;var notes=loadNotes();if(label||text)notes[dk]={label:label,text:text,color:color};else delete notes[dk];saveNotes(notes);closeModal();render();});document.getElementById('cal-modal-clear').addEventListener('click',function(){var dk=document.getElementById('cal-modal-date').textContent;var notes=loadNotes();delete notes[dk];saveNotes(notes);closeModal();render();});document.getElementById('cal-modal-cancel').addEventListener('click',closeModal);document.getElementById('cal-modal').addEventListener('click',function(e){if(e.target===this)closeModal();});render();})();</script>
   </div>
 
   <!-- BASES TAB -->
   <div id="tab-bases" class="tab-content">
-<style>
-      .ac-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:16px;}
-      .ac-card{background:var(--surface);border:1px solid var(--border);border-radius:4px;overflow:hidden;transition:border-color .2s;}
-      .ac-card-base {border-color:rgba(0,230,118,0.35);}
-      .ac-card-air  {border-color:rgba(41,182,246,0.4);}
-      .ac-card-away {border-color:rgba(255,171,0,0.35);}
-      .ac-card-nodata{opacity:.55;}
-      .ac-card-header{display:flex;justify-content:space-between;align-items:baseline;
-        padding:10px 14px 8px;background:var(--surface2);border-bottom:1px solid var(--border);}
-      .ac-tail{font-family:var(--sans);font-weight:900;font-size:18px;letter-spacing:1px;color:var(--heading);}
-      .ac-hours{font-family:var(--mono);font-size:10px;color:var(--muted);}
-      .ac-card-body{padding:12px 14px;}
-      .ac-loc{font-family:var(--mono);font-size:11px;line-height:1.6;}
-      .ac-loc-base  {color:var(--green);font-weight:700;letter-spacing:.5px;}
-      .ac-loc-air   {color:var(--blue);font-weight:700;letter-spacing:.5px;}
-      .ac-loc-away  {color:var(--amber);font-weight:700;letter-spacing:.5px;}
-      .ac-loc-unknown{color:var(--muted);}
-      .ac-loc-detail{color:var(--muted);font-size:10px;}
-      .ac-age{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:6px;opacity:.6;}
-    </style>
-    <div class="section-label">Aircraft Location</div>
-    <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:4px;">
-      Live positions via SkyRouter GPS · refreshes every 60 seconds
-      
-    </div>
-    <div class="ac-grid" id="ac-location-grid">
-        <div class="ac-card ac-card-nodata">
-          <div class="ac-card-header">
-            <div class="ac-tail">N251HC</div>
-            <div class="ac-hours">6,053.0 TT</div>
-          </div>
-          <div class="ac-card-body">
-            <div class="ac-loc"><span class="ac-loc-unknown">NO DATA</span></div>
-            
-          </div>
-        </div>
-        <div class="ac-card ac-card-nodata">
-          <div class="ac-card-header">
-            <div class="ac-tail">N261HC</div>
-            <div class="ac-hours">6,078.2 TT</div>
-          </div>
-          <div class="ac-card-body">
-            <div class="ac-loc"><span class="ac-loc-unknown">NO DATA</span></div>
-            
-          </div>
-        </div>
-        <div class="ac-card ac-card-nodata">
-          <div class="ac-card-header">
-            <div class="ac-tail">N271HC</div>
-            <div class="ac-hours">6,969.9 TT</div>
-          </div>
-          <div class="ac-card-body">
-            <div class="ac-loc"><span class="ac-loc-unknown">NO DATA</span></div>
-            
-          </div>
-        </div>
-        <div class="ac-card ac-card-nodata">
-          <div class="ac-card-header">
-            <div class="ac-tail">N281HC</div>
-            <div class="ac-hours">6,499.7 TT</div>
-          </div>
-          <div class="ac-card-body">
-            <div class="ac-loc"><span class="ac-loc-unknown">NO DATA</span></div>
-            
-          </div>
-        </div>
-        <div class="ac-card ac-card-nodata">
-          <div class="ac-card-header">
-            <div class="ac-tail">N291HC</div>
-            <div class="ac-hours">5,892.0 TT</div>
-          </div>
-          <div class="ac-card-body">
-            <div class="ac-loc"><span class="ac-loc-unknown">NO DATA</span></div>
-            
-          </div>
-        </div>
-        <div class="ac-card ac-card-nodata">
-          <div class="ac-card-header">
-            <div class="ac-tail">N431HC</div>
-            <div class="ac-hours">1,999.4 TT</div>
-          </div>
-          <div class="ac-card-body">
-            <div class="ac-loc"><span class="ac-loc-unknown">NO DATA</span></div>
-            
-          </div>
-        </div>
-        <div class="ac-card ac-card-nodata">
-          <div class="ac-card-header">
-            <div class="ac-tail">N531HC</div>
-            <div class="ac-hours">3,323.1 TT</div>
-          </div>
-          <div class="ac-card-body">
-            <div class="ac-loc"><span class="ac-loc-unknown">NO DATA</span></div>
-            
-          </div>
-        </div>
-        <div class="ac-card ac-card-nodata">
-          <div class="ac-card-header">
-            <div class="ac-tail">N631HC</div>
-            <div class="ac-hours">1,847.5 TT</div>
-          </div>
-          <div class="ac-card-body">
-            <div class="ac-loc"><span class="ac-loc-unknown">NO DATA</span></div>
-            
-          </div>
-        </div>
-        <div class="ac-card ac-card-nodata">
-          <div class="ac-card-header">
-            <div class="ac-tail">N731HC</div>
-            <div class="ac-hours">20.6 TT</div>
-          </div>
-          <div class="ac-card-body">
-            <div class="ac-loc"><span class="ac-loc-unknown">NO DATA</span></div>
-            
-          </div>
-        </div></div>
+<div style="font-family:var(--mono);font-size:12px;color:var(--muted);padding:20px;">No position data available. Runs after fetch_positions.py completes.</div>
   </div>
 </main>
 <footer>
@@ -814,24 +695,6 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 <script>
-  const DASHBOARD_VERSION = "20260305075429";
-
-  (function checkForFreshDashboard() {
-    const versionUrl = 'data/dashboard_version.json?ts=' + Date.now();
-    fetch(versionUrl, { cache: 'no-store' })
-      .then(res => res.ok ? res.json() : null)
-      .then(data => {
-        if (!data || !data.version || data.version === DASHBOARD_VERSION) return;
-
-        const nextUrl = new URL(window.location.href);
-        if (nextUrl.searchParams.get('v') === data.version) return;
-
-        nextUrl.searchParams.set('v', data.version);
-        window.location.replace(nextUrl.toString());
-      })
-      .catch(() => {});
-  })();
-
   function switchTab(tabName, btn) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
@@ -895,7 +758,7 @@
           datasets: [
             {
               label: 'Avg Daily (hrs)',
-              data: [1.74,1.21,0.36,1.03,0.67,0.1,0.83,0.06,1.36],
+              data: [1.3,0.64,0.13,0.71,0.5,0.1,0.49,0.06,1.36],
               backgroundColor: 'rgba(41,182,246,0.8)',
               borderColor: '#29b6f6',
               borderWidth: 1,
@@ -903,7 +766,7 @@
             },
             {
               label: 'Avg Weekly (hrs)',
-              data: [12.2,8.5,2.5,7.2,4.7,0.7,5.8,0.4,9.5],
+              data: [9.1,4.5,0.9,5.0,3.5,0.7,3.4,0.4,9.5],
               backgroundColor: 'rgba(246,173,85,0.8)',
               borderColor: '#f6ad55',
               borderWidth: 1,
@@ -928,14 +791,14 @@
               type: 'linear', position: 'left',
               beginAtZero: true,
               title: { display: true, text: 'Daily Avg (hrs)', color: '#29b6f6', font: { size: 10 } },
-              ticks: { color: '#fff', font: { size: 10 } },
+              ticks: { color: '#4a5568', font: { size: 10 } },
               grid: { color: 'rgba(30,37,48,0.8)' }
             },
             yWeekly: {
               type: 'linear', position: 'right',
               beginAtZero: true,
               title: { display: true, text: 'Weekly Avg (hrs)', color: '#f6ad55', font: { size: 10 } },
-              ticks: { color: '#fff', font: { size: 10 } },
+              ticks: { color: '#4a5568', font: { size: 10 } },
               grid: { drawOnChartArea: false }
             },
             x: {
@@ -947,117 +810,6 @@
         plugins: [ChartDataLabels]
       });
     })();
-
-// ── LIVE AIRCRAFT LOCATION REFRESH ────────────────────────────────────────
-  (function() {
-    var HAS_POSITIONS_FEED = false;
-    if (!HAS_POSITIONS_FEED) return;
-
-    var ALL_TAILS = ['N251HC','N261HC','N271HC','N281HC','N291HC',
-                     'N431HC','N531HC','N631HC','N731HC'];
-
-    var BASES = {
-      LOGAN:      {name:'Logan',      lat:41.7912,  lon:-111.8522},
-      MCKAY:      {name:'McKay-Dee',  lat:41.2545,  lon:-112.0126},
-      IMED:       {name:'IMed',       lat:40.2338,  lon:-111.6585},
-      PROVO:      {name:'Provo',      lat:40.2192,  lon:-111.7233},
-      ROOSEVELT:  {name:'Roosevelt',  lat:40.2765,  lon:-110.0518},
-      CEDAR_CITY: {name:'Cedar City', lat:37.7010,  lon:-113.0989},
-      ST_GEORGE:  {name:'St George',  lat:37.0365,  lon:-113.5101},
-      KSLC:       {name:'KSLC',       lat:40.7884,  lon:-111.9778},
-    };
-
-    function bearing(lat1,lon1,lat2,lon2) {
-      var dLon=(lon2-lon1)*Math.PI/180;
-      lat1=lat1*Math.PI/180; lat2=lat2*Math.PI/180;
-      var y=Math.sin(dLon)*Math.cos(lat2);
-      var x=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLon);
-      return ((Math.atan2(y,x)*180/Math.PI)+360)%360;
-    }
-    function cardinal(d) {
-      return ['N','NE','E','SE','S','SW','W','NW'][Math.round(d/45)%8];
-    }
-    function esc(t) {
-      return String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    }
-    function ageFmt(utcStr) {
-      if (!utcStr) return '';
-      var dt=new Date(utcStr), now=new Date();
-      var m=Math.round((now-dt)/60000);
-      if (isNaN(m)||m<0) return '';
-      return m<60 ? m+'m ago' : (m/60).toFixed(1)+'h ago';
-    }
-
-    function locLine(detail, bases) {
-      if (!detail) return '<span class="ac-loc-unknown">NO DATA</span>';
-      var status=(detail.status||'').toUpperCase();
-      var baseId=detail.closest_base||'';
-      var baseMeta=bases[baseId]||BASES[baseId]||{};
-      var baseName=baseMeta.name||baseId;
-      var distMi=detail.dist_miles||0;
-      var dir='';
-      if (detail.lat && detail.lon && baseMeta.lat) {
-        dir=cardinal(bearing(baseMeta.lat,baseMeta.lon,detail.lat,detail.lon));
-      }
-      if (status==='AT_BASE') {
-        return '<span class="ac-loc-base">AT '+esc(baseName.toUpperCase())+'</span>';
-      }
-      if (status==='AIRBORNE') {
-        var alt=detail.alt_ft ? parseInt(detail.alt_ft).toLocaleString()+' ft' : '';
-        var spd=detail.speed_kts ? Math.round(detail.speed_kts)+' kts' : '';
-        var pos=distMi && baseName ? (Math.round(distMi)+' mi '+(dir?dir+' of ':' from ')+baseName) : '';
-        var parts=[pos,alt,spd].filter(Boolean).join(' · ');
-        return '<span class="ac-loc-air">AIRBORNE</span>'+(parts?'<span class="ac-loc-detail"> '+esc(parts)+'</span>':'');
-      }
-      if (status==='AWAY') {
-        var pos=distMi && baseName ? (Math.round(distMi)+' mi '+(dir?dir+' of ':' from ')+baseName) : (baseName||'unknown');
-        return '<span class="ac-loc-away">AWAY</span><span class="ac-loc-detail"> · '+esc(pos)+'</span>';
-      }
-      return '<span class="ac-loc-unknown">'+esc(status||'UNKNOWN')+'</span>';
-    }
-
-    function render(payload) {
-      var grid = document.getElementById('ac-location-grid');
-      if (!grid || !payload) return;
-      var detail = payload.aircraft_detail || {};
-      var bases  = payload.bases || {};
-      var acHrs  = {};
-      document.querySelectorAll('#insp-tbody tr[data-tail]').forEach(function(tr) {
-        var tail = tr.getAttribute('data-tail');
-        var hrsEl = tr.querySelector('.airframe-hrs');
-        if (hrsEl) acHrs[tail] = hrsEl.textContent.replace(' TT','').trim();
-      });
-      var cards = ALL_TAILS.map(function(tail) {
-        var d = detail[tail];
-        var status = d ? (d.status||'UNKNOWN').toUpperCase() : 'NO DATA';
-        var hrs = acHrs[tail] || '';
-        var cardCls = {AT_BASE:'ac-card-base',AIRBORNE:'ac-card-air',AWAY:'ac-card-away'}[status]||'ac-card-nodata';
-        var age = d ? ageFmt(d.utc) : '';
-        return '<div class="ac-card '+cardCls+'">'
-          +'<div class="ac-card-header">'
-            +'<div class="ac-tail">'+esc(tail)+'</div>'
-            +'<div class="ac-hours">'+(hrs?esc(hrs)+' TT':'N/A')+'</div>'
-          +'</div>'
-          +'<div class="ac-card-body">'
-            +'<div class="ac-loc">'+locLine(d, bases)+'</div>'
-            +(age?'<div class="ac-age">'+esc(age)+'</div>':'')
-          +'</div>'
-        +'</div>';
-      });
-      grid.innerHTML = cards.join('');
-    }
-
-    function refresh() {
-      var ts = Date.now();
-      fetch('data/base_assignments.json?ts='+ts, {cache:'no-store'})
-        .then(function(r){ if(!r.ok) throw new Error('failed'); return r.json(); })
-        .then(render)
-        .catch(function(){});
-    }
-
-    refresh();
-    setInterval(refresh, 60000);
-  })();
 
   // ── EDITABLE CALENDAR ─────────────────────────────────────────────────────
   (function() {
@@ -1128,57 +880,23 @@
       renderUserEvents();
     }
 
-    function initCalendarEditor() {
-      var modal = document.getElementById('cal-modal');
-      var saveBtn = document.getElementById('cal-modal-save');
-      var clearBtn = document.getElementById('cal-modal-clear');
-      var cancelBtn = document.getElementById('cal-modal-cancel');
-      var labelInput = document.getElementById('cal-modal-label');
-      var textInput = document.getElementById('cal-modal-text');
-      if (!modal || !saveBtn || !clearBtn || !cancelBtn || !labelInput || !textInput) return;
-
-      // Attach click handlers to all cal-day cells
-      document.querySelectorAll('.cal-day').forEach(function(cell) {
-        cell.style.cursor = 'pointer';
-        cell.addEventListener('click', function() {
-          var dateKey = cell.getAttribute('data-date');
-          if (dateKey) openModal(dateKey);
-        });
+    // Attach click handlers to all cal-day cells
+    document.querySelectorAll('.cal-day').forEach(function(cell) {
+      cell.style.cursor = 'pointer';
+      cell.addEventListener('click', function() {
+        var dateKey = cell.getAttribute('data-date');
+        if (dateKey) openModal(dateKey);
       });
+    });
 
-      saveBtn.addEventListener('click', saveModal);
-      clearBtn.addEventListener('click', clearModal);
-      cancelBtn.addEventListener('click', closeModal);
-      modal.addEventListener('click', function(e) {
-        if (e.target === this) closeModal();
-      });
+    document.getElementById('cal-modal-save').addEventListener('click', saveModal);
+    document.getElementById('cal-modal-clear').addEventListener('click', clearModal);
+    document.getElementById('cal-modal-cancel').addEventListener('click', closeModal);
+    document.getElementById('cal-modal').addEventListener('click', function(e) {
+      if (e.target === this) closeModal();
+    });
 
-      modal.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-          e.preventDefault();
-          closeModal();
-        }
-        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-          e.preventDefault();
-          saveModal();
-        }
-      });
-
-      labelInput.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          textInput.focus();
-        }
-      });
-
-      renderUserEvents();
-    }
-
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initCalendarEditor, { once: true });
-    } else {
-      initCalendarEditor();
-    }
+    renderUserEvents();
   })();
 </script>
 
@@ -1207,7 +925,7 @@
         padding:7px 16px;border-radius:3px;cursor:pointer;font-family:monospace;font-size:11px;">
         CLEAR</button>
       <button id="cal-modal-cancel"
-        style="background:transparent;border:1px solid #fff;color:#718096;
+        style="background:transparent;border:1px solid #4a5568;color:#718096;
         padding:7px 16px;border-radius:3px;cursor:pointer;font-family:monospace;font-size:11px;">
         CANCEL</button>
       <button id="cal-modal-save"
