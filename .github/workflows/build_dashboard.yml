@@ -1,0 +1,32 @@
+name: Build Dashboard
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "data/Due-List_BIG_WEEKLY_aw109sp.csv"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build dashboard
+        run: python scripts/fleet_dashboard_generator.py
+
+      - name: Commit output
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/index.html data/flight_hours_history.json
+          git diff --staged --quiet || git commit -m "ci: rebuild dashboard [skip ci]"
+          git push
