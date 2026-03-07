@@ -18,9 +18,9 @@ from pathlib import Path
 
 OUTPUT_FOLDER = "data"
 
-INPUT_FILENAME     = "Due-List_Latest_aw109sp.csv"
+INPUT_FILENAME     = "Due-List_BIG_WEEKLY_aw109sp.csv"
 WEEKLY_FILENAME    = "Due-List_BIG_WEEKLY_aw109sp.csv"
-INPUT_FALLBACKS    = ["Due-List_Latest.csv"]
+INPUT_FALLBACKS    = ["Due-List_BIG_WEEKLY_aw109sp.csv"]
 WEEKLY_FALLBACKS   = ["Due-List_BIG_WEEKLY.csv"]
 OUTPUT_FILENAME    = "fleet_dashboard.html"
 HISTORY_FILENAME   = "flight_hours_history.json"
