@@ -18,12 +18,11 @@ from pathlib import Path
 
 OUTPUT_FOLDER = "data"
 
-
 INPUT_FILENAME     = "Due-List_Latest_aw109sp.csv"
 WEEKLY_FILENAME    = "Due-List_BIG_WEEKLY_aw109sp.csv"
 INPUT_FALLBACKS    = ["Due-List_Latest.csv"]
 WEEKLY_FALLBACKS   = ["Due-List_BIG_WEEKLY.csv"]
-OUTPUT_FILENAME    = "index.html"
+OUTPUT_FILENAME    = "fleet_dashboard.html"
 HISTORY_FILENAME   = "flight_hours_history.json"
 POSITIONS_FILENAME = "base_assignments.json"
 
@@ -1152,59 +1151,20 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
 
 
 def _build_calendar_tab(aircraft_list, flight_hours_stats):
-    """Build a month-view calendar with projected maintenance due dates."""
+    """Single-month navigable calendar with large cells."""
     import calendar as cal_mod
+    import json as _json
 
     today = datetime.today()
 
-    # Collect all projected events: {date_str: [(tail, interval, urgency), ...]}
     events = {}
-    fallback_cards = []
-
     for ac in aircraft_list:
         tail = ac['tail']
         current_hrs = ac['airframe_hrs']
         if current_hrs is None:
             continue
-
         stats = flight_hours_stats.get(tail, {})
         avg_daily = stats.get('avg_daily')
-
-        if not avg_daily or avg_daily <= 0:
-            rows = []
-            for interval in TARGET_INTERVALS:
-                v = ac['intervals'].get(interval)
-                if v is None:
-                    continue
-                rem_hrs = v.get('rem_hrs')
-                if rem_hrs is None:
-                    continue
-                if rem_hrs < 0:
-                    cls = 'cal-ev-overdue'
-                    label = 'OVERDUE'
-                elif rem_hrs <= 25:
-                    cls = 'cal-ev-urgent'
-                    label = f'{rem_hrs:.0f} hrs'
-                elif rem_hrs <= 100:
-                    cls = 'cal-ev-soon'
-                    label = f'{rem_hrs:.0f} hrs'
-                else:
-                    cls = ''
-                    label = f'{rem_hrs:.0f} hrs'
-                rows.append(
-                    f'<div class="cal-fb-row"><span class="cal-fb-insp">{interval} Hr</span>'
-                    f'<span class="cal-fb-val {cls}">{label}</span></div>'
-                )
-            if rows:
-                ah = f'{current_hrs:,.1f}' if current_hrs else 'N/A'
-                fallback_cards.append(
-                    f'<div class="cal-fb-card"><div class="cal-fb-head">'
-                    f'<span class="cal-fb-tail">{tail}</span>'
-                    f'<span class="cal-fb-hrs">{ah} TT &mdash; no utilization data</span>'
-                    f'</div>{"".join(rows)}</div>'
-                )
-            continue
-
         for interval in TARGET_INTERVALS:
             v = ac['intervals'].get(interval)
             if v is None:
@@ -1212,155 +1172,171 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
             rem_hrs = v.get('rem_hrs')
             if rem_hrs is None:
                 continue
-
-            if rem_hrs < 0:
-                due_date = today
-                urgency = 'overdue'
-            else:
-                days_until = rem_hrs / avg_daily
-                due_date = today + timedelta(days=days_until)
-                if days_until <= 30:
-                    urgency = 'urgent'
-                elif days_until <= 90:
-                    urgency = 'soon'
-                else:
-                    urgency = 'ok'
-
+            if not avg_daily or avg_daily <= 0:
+                if rem_hrs < 0:
+                    key = today.strftime('%Y-%m-%d')
+                    events.setdefault(key, []).append([tail, interval, 'overdue', rem_hrs])
+                continue
+            days_until = rem_hrs / avg_daily if rem_hrs >= 0 else 0
+            due_date = today if rem_hrs < 0 else today + timedelta(days=days_until)
+            urgency = ('overdue' if rem_hrs < 0 else
+                       'urgent'  if days_until <= 30 else
+                       'soon'    if days_until <= 90 else 'ok')
             key = due_date.strftime('%Y-%m-%d')
-            events.setdefault(key, []).append((tail, interval, urgency))
+            events.setdefault(key, []).append([tail, interval, urgency, round(rem_hrs, 1)])
 
-    # Build 3-month calendar view
-    months_html = ''
-    for month_offset in range(3):
-        m = today.month + month_offset
-        y = today.year + (m - 1) // 12
-        m = ((m - 1) % 12) + 1
-
-        month_name = datetime(y, m, 1).strftime('%B %Y').upper()
-        first_dow = datetime(y, m, 1).weekday()  # 0=Monday
-        days_in_month = cal_mod.monthrange(y, m)[1]
-
-        day_headers = ''.join(
-            f'<div class="cal-dow">{d}</div>'
-            for d in ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
-        )
-
-        cells = '<div class="cal-empty"></div>' * first_dow
-
-        for day in range(1, days_in_month + 1):
-            date_key = f'{y}-{m:02d}-{day:02d}'
-            day_events = events.get(date_key, [])
-            is_today = (y == today.year and m == today.month and day == today.day)
-            today_cls = ' cal-today' if is_today else ''
-
-            if day_events:
-                if any(e[2] == 'overdue' for e in day_events):
-                    cell_cls = 'cal-day-overdue'
-                elif any(e[2] == 'urgent' for e in day_events):
-                    cell_cls = 'cal-day-urgent'
-                elif any(e[2] == 'soon' for e in day_events):
-                    cell_cls = 'cal-day-soon'
-                else:
-                    cell_cls = 'cal-day-ok'
-
-                ev_html = ''
-                for t, interval, urgency in day_events:
-                    ev_cls = f'cal-ev-{urgency}'
-                    ev_html += f'<div class="cal-ev {ev_cls}">{t} {interval}h</div>'
-
-                cells += (
-                    f'<div class="cal-day {cell_cls}{today_cls}" data-date="{date_key}">'
-                    f'<div class="cal-day-num">{day}</div>{ev_html}</div>'
-                )
-            else:
-                is_past = (y == today.year and m == today.month and day < today.day)
-                past_cls = ' cal-past' if is_past else ''
-                cells += (
-                    f'<div class="cal-day{today_cls}{past_cls}" data-date="{date_key}">'
-                    f'<div class="cal-day-num">{day}</div></div>'
-                )
-
-        months_html += (
-            f'<div class="cal-month">'
-            f'<div class="cal-month-title">{month_name}</div>'
-            f'<div class="cal-grid-days">{day_headers}{cells}</div>'
-            f'</div>'
-        )
-
-    fallback_html = ''
-    if fallback_cards:
-        fallback_html = (
-            f'<div class="section-label" style="margin-top:32px;">AIRCRAFT WITHOUT UTILIZATION DATA</div>'
-            f'<div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:12px;">'
-            f'Showing hours remaining. Projected dates appear once utilization history accumulates.</div>'
-            f'<div class="cal-fb-grid">{"".join(fallback_cards)}</div>'
-        )
-
-    legend_html = (
-        '<div class="cal-legend">'
-        '<span class="cal-leg-item"><span class="cal-leg-dot cal-ev-overdue"></span>OVERDUE</span>'
-        '<span class="cal-leg-item"><span class="cal-leg-dot cal-ev-urgent"></span>DUE &le;30 DAYS</span>'
-        '<span class="cal-leg-item"><span class="cal-leg-dot cal-ev-soon"></span>DUE &le;90 DAYS</span>'
-        '<span class="cal-leg-item"><span class="cal-leg-dot cal-ev-ok"></span>SCHEDULED</span>'
-        '</div>'
-    )
+    events_js = _json.dumps(events)
 
     css = (
         '<style>'
-        '.cal-months-wrap{display:flex;flex-direction:column;gap:32px;}'
-        '.cal-month{width:100%;}'
-        '.cal-month-title{font-family:var(--mono);font-size:11px;font-weight:700;'
-        'color:var(--cyan);letter-spacing:2px;margin-bottom:8px;}'
-        '.cal-grid-days{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}'
-        '.cal-dow{font-family:var(--mono);font-size:9px;color:var(--muted);'
-        'text-align:center;padding:4px 0;letter-spacing:1px;}'
-        '.cal-empty{background:transparent;min-height:60px;}'
-        '.cal-day{background:#0d1117;border:1px solid #1e2533;border-radius:3px;'
-        'min-height:60px;padding:4px;position:relative;overflow:hidden;}'
-        '.cal-day-num{font-family:var(--mono);font-size:9px;color:var(--muted);margin-bottom:2px;}'
-        '.cal-today{border-color:var(--cyan)!important;}'
-        '.cal-today .cal-day-num{color:var(--cyan);font-weight:700;}'
-        '.cal-past{opacity:0.4;}'
-        '.cal-day-overdue{background:#2a0a0a;border-color:#c0392b;}'
-        '.cal-day-urgent{background:#1a1200;border-color:#e67e22;}'
-        '.cal-day-soon{background:#0d1a0d;border-color:#f39c12;}'
-        '.cal-day-ok{background:#0a1520;border-color:#2980b9;}'
-        '.cal-ev{font-family:var(--mono);font-size:8px;padding:1px 3px;'
-        'border-radius:2px;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}'
-        '.cal-ev-overdue{background:#c0392b;color:#fff;}'
-        '.cal-ev-urgent{background:#e67e22;color:#000;}'
-        '.cal-ev-soon{background:#f39c12;color:#000;}'
-        '.cal-ev-ok{background:#2980b9;color:#fff;}'
-        '.cal-legend{display:flex;gap:20px;margin-bottom:20px;font-family:var(--mono);'
-        'font-size:10px;color:var(--muted);flex-wrap:wrap;}'
-        '.cal-leg-item{display:flex;align-items:center;gap:6px;}'
-        '.cal-leg-dot{width:10px;height:10px;border-radius:2px;display:inline-block;}'
-        '.cal-fb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;}'
-        '.cal-fb-card{background:#0d1117;border:1px solid #1e2533;border-radius:4px;padding:12px;}'
-        '.cal-fb-head{display:flex;justify-content:space-between;align-items:baseline;'
-        'margin-bottom:8px;border-bottom:1px solid #1e2533;padding-bottom:6px;}'
-        '.cal-fb-tail{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--cyan);}'
-        '.cal-fb-hrs{font-family:var(--mono);font-size:9px;color:var(--muted);}'
-        '.cal-fb-row{display:flex;justify-content:space-between;font-family:var(--mono);'
-        'font-size:11px;padding:3px 0;border-bottom:1px solid #161c25;}'
-        '.cal-fb-insp{color:var(--muted);}'
-        '.cal-fb-val{font-weight:700;}'
-        '.cal-user-ev{font-family:var(--mono);font-size:8px;padding:2px 4px;border-radius:2px;'
-        'margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'
-        'background:#2d3748;color:#e2e8f0;border-left:3px solid #f6ad55;}'
+        '.cal-wrap{font-family:var(--mono)}'
+        '.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}'
+        '.cal-nav-btn{background:var(--surface2);border:1px solid var(--border);color:var(--text);'
+        'font-family:var(--sans);font-weight:700;font-size:14px;letter-spacing:2px;'
+        'padding:8px 20px;border-radius:3px;cursor:pointer}'
+        '.cal-nav-btn:hover{border-color:var(--blue);color:var(--blue)}'
+        '.cal-month-label{font-family:var(--sans);font-weight:900;font-size:22px;'
+        'letter-spacing:3px;color:var(--heading)}'
+        '.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}'
+        '.cal-dow-hdr{font-family:var(--mono);font-size:10px;color:var(--muted);'
+        'text-align:center;padding:6px 0;letter-spacing:2px}'
+        '.cal-cell{background:var(--surface);border:1px solid var(--border);border-radius:4px;'
+        'min-height:110px;padding:6px;cursor:pointer;transition:border-color .15s}'
+        '.cal-cell:hover{border-color:var(--blue)}'
+        '.cal-cell.other-month{opacity:.25}'
+        '.cal-cell.is-today{border-color:var(--blue)!important;border-width:2px}'
+        '.cal-cell.is-past{opacity:.5}'
+        '.cal-cell.has-overdue{background:#1c0a0a;border-color:#c0392b}'
+        '.cal-cell.has-urgent{background:#1a1200;border-color:#e67e22}'
+        '.cal-cell.has-soon{background:#0d1a0d;border-color:#27ae60}'
+        '.cal-cell.has-ok{background:#0a1520;border-color:#2980b9}'
+        '.cal-day-num{font-family:var(--sans);font-weight:700;font-size:16px;'
+        'color:var(--muted);margin-bottom:5px;line-height:1}'
+        '.cal-cell.is-today .cal-day-num{color:var(--blue)}'
+        '.cal-ev-bar{font-size:11px;font-weight:700;padding:3px 7px;border-radius:3px;'
+        'margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'
+        'letter-spacing:.3px;cursor:default}'
+        '.ev-overdue{background:#c0392b;color:#fff}'
+        '.ev-urgent{background:#e67e22;color:#000}'
+        '.ev-soon{background:#27ae60;color:#fff}'
+        '.ev-ok{background:#2980b9;color:#fff}'
+        '.cal-user-note{font-size:10px;padding:3px 6px;border-radius:2px;margin-bottom:2px;'
+        'background:#2d3748;color:#e2e8f0;border-left:3px solid #f6ad55;'
+        'white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
+        '.cal-legend{display:flex;gap:16px;margin-bottom:16px;flex-wrap:wrap;align-items:center}'
+        '.cal-leg{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--muted)}'
+        '.cal-leg-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}'
         '</style>'
+    )
+
+    legend = (
+        '<div class="cal-legend">'
+        '<div class="cal-leg"><div class="cal-leg-dot ev-overdue"></div>OVERDUE</div>'
+        '<div class="cal-leg"><div class="cal-leg-dot ev-urgent"></div>DUE &le;30 DAYS</div>'
+        '<div class="cal-leg"><div class="cal-leg-dot ev-soon"></div>DUE &le;90 DAYS</div>'
+        '<div class="cal-leg"><div class="cal-leg-dot ev-ok"></div>SCHEDULED</div>'
+        '<div style="margin-left:auto;font-size:10px;color:var(--muted);">Click any day to add a note</div>'
+        '</div>'
+    )
+
+    js = (
+        '<script>'
+        '(function(){'
+        f'var EVENTS={events_js};'
+        f'var curYear={today.year},curMonth={today.month - 1};'
+        "var NOTES_KEY='ihc_cal_notes_v2';"
+        "function loadNotes(){try{return JSON.parse(localStorage.getItem(NOTES_KEY)||'{}');}catch(e){return {};}}"
+        "function saveNotes(n){localStorage.setItem(NOTES_KEY,JSON.stringify(n));}"
+        "function fmt(y,m,d){return y+'-'+(m<9?'0':'')+(m+1)+'-'+(d<10?'0':'')+d;}"
+        "function render(){"
+        "var today=new Date();"
+        "var td=fmt(today.getFullYear(),today.getMonth(),today.getDate());"
+        "var notes=loadNotes();"
+        "var daysInMonth=new Date(curYear,curMonth+1,0).getDate();"
+        "var startDow=(new Date(curYear,curMonth,1).getDay()+6)%7;"
+        "var MNAMES=['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];"
+        "document.getElementById('cal-month-label').textContent=MNAMES[curMonth]+' '+curYear;"
+        "var grid=document.getElementById('cal-grid-body');"
+        "grid.innerHTML='';"
+        "for(var b=0;b<startDow;b++){var bl=document.createElement('div');bl.className='cal-cell other-month';grid.appendChild(bl);}"
+        "for(var d=1;d<=daysInMonth;d++){"
+        "var key=fmt(curYear,curMonth,d);"
+        "var evs=EVENTS[key]||[];"
+        "var note=notes[key];"
+        "var cell=document.createElement('div');"
+        "cell.className='cal-cell';"
+        "cell.setAttribute('data-date',key);"
+        "if(key===td)cell.classList.add('is-today');"
+        "else if(key<td)cell.classList.add('is-past');"
+        "var urg=evs.map(function(e){return e[2];});"
+        "if(urg.indexOf('overdue')>=0)cell.classList.add('has-overdue');"
+        "else if(urg.indexOf('urgent')>=0)cell.classList.add('has-urgent');"
+        "else if(urg.indexOf('soon')>=0)cell.classList.add('has-soon');"
+        "else if(urg.length)cell.classList.add('has-ok');"
+        "var num=document.createElement('div');num.className='cal-day-num';num.textContent=d;cell.appendChild(num);"
+        "evs.forEach(function(ev){"
+        "var bar=document.createElement('div');"
+        "var cls={overdue:'ev-overdue',urgent:'ev-urgent',soon:'ev-soon',ok:'ev-ok'}[ev[2]]||'ev-ok';"
+        "bar.className='cal-ev-bar '+cls;"
+        "bar.textContent=ev[0]+' '+ev[1]+'h';"
+        "bar.title=ev[0]+' '+ev[1]+' Hr — '+(ev[3]<0?'OVERDUE '+Math.abs(ev[3]).toFixed(0)+' hrs past':ev[3].toFixed(1)+' hrs remaining');"
+        "cell.appendChild(bar);});"
+        "if(note&&(note.label||note.text)){var nd=document.createElement('div');nd.className='cal-user-note';nd.textContent=(note.label||'NOTE')+(note.text?': '+note.text:'');cell.appendChild(nd);}"
+        "cell.addEventListener('click',function(){openModal(this.getAttribute('data-date'),loadNotes());}.bind(cell));"
+        "grid.appendChild(cell);}"
+        "}"
+        "function openModal(dateKey,notes){"
+        "var ex=notes[dateKey]||{};"
+        "document.getElementById('cal-modal-date').textContent=dateKey;"
+        "document.getElementById('cal-modal-label').value=ex.label||'';"
+        "document.getElementById('cal-modal-text').value=ex.text||'';"
+        "document.getElementById('cal-modal-color').value=ex.color||'#f6ad55';"
+        "document.getElementById('cal-modal').style.display='flex';"
+        "document.getElementById('cal-modal-text').focus();}"
+        "function closeModal(){document.getElementById('cal-modal').style.display='none';}"
+        "document.getElementById('cal-prev').addEventListener('click',function(){curMonth--;if(curMonth<0){curMonth=11;curYear--;}render();});"
+        "document.getElementById('cal-next').addEventListener('click',function(){curMonth++;if(curMonth>11){curMonth=0;curYear++;}render();});"
+        "document.getElementById('cal-modal-save').addEventListener('click',function(){"
+        "var dk=document.getElementById('cal-modal-date').textContent;"
+        "var label=document.getElementById('cal-modal-label').value.trim();"
+        "var text=document.getElementById('cal-modal-text').value.trim();"
+        "var color=document.getElementById('cal-modal-color').value;"
+        "var notes=loadNotes();"
+        "if(label||text)notes[dk]={label:label,text:text,color:color};else delete notes[dk];"
+        "saveNotes(notes);closeModal();render();});"
+        "document.getElementById('cal-modal-clear').addEventListener('click',function(){"
+        "var dk=document.getElementById('cal-modal-date').textContent;"
+        "var notes=loadNotes();delete notes[dk];saveNotes(notes);closeModal();render();});"
+        "document.getElementById('cal-modal-cancel').addEventListener('click',closeModal);"
+        "document.getElementById('cal-modal').addEventListener('click',function(e){if(e.target===this)closeModal();});"
+        "render();"
+        "})();"
+        '</script>'
     )
 
     return (
         f'{css}'
-        f'<div class="section-label">PROJECTED MAINTENANCE CALENDAR</div>'
-        f'<div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:16px;">'
-        f'Dates projected from average daily utilization. Actual dates will vary.</div>'
-        f'{legend_html}'
-        f'<div class="cal-months-wrap">{months_html}</div>'
-        f'{fallback_html}'
+        '<div class="section-label">PROJECTED MAINTENANCE CALENDAR</div>'
+        '<div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:14px;">'
+        'Dates projected from average daily utilization &nbsp;&middot;&nbsp; Click any day to add a note'
+        '</div>'
+        f'{legend}'
+        '<div class="cal-wrap">'
+        '<div class="cal-nav">'
+        '<button class="cal-nav-btn" id="cal-prev">&#8592; PREV</button>'
+        '<div class="cal-month-label" id="cal-month-label"></div>'
+        '<button class="cal-nav-btn" id="cal-next">NEXT &#8594;</button>'
+        '</div>'
+        '<div class="cal-grid">'
+        '<div class="cal-dow-hdr">MON</div><div class="cal-dow-hdr">TUE</div>'
+        '<div class="cal-dow-hdr">WED</div><div class="cal-dow-hdr">THU</div>'
+        '<div class="cal-dow-hdr">FRI</div><div class="cal-dow-hdr">SAT</div>'
+        '<div class="cal-dow-hdr">SUN</div>'
+        '<div id="cal-grid-body" style="display:contents"></div>'
+        '</div>'
+        '</div>'
+        f'{js}'
     )
-
 
 
 def _build_bases_tab(aircraft_list, positions):
@@ -1470,9 +1446,9 @@ def main():
     data_dir       = Path(OUTPUT_FOLDER)
     input_path     = data_dir / INPUT_FILENAME
     weekly_path    = data_dir / WEEKLY_FILENAME
-    output_path    = data_dir / OUTPUT_FILENAME
-    history_path   = data_dir / HISTORY_FILENAME
-    positions_path = data_dir / POSITIONS_FILENAME
+    output_path    = Path(OUTPUT_FOLDER) / OUTPUT_FILENAME
+    history_path   = Path(OUTPUT_FOLDER) / HISTORY_FILENAME
+    positions_path = Path(OUTPUT_FOLDER) / POSITIONS_FILENAME
     log_path       = Path(__file__).with_name("dashboard_log.txt")
 
     def log(msg):
