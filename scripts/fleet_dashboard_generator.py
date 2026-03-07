@@ -18,11 +18,12 @@ from pathlib import Path
 
 OUTPUT_FOLDER = "data"
 
+
 INPUT_FILENAME     = "Due-List_Latest_aw109sp.csv"
 WEEKLY_FILENAME    = "Due-List_BIG_WEEKLY_aw109sp.csv"
 INPUT_FALLBACKS    = ["Due-List_Latest.csv"]
 WEEKLY_FALLBACKS   = ["Due-List_BIG_WEEKLY.csv"]
-OUTPUT_FILENAME    = "fleet_dashboard.html"
+OUTPUT_FILENAME    = "index.html"
 HISTORY_FILENAME   = "flight_hours_history.json"
 POSITIONS_FILENAME = "base_assignments.json"
 
@@ -1469,9 +1470,9 @@ def main():
     data_dir       = Path(OUTPUT_FOLDER)
     input_path     = data_dir / INPUT_FILENAME
     weekly_path    = data_dir / WEEKLY_FILENAME
-    output_path    = Path("index.html")  # GitHub Pages serves from repo root
-    history_path   = Path(OUTPUT_FOLDER) / HISTORY_FILENAME
-    positions_path = Path(OUTPUT_FOLDER) / POSITIONS_FILENAME
+    output_path    = data_dir / OUTPUT_FILENAME
+    history_path   = data_dir / HISTORY_FILENAME
+    positions_path = data_dir / POSITIONS_FILENAME
     log_path       = Path(__file__).with_name("dashboard_log.txt")
 
     def log(msg):
