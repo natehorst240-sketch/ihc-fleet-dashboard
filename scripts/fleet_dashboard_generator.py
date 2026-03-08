@@ -13,7 +13,6 @@ import re
 import json
 import base64
 import io
-import urllib.parse
 from datetime import datetime, timedelta, date
 from pathlib import Path
 
@@ -136,12 +135,20 @@ def parse_report_date(val):
 
 def load_photo_b64(data_dir):
     """Load and resize the fleet photo, return base64 string or empty string."""
-    photo_path = data_dir / PHOTO_FILENAME
-    if not photo_path.exists():
+    # Search in data/ dir, repo root, and next to this script
+    candidates = [
+        data_dir / PHOTO_FILENAME,
+        Path(__file__).parent.parent / PHOTO_FILENAME,
+        Path(__file__).parent / PHOTO_FILENAME,
+        Path(PHOTO_FILENAME),
+    ]
+    photo_path = next((p for p in candidates if p.exists()), None)
+    if photo_path is None:
         return ''
     try:
         if _HAS_PIL:
             img = _PILImage.open(str(photo_path))
+            # Resize to 120px tall (displayed at 60px, 2x for retina)
             ratio = 120 / img.height
             new_w = int(img.width * ratio)
             img = img.resize((new_w, 120), _PILImage.LANCZOS)
@@ -151,28 +158,9 @@ def load_photo_b64(data_dir):
         else:
             with open(photo_path, 'rb') as f:
                 return base64.b64encode(f.read()).decode('ascii')
-    except Exception:
+    except Exception as e:
+        print(f"Warning: could not load photo: {e}")
         return ''
-
-
-def build_header_photo_tag(photo_b64=''):
-    """Return a header image tag, using fallback artwork if no photo exists."""
-    if photo_b64:
-        src = f'data:image/jpeg;base64,{photo_b64}'
-    else:
-        fallback_svg = (
-            '<svg xmlns="http://www.w3.org/2000/svg" width="180" height="60" viewBox="0 0 180 60">'
-            '<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">'
-            '<stop offset="0" stop-color="#0f1622"/><stop offset="1" stop-color="#1f2a3d"/></linearGradient></defs>'
-            '<rect width="180" height="60" rx="4" fill="url(#bg)"/>'
-            '<text x="90" y="27" text-anchor="middle" font-family="Barlow,Arial,sans-serif" '
-            'font-size="14" fill="#29b6f6" font-weight="700">IHC FLEET</text>'
-            '<text x="90" y="44" text-anchor="middle" font-family="Barlow,Arial,sans-serif" '
-            'font-size="11" fill="#d9e2ef">MAINTENANCE DASHBOARD</text>'
-            '</svg>'
-        )
-        src = f"data:image/svg+xml;utf8,{urllib.parse.quote(fallback_svg)}"
-    return f'<img class="header-photo" src="{src}" alt="IHC Fleet">'
 
 
 # ── FLIGHT HOURS TRACKING ─────────────────────────────────────────────────────
@@ -406,7 +394,6 @@ def parse_due_list_parts(filepath):
         desc      = row[COL_DESC].strip()       if row[COL_DESC]      else ""
         rem_hrs   = safe_float(row[COL_REM_HRS])
         rem_days  = safe_float(row[COL_REM_DAYS])
-        rem_months = safe_float(row[COL_REM_MONTHS])
         status    = row[COL_STATUS].strip()     if row[COL_STATUS]    else ""
 
         if item_type.upper() == "INSPECTION":
@@ -424,19 +411,7 @@ def parse_due_list_parts(filepath):
                     rem_hrs is not None and (existing["rem_hrs"] is None or rem_hrs < existing["rem_hrs"])
                 ):
                     aircraft_raw[reg][key] = {
-                        "rem_hrs": rem_hrs, "rem_days": rem_days, "rem_months": rem_months,
-                        "status": status, "desc": desc,
-                    }
-
-        if item_type.upper() == "INSPECTION":
-            interval_hrs = safe_float(row[COL_INTERVAL_HRS]) if len(row) > COL_INTERVAL_HRS else None
-            if interval_hrs in TARGET_INTERVALS:
-                if reg not in aircraft_raw:
-                    aircraft_raw[reg] = {}
-                key = f"{int(interval_hrs):.2f}"
-                if key not in aircraft_raw[reg]:
-                    aircraft_raw[reg][key] = {
-                        "rem_hrs": rem_hrs, "rem_days": rem_days, "rem_months": rem_months,
+                        "rem_hrs": rem_hrs, "rem_days": rem_days,
                         "status": status, "desc": desc,
                     }
 
@@ -445,9 +420,8 @@ def parse_due_list_parts(filepath):
         if is_part or is_retirement_insp:
             hrs_in_window  = rem_hrs is not None and rem_hrs <= COMPONENT_WINDOW_HRS
             days_in_window = rem_hrs is None and rem_days is not None and rem_days <= 60
-            months_in_window = rem_hrs is None and rem_days is None and rem_months is not None and rem_months <= 24
             past_due       = status.strip().upper() == "PAST DUE"
-            if hrs_in_window or days_in_window or months_in_window or past_due:
+            if hrs_in_window or days_in_window or past_due:
                 if reg not in components_raw:
                     components_raw[reg] = []
                 clean_desc = re.sub(r"^\(RII\)\s*", "", desc, flags=re.IGNORECASE)
@@ -459,12 +433,10 @@ def parse_due_list_parts(filepath):
                     sort_key = rem_hrs
                 elif rem_days is not None:
                     sort_key = rem_days * 0.5
-                elif rem_months is not None:
-                    sort_key = rem_months * 30
                 else:
                     sort_key = 9999
                 components_raw[reg].append({
-                    "name": clean_desc, "rem_hrs": rem_hrs, "rem_days": rem_days, "rem_months": rem_months,
+                    "name": clean_desc, "rem_hrs": rem_hrs, "rem_days": rem_days,
                     "status": status, "rii": rii_flag, "sort_key": sort_key,
                 })
 
@@ -497,7 +469,6 @@ def parse_due_list(input_path):
                 intervals[i] = {
                     "rem_hrs":  entry.get("rem_hrs"),
                     "rem_days": entry.get("rem_days"),
-                    "rem_months": entry.get("rem_months"),
                     "status":   entry.get("status", ""),
                 }
             else:
@@ -521,7 +492,12 @@ def parse_due_list(input_path):
 # ── CALENDAR TAB ──────────────────────────────────────────────────────────────
 
 def _build_calendar_tab(aircraft_list, flight_hours_stats):
-    """Calendar with multi-day spanning event bars, no modal."""
+    """
+    Calendar with multi-day spanning event bars.
+    Each week uses a SINGLE CSS grid so day cells and event bars share
+    the same column definitions — bars can never overflow outside the grid.
+    Click a day number to open a note modal (localStorage, no server).
+    """
     import calendar as cal_mod
 
     today_dt = datetime.today()
@@ -534,14 +510,13 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
         'ok':      '#2980b9',
     }
 
-    # Build events list: each has start/end date range
+    # ── Collect projected events ──────────────────────────────────────────────
     all_events = []
     for ac in aircraft_list:
         tail = ac['tail']
         if ac['airframe_hrs'] is None:
             continue
-        stats = flight_hours_stats.get(tail, {})
-        avg_daily = stats.get('avg_daily')
+        avg_daily = flight_hours_stats.get(tail, {}).get('avg_daily')
         if not avg_daily or avg_daily <= 0:
             continue
 
@@ -554,39 +529,27 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
                 continue
 
             if rem_hrs < 0:
-                due  = today
+                due = today
                 urgency = 'overdue'
                 days_until = 0
             else:
                 days_until = rem_hrs / avg_daily
-                due = today + timedelta(days=days_until)
-                if days_until <= 30:
-                    urgency = 'urgent'
-                elif days_until <= 90:
-                    urgency = 'soon'
-                else:
-                    urgency = 'ok'
+                due = today + timedelta(days=int(days_until))
+                urgency = ('urgent' if days_until <= 30 else
+                           'soon'   if days_until <= 90 else 'ok')
 
-            # Bar start = a few days before due to show lead-in
             if urgency == 'overdue':
                 bar_start = today
             elif urgency == 'urgent':
-                lead = max(3, min(7, int(days_until)))
-                bar_start = due - timedelta(days=lead)
-                bar_start = max(bar_start, today)
+                bar_start = max(today, due - timedelta(days=min(7, max(3, int(days_until)))))
             elif urgency == 'soon':
-                lead = max(5, min(14, int(days_until * 0.3)))
-                bar_start = due - timedelta(days=lead)
-                bar_start = max(bar_start, today)
+                bar_start = max(today, due - timedelta(days=min(14, max(5, int(days_until * 0.3)))))
             else:
-                lead = 2
-                bar_start = max(today, due - timedelta(days=lead))
+                bar_start = due
 
             all_events.append({
-                'tail': tail,
-                'interval': interval,
-                'start': bar_start,
-                'end':   due,
+                'tail': tail, 'interval': interval,
+                'start': bar_start, 'end': due,
                 'urgency': urgency,
                 'label': f'{tail} {interval}h',
                 'color': URGENCY_COLOR[urgency],
@@ -599,11 +562,10 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
         y = today_dt.year + (m - 1) // 12
         m = ((m - 1) % 12) + 1
 
-        month_name   = datetime(y, m, 1).strftime('%B %Y').upper()
-        first_dow    = datetime(y, m, 1).weekday()   # 0=Monday
+        month_name    = datetime(y, m, 1).strftime('%B %Y').upper()
+        first_dow     = datetime(y, m, 1).weekday()  # 0=Monday
         days_in_month = cal_mod.monthrange(y, m)[1]
 
-        # Build week lists: each week = 7 date|None entries
         weeks = []
         week  = [None] * first_dow
         for d in range(1, days_in_month + 1):
@@ -612,94 +574,100 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
                 weeks.append(week)
                 week = []
         if week:
-            week += [None] * (7 - len(week))
-            weeks.append(week)
+            weeks.append(week + [None] * (7 - len(week)))
 
         weeks_html = ''
         for week in weeks:
-            real_days = [d for d in week if d is not None]
+            real_days  = [d for d in week if d is not None]
             if not real_days:
                 continue
             week_start = real_days[0]
             week_end   = real_days[-1]
 
-            # ── Day number row ────────────────────────────────────────────────
-            day_cells = ''
-            for d in week:
-                if d is None:
-                    day_cells += '<div class="cal-day cal-empty"></div>'
-                else:
-                    cls = 'cal-day'
-                    if d == today:
-                        cls += ' cal-today'
-                    elif d < today:
-                        cls += ' cal-past'
-                    day_cells += (
-                        f'<div class="{cls}" data-date="{d.isoformat()}">'
-                        f'<div class="cal-day-num">{d.day}</div></div>'
-                    )
+            # ── Find & pack events for this week ──────────────────────────────
+            week_events = [e for e in all_events
+                           if e['start'] <= week_end and e['end'] >= week_start]
 
-            # ── Event rows ────────────────────────────────────────────────────
-            # Find events overlapping this week
-            week_events = [
-                e for e in all_events
-                if e['start'] <= week_end and e['end'] >= week_start
-            ]
-
-            # Pack into rows (greedy, no overlap)
-            packed_rows = []
+            packed_rows = []  # list of lists of items
             for ev in sorted(week_events, key=lambda x: x['start']):
-                col_start = max(0, (ev['start'] - week_start).days)
-                col_end   = min(6, (ev['end']   - week_start).days)
-                span = col_end - col_start + 1
+                cs = max(0, (ev['start'] - week_start).days)
+                ce = min(6, (ev['end']   - week_start).days)
                 placed = False
                 for row in packed_rows:
-                    last_end = max((item['col_end'] for item in row), default=-1)
-                    if col_start > last_end:
-                        row.append({**ev, 'col_start': col_start, 'col_end': col_end, 'span': span})
+                    if cs > max(it['ce'] for it in row):
+                        row.append({**ev, 'cs': cs, 'ce': ce})
                         placed = True
                         break
                 if not placed:
-                    packed_rows.append([{**ev, 'col_start': col_start, 'col_end': col_end, 'span': span}])
+                    packed_rows.append([{**ev, 'cs': cs, 'ce': ce}])
 
-            ev_rows_html = ''
-            for row in packed_rows[:4]:  # max 4 event rows per week
-                cells = ''
+            # ── Build unified grid: row 1 = day numbers, rows 2+ = event bars ─
+            # Use explicit grid-row placement so everything shares one grid.
+            grid_items = ''
+
+            # Day number cells (grid-row: 1)
+            for col_idx, d in enumerate(week, 1):
+                if d is None:
+                    grid_items += (
+                        f'<div class="cal-empty" '
+                        f'style="grid-column:{col_idx};grid-row:1"></div>'
+                    )
+                else:
+                    cls = 'cal-day'
+                    if d == today:   cls += ' cal-today'
+                    elif d < today:  cls += ' cal-past'
+                    grid_items += (
+                        f'<div class="{cls}" data-date="{d.isoformat()}" '
+                        f'style="grid-column:{col_idx};grid-row:1" '
+                        f'onclick="calDayClick(event,\'{d.isoformat()}\')" title="Click to add note">'
+                        f'<div class="cal-day-num">{d.day}</div>'
+                        f'<div class="cal-user-ev" id="uev-{d.isoformat()}"></div>'
+                        f'</div>'
+                    )
+
+            # Event bar rows (grid-row: 2, 3, …)
+            for row_idx, row in enumerate(packed_rows[:5], 2):
                 col = 0
-                for item in sorted(row, key=lambda x: x['col_start']):
-                    gap = item['col_start'] - col
-                    if gap > 0:
-                        cells += f'<div style="grid-column:span {gap}"></div>'
-                    # Round left/right corners based on whether bar is clipped at week boundary
-                    radius_left  = '2px' if item['col_start'] > 0 or item['start'] >= week_start else '0'
-                    radius_right = '2px' if item['col_end'] < 6  or item['end']   <= week_end   else '0'
-                    cells += (
+                for item in sorted(row, key=lambda x: x['cs']):
+                    # gap filler
+                    if item['cs'] > col:
+                        grid_items += (
+                            f'<div style="grid-column:{col+1}/{item["cs"]+1};'
+                            f'grid-row:{row_idx}"></div>'
+                        )
+                    span  = item['ce'] - item['cs'] + 1
+                    rl    = '3px' if item['start'] >= week_start else '0'
+                    rr    = '3px' if item['end']   <= week_end   else '0'
+                    grid_items += (
                         f'<div class="cal-span-ev" '
-                        f'style="grid-column:span {item["span"]};background:{item["color"]};'
-                        f'border-radius:{radius_left} {radius_right} {radius_right} {radius_left};" '
+                        f'style="grid-column:{item["cs"]+1}/{item["ce"]+2};'
+                        f'grid-row:{row_idx};background:{item["color"]};'
+                        f'border-radius:{rl} {rr} {rr} {rl};" '
                         f'title="{item["label"]}">{item["label"]}</div>'
                     )
-                    col = item['col_end'] + 1
-                if col < 7:
-                    cells += f'<div style="grid-column:span {7 - col}"></div>'
-                ev_rows_html += f'<div class="cal-ev-row">{cells}</div>'
+                    col = item['ce'] + 1
 
-            weeks_html += f'''<div class="cal-week-block">
-  <div class="cal-day-row">{day_cells}</div>
-  {ev_rows_html}
-</div>'''
+            n_ev_rows = len(packed_rows[:5])
+            grid_rows = f'36px' + (' 20px' * n_ev_rows)
+            weeks_html += (
+                f'<div class="cal-week" '
+                f'style="display:grid;grid-template-columns:repeat(7,1fr);'
+                f'grid-template-rows:{grid_rows};gap:2px;margin-bottom:4px;">'
+                f'{grid_items}</div>'
+            )
 
-        months_html += f'''<div class="cal-month">
-  <div class="cal-month-title">{month_name}</div>
-  <div class="cal-dow-row">
-    <div class="cal-dow">MON</div><div class="cal-dow">TUE</div>
-    <div class="cal-dow">WED</div><div class="cal-dow">THU</div>
-    <div class="cal-dow">FRI</div><div class="cal-dow">SAT</div>
-    <div class="cal-dow">SUN</div>
-  </div>
-  {weeks_html}
-</div>'''
+        months_html += (
+            f'<div class="cal-month">'
+            f'<div class="cal-month-title">{month_name}</div>'
+            f'<div class="cal-dow-row">'
+            f'<div class="cal-dow">MON</div><div class="cal-dow">TUE</div>'
+            f'<div class="cal-dow">WED</div><div class="cal-dow">THU</div>'
+            f'<div class="cal-dow">FRI</div><div class="cal-dow">SAT</div>'
+            f'<div class="cal-dow">SUN</div></div>'
+            f'{weeks_html}</div>'
+        )
 
+    # ── CSS ───────────────────────────────────────────────────────────────────
     css = '''<style>
 .cal-months-wrap{display:flex;flex-direction:column;gap:28px;}
 .cal-month{width:100%;}
@@ -707,25 +675,141 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
   color:var(--blue);letter-spacing:2px;margin-bottom:6px;}
 .cal-dow-row{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:2px;}
 .cal-dow{font-family:var(--mono);font-size:9px;color:var(--muted);
-  text-align:center;padding:4px 0;letter-spacing:1px;}
-.cal-week-block{margin-bottom:3px;}
-.cal-day-row{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}
-.cal-ev-row{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-top:1px;min-height:18px;}
+  text-align:center;padding:3px 0;letter-spacing:1px;}
 .cal-day{background:#0d1117;border:1px solid #1e2533;border-radius:3px;
-  min-height:32px;padding:4px;}
-.cal-empty{background:transparent!important;border-color:transparent!important;}
+  padding:3px 4px;cursor:pointer;transition:border-color .15s;}
+.cal-day:hover{border-color:var(--blue);}
+.cal-empty{background:transparent!important;border-color:transparent!important;cursor:default;}
 .cal-day-num{font-family:var(--mono);font-size:9px;color:var(--muted);}
 .cal-today{border-color:var(--blue)!important;}
 .cal-today .cal-day-num{color:var(--blue);font-weight:700;}
-.cal-past{opacity:0.4;}
-.cal-span-ev{font-family:var(--mono);font-size:9px;padding:2px 5px;
+.cal-past{opacity:0.45;}
+.cal-span-ev{font-family:var(--mono);font-size:9px;padding:0 5px;
   color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  height:18px;display:flex;align-items:center;cursor:default;}
+  display:flex;align-items:center;cursor:default;}
+.cal-user-ev{font-family:var(--mono);font-size:8px;margin-top:1px;
+  color:#f6ad55;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;}
 .cal-legend{display:flex;gap:20px;margin-bottom:16px;font-family:var(--mono);
-  font-size:10px;color:var(--muted);flex-wrap:wrap;}
+  font-size:10px;color:var(--muted);flex-wrap:wrap;align-items:center;}
 .cal-leg-item{display:flex;align-items:center;gap:6px;}
-.cal-leg-dot{width:10px;height:10px;border-radius:2px;display:inline-block;}
+.cal-leg-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0;}
 </style>'''
+
+    # ── Note modal JS (stored in localStorage, opened by clicking day cells) ──
+    modal_js = '''<script>
+(function() {
+  var STORAGE_KEY = 'ihc_cal_notes_v2';
+  function loadNotes() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch(e) { return {}; }
+  }
+  function saveNotes(n) { localStorage.setItem(STORAGE_KEY, JSON.stringify(n)); }
+
+  // Render saved notes into day cells on load
+  function renderAllNotes() {
+    var notes = loadNotes();
+    Object.keys(notes).forEach(function(k) {
+      var el = document.getElementById('uev-' + k);
+      if (el) el.textContent = notes[k].label || notes[k].text || '';
+    });
+  }
+
+  // Expose click handler used inline on day cells
+  window.calDayClick = function(evt, dateKey) {
+    evt.stopPropagation();
+    var notes    = loadNotes();
+    var existing = notes[dateKey] || {};
+
+    var modal = document.getElementById('cal-note-modal');
+    document.getElementById('cal-note-date').textContent  = dateKey;
+    document.getElementById('cal-note-label').value = existing.label || '';
+    document.getElementById('cal-note-text').value  = existing.text  || '';
+    modal.style.display = 'flex';
+    setTimeout(function(){ document.getElementById('cal-note-label').focus(); }, 50);
+  };
+
+  function closeModal() {
+    document.getElementById('cal-note-modal').style.display = 'none';
+  }
+  function saveModal() {
+    var dateKey = document.getElementById('cal-note-date').textContent;
+    var label   = document.getElementById('cal-note-label').value.trim();
+    var text    = document.getElementById('cal-note-text').value.trim();
+    var notes   = loadNotes();
+    if (label || text) {
+      notes[dateKey] = { label: label, text: text };
+    } else {
+      delete notes[dateKey];
+    }
+    saveNotes(notes);
+    var el = document.getElementById('uev-' + dateKey);
+    if (el) el.textContent = label || text || '';
+    closeModal();
+  }
+  function clearModal() {
+    var dateKey = document.getElementById('cal-note-date').textContent;
+    var notes = loadNotes();
+    delete notes[dateKey];
+    saveNotes(notes);
+    var el = document.getElementById('uev-' + dateKey);
+    if (el) el.textContent = '';
+    closeModal();
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    renderAllNotes();
+
+    var modal     = document.getElementById('cal-note-modal');
+    var labelInp  = document.getElementById('cal-note-label');
+    var textInp   = document.getElementById('cal-note-text');
+
+    document.getElementById('cal-note-save').addEventListener('click', saveModal);
+    document.getElementById('cal-note-clear').addEventListener('click', clearModal);
+    document.getElementById('cal-note-cancel').addEventListener('click', closeModal);
+
+    // Click outside modal box → close
+    modal.addEventListener('click', function(e) { if (e.target === modal) closeModal(); });
+
+    // Keyboard shortcuts
+    modal.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') { e.preventDefault(); closeModal(); }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); saveModal(); }
+    });
+    labelInp.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') { e.preventDefault(); textInp.focus(); }
+    });
+  });
+})();
+</script>
+
+<!-- Calendar Note Modal — placed here in body, NOT after </script> -->
+<div id="cal-note-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);
+  z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:#0d1117;border:1px solid var(--blue);border-radius:6px;padding:28px;
+    min-width:320px;max-width:460px;width:90%;" onclick="event.stopPropagation()">
+    <div style="font-size:10px;color:var(--blue);letter-spacing:2px;margin-bottom:4px;font-family:var(--mono);">SCHEDULE / NOTE</div>
+    <div id="cal-note-date" style="font-size:15px;color:var(--heading);font-weight:700;margin-bottom:18px;font-family:var(--mono);"></div>
+    <label style="display:block;font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:4px;font-family:var(--mono);">LABEL (e.g. 50 HR INSP)</label>
+    <input id="cal-note-label" type="text" maxlength="30"
+      style="width:100%;box-sizing:border-box;background:#161c25;border:1px solid var(--border);
+      border-radius:3px;color:var(--heading);padding:8px;font-family:var(--mono);font-size:13px;margin-bottom:12px;">
+    <label style="display:block;font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:4px;font-family:var(--mono);">NOTES</label>
+    <textarea id="cal-note-text" rows="3" maxlength="200"
+      style="width:100%;box-sizing:border-box;background:#161c25;border:1px solid var(--border);
+      border-radius:3px;color:var(--heading);padding:8px;font-family:var(--mono);font-size:12px;
+      resize:vertical;margin-bottom:16px;"></textarea>
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button id="cal-note-clear"
+        style="background:transparent;border:1px solid #c0392b;color:#c0392b;
+        padding:7px 14px;border-radius:3px;cursor:pointer;font-family:var(--mono);font-size:11px;">CLEAR</button>
+      <button id="cal-note-cancel"
+        style="background:transparent;border:1px solid var(--border);color:var(--muted);
+        padding:7px 14px;border-radius:3px;cursor:pointer;font-family:var(--mono);font-size:11px;">CANCEL</button>
+      <button id="cal-note-save"
+        style="background:var(--blue);border:none;color:#000;
+        padding:7px 14px;border-radius:3px;cursor:pointer;font-family:var(--mono);font-size:11px;font-weight:700;">SAVE</button>
+    </div>
+  </div>
+</div>'''
 
     legend = (
         '<div class="cal-legend">'
@@ -733,6 +817,7 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
         '<span class="cal-leg-item"><span class="cal-leg-dot" style="background:#e67e22"></span>DUE \u226430 DAYS</span>'
         '<span class="cal-leg-item"><span class="cal-leg-dot" style="background:#f39c12"></span>DUE \u226490 DAYS</span>'
         '<span class="cal-leg-item"><span class="cal-leg-dot" style="background:#2980b9"></span>SCHEDULED</span>'
+        '<span style="margin-left:auto;font-size:9px;color:var(--muted);">Click any day to add a note</span>'
         '</div>'
     )
 
@@ -740,9 +825,10 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
         f'{css}'
         f'<div class="section-label">PROJECTED MAINTENANCE CALENDAR</div>'
         f'<div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:12px;">'
-        f'Bars span from warning zone to projected due date based on average daily utilization.</div>'
+        f'Bars span from warning zone to projected due date. Click a day to add notes.</div>'
         f'{legend}'
         f'<div class="cal-months-wrap">{months_html}</div>'
+        f'{modal_js}'
     )
 
 
@@ -931,7 +1017,6 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
             return '<span class="hr-na">—</span>'
         hrs    = val_dict['rem_hrs']
         status = val_dict['status']
-        months = val_dict.get('rem_months')
         if hrs is not None:
             cls   = classify(hrs)
             label = f'OVRD {abs(hrs):.0f}' if hrs < 0 else f'{hrs:.1f}'
@@ -940,8 +1025,6 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
             days = val_dict.get('rem_days')
             if days is not None:
                 label = f'OVRD {abs(days):.0f}d' if days < 0 else f'{days:.0f}d'
-            elif months is not None:
-                label = f'OVRD {abs(months):.0f}mo' if months < 0 else f'{months:.0f}mo'
             else:
                 label = status[:8] if status else '?'
         badge_cls = {
@@ -967,14 +1050,21 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
         for c in comps:
             rem   = c['rem_hrs']
             rem_d = c.get('rem_days')
-            rem_m = c.get('rem_months')
-            if (rem is not None and rem < 0) or (rem is None and rem_d is not None and rem_d < 0) or (rem is None and rem_d is None and rem_m is not None and rem_m < 0):
+            if (rem is not None and rem < 0) or (rem is None and rem_d is not None and rem_d < 0):
                 comp_overdue += 1
 
     airborne_count = sum(1 for t in aircraft_list if positions.get(t['tail'], {}).get('status') == 'AIRBORNE')
     at_base_count  = sum(1 for t in aircraft_list if positions.get(t['tail'], {}).get('status') == 'AT_BASE')
 
-    photo_tag = build_header_photo_tag(photo_b64)
+    # Photo tag
+    if photo_b64:
+        photo_tag = (
+            f'<img src="data:image/jpeg;base64,{photo_b64}" '
+            f'style="height:60px;margin-left:16px;border-radius:4px;opacity:0.88;'
+            f'box-shadow:0 0 8px rgba(41,182,246,0.3);" alt="IHC Fleet">'
+        )
+    else:
+        photo_tag = ''
 
     # Table rows
     table_rows_html = ''
@@ -999,14 +1089,11 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
         for c in comps:
             rem      = c['rem_hrs']
             rem_days = c.get('rem_days')
-            rem_months = c.get('rem_months')
             status   = c.get('status', '')
             if rem is not None:
                 cls = classify(rem)
             elif rem_days is not None:
                 cls = 'overdue' if rem_days < 0 else ('red' if rem_days <= 7 else ('amber' if rem_days <= 30 else 'green'))
-            elif rem_months is not None:
-                cls = 'overdue' if rem_months < 0 else ('red' if rem_months <= 1 else ('amber' if rem_months <= 6 else 'green'))
             else:
                 cls = classify_from_status(status)
             ind_cls   = {'overdue':'comp-overdue','red':'comp-red','amber':'comp-amber','green':'comp-green'}.get(cls,'comp-green')
@@ -1016,8 +1103,6 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
                 rem_label = f'OVERDUE — {abs(rem):.1f} hrs past limit' if rem < 0 else f'{rem:.1f} hrs remaining'
             elif rem_days is not None:
                 rem_label = f'OVERDUE — {abs(rem_days):.0f} days past limit' if rem_days < 0 else f'{rem_days:.0f} days remaining'
-            elif rem_months is not None:
-                rem_label = f'OVERDUE — {abs(rem_months):.0f} months past limit' if rem_months < 0 else f'{rem_months:.0f} months remaining'
             else:
                 rem_label = status
             rows_html += f'''<div class="component-row">
