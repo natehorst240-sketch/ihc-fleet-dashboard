@@ -13,6 +13,7 @@ import re
 import json
 import base64
 import io
+import urllib.parse
 from datetime import datetime, timedelta, date
 from pathlib import Path
 
@@ -152,6 +153,26 @@ def load_photo_b64(data_dir):
                 return base64.b64encode(f.read()).decode('ascii')
     except Exception:
         return ''
+
+
+def build_header_photo_tag(photo_b64=''):
+    """Return a header image tag, using fallback artwork if no photo exists."""
+    if photo_b64:
+        src = f'data:image/jpeg;base64,{photo_b64}'
+    else:
+        fallback_svg = (
+            '<svg xmlns="http://www.w3.org/2000/svg" width="180" height="60" viewBox="0 0 180 60">'
+            '<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">'
+            '<stop offset="0" stop-color="#0f1622"/><stop offset="1" stop-color="#1f2a3d"/></linearGradient></defs>'
+            '<rect width="180" height="60" rx="4" fill="url(#bg)"/>'
+            '<text x="90" y="27" text-anchor="middle" font-family="Barlow,Arial,sans-serif" '
+            'font-size="14" fill="#29b6f6" font-weight="700">IHC FLEET</text>'
+            '<text x="90" y="44" text-anchor="middle" font-family="Barlow,Arial,sans-serif" '
+            'font-size="11" fill="#d9e2ef">MAINTENANCE DASHBOARD</text>'
+            '</svg>'
+        )
+        src = f"data:image/svg+xml;utf8,{urllib.parse.quote(fallback_svg)}"
+    return f'<img class="header-photo" src="{src}" alt="IHC Fleet">'
 
 
 # ── FLIGHT HOURS TRACKING ─────────────────────────────────────────────────────
@@ -385,6 +406,7 @@ def parse_due_list_parts(filepath):
         desc      = row[COL_DESC].strip()       if row[COL_DESC]      else ""
         rem_hrs   = safe_float(row[COL_REM_HRS])
         rem_days  = safe_float(row[COL_REM_DAYS])
+        rem_months = safe_float(row[COL_REM_MONTHS])
         status    = row[COL_STATUS].strip()     if row[COL_STATUS]    else ""
 
         if item_type.upper() == "INSPECTION":
@@ -402,7 +424,19 @@ def parse_due_list_parts(filepath):
                     rem_hrs is not None and (existing["rem_hrs"] is None or rem_hrs < existing["rem_hrs"])
                 ):
                     aircraft_raw[reg][key] = {
-                        "rem_hrs": rem_hrs, "rem_days": rem_days,
+                        "rem_hrs": rem_hrs, "rem_days": rem_days, "rem_months": rem_months,
+                        "status": status, "desc": desc,
+                    }
+
+        if item_type.upper() == "INSPECTION":
+            interval_hrs = safe_float(row[COL_INTERVAL_HRS]) if len(row) > COL_INTERVAL_HRS else None
+            if interval_hrs in TARGET_INTERVALS:
+                if reg not in aircraft_raw:
+                    aircraft_raw[reg] = {}
+                key = f"{int(interval_hrs):.2f}"
+                if key not in aircraft_raw[reg]:
+                    aircraft_raw[reg][key] = {
+                        "rem_hrs": rem_hrs, "rem_days": rem_days, "rem_months": rem_months,
                         "status": status, "desc": desc,
                     }
 
@@ -411,8 +445,9 @@ def parse_due_list_parts(filepath):
         if is_part or is_retirement_insp:
             hrs_in_window  = rem_hrs is not None and rem_hrs <= COMPONENT_WINDOW_HRS
             days_in_window = rem_hrs is None and rem_days is not None and rem_days <= 60
+            months_in_window = rem_hrs is None and rem_days is None and rem_months is not None and rem_months <= 24
             past_due       = status.strip().upper() == "PAST DUE"
-            if hrs_in_window or days_in_window or past_due:
+            if hrs_in_window or days_in_window or months_in_window or past_due:
                 if reg not in components_raw:
                     components_raw[reg] = []
                 clean_desc = re.sub(r"^\(RII\)\s*", "", desc, flags=re.IGNORECASE)
@@ -424,10 +459,12 @@ def parse_due_list_parts(filepath):
                     sort_key = rem_hrs
                 elif rem_days is not None:
                     sort_key = rem_days * 0.5
+                elif rem_months is not None:
+                    sort_key = rem_months * 30
                 else:
                     sort_key = 9999
                 components_raw[reg].append({
-                    "name": clean_desc, "rem_hrs": rem_hrs, "rem_days": rem_days,
+                    "name": clean_desc, "rem_hrs": rem_hrs, "rem_days": rem_days, "rem_months": rem_months,
                     "status": status, "rii": rii_flag, "sort_key": sort_key,
                 })
 
@@ -460,6 +497,7 @@ def parse_due_list(input_path):
                 intervals[i] = {
                     "rem_hrs":  entry.get("rem_hrs"),
                     "rem_days": entry.get("rem_days"),
+                    "rem_months": entry.get("rem_months"),
                     "status":   entry.get("status", ""),
                 }
             else:
@@ -541,7 +579,8 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
                 bar_start = due - timedelta(days=lead)
                 bar_start = max(bar_start, today)
             else:
-                bar_start = due  # single day marker for far-out events
+                lead = 2
+                bar_start = max(today, due - timedelta(days=lead))
 
             all_events.append({
                 'tail': tail,
@@ -892,6 +931,7 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
             return '<span class="hr-na">—</span>'
         hrs    = val_dict['rem_hrs']
         status = val_dict['status']
+        months = val_dict.get('rem_months')
         if hrs is not None:
             cls   = classify(hrs)
             label = f'OVRD {abs(hrs):.0f}' if hrs < 0 else f'{hrs:.1f}'
@@ -900,6 +940,8 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
             days = val_dict.get('rem_days')
             if days is not None:
                 label = f'OVRD {abs(days):.0f}d' if days < 0 else f'{days:.0f}d'
+            elif months is not None:
+                label = f'OVRD {abs(months):.0f}mo' if months < 0 else f'{months:.0f}mo'
             else:
                 label = status[:8] if status else '?'
         badge_cls = {
@@ -925,21 +967,14 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
         for c in comps:
             rem   = c['rem_hrs']
             rem_d = c.get('rem_days')
-            if (rem is not None and rem < 0) or (rem is None and rem_d is not None and rem_d < 0):
+            rem_m = c.get('rem_months')
+            if (rem is not None and rem < 0) or (rem is None and rem_d is not None and rem_d < 0) or (rem is None and rem_d is None and rem_m is not None and rem_m < 0):
                 comp_overdue += 1
 
     airborne_count = sum(1 for t in aircraft_list if positions.get(t['tail'], {}).get('status') == 'AIRBORNE')
     at_base_count  = sum(1 for t in aircraft_list if positions.get(t['tail'], {}).get('status') == 'AT_BASE')
 
-    # Photo tag
-    if photo_b64:
-        photo_tag = (
-            f'<img src="data:image/jpeg;base64,{photo_b64}" '
-            f'style="height:60px;margin-left:16px;border-radius:4px;opacity:0.88;'
-            f'box-shadow:0 0 8px rgba(41,182,246,0.3);" alt="IHC Fleet">'
-        )
-    else:
-        photo_tag = ''
+    photo_tag = build_header_photo_tag(photo_b64)
 
     # Table rows
     table_rows_html = ''
@@ -964,11 +999,14 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
         for c in comps:
             rem      = c['rem_hrs']
             rem_days = c.get('rem_days')
+            rem_months = c.get('rem_months')
             status   = c.get('status', '')
             if rem is not None:
                 cls = classify(rem)
             elif rem_days is not None:
                 cls = 'overdue' if rem_days < 0 else ('red' if rem_days <= 7 else ('amber' if rem_days <= 30 else 'green'))
+            elif rem_months is not None:
+                cls = 'overdue' if rem_months < 0 else ('red' if rem_months <= 1 else ('amber' if rem_months <= 6 else 'green'))
             else:
                 cls = classify_from_status(status)
             ind_cls   = {'overdue':'comp-overdue','red':'comp-red','amber':'comp-amber','green':'comp-green'}.get(cls,'comp-green')
@@ -978,6 +1016,8 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
                 rem_label = f'OVERDUE — {abs(rem):.1f} hrs past limit' if rem < 0 else f'{rem:.1f} hrs remaining'
             elif rem_days is not None:
                 rem_label = f'OVERDUE — {abs(rem_days):.0f} days past limit' if rem_days < 0 else f'{rem_days:.0f} days remaining'
+            elif rem_months is not None:
+                rem_label = f'OVERDUE — {abs(rem_months):.0f} months past limit' if rem_months < 0 else f'{rem_months:.0f} months remaining'
             else:
                 rem_label = status
             rows_html += f'''<div class="component-row">
