@@ -3,7 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>IHC Health Services — Fleet Due List</title>
+<link rel="icon" href="data:,">
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -18,9 +22,11 @@
   body{background:var(--bg);color:var(--text);font-family:var(--body);min-height:100vh;overflow-x:hidden;}
   body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);pointer-events:none;z-index:1000;}
   header{background:var(--surface);border-bottom:1px solid var(--border);padding:18px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+  .header-left{display:flex;align-items:center;gap:0;}
   .logo{font-family:var(--sans);font-weight:900;font-size:22px;letter-spacing:3px;color:var(--heading);text-transform:uppercase;}
   .logo span{color:var(--blue);}
   .subtitle{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-top:3px;}
+  .header-photo{height:60px;margin-left:16px;border-radius:4px;opacity:0.88;box-shadow:0 0 8px rgba(41,182,246,0.3);}
   .header-meta{font-family:var(--mono);font-size:11px;color:var(--muted);text-align:right;line-height:1.8;}
   .header-meta .date{color:var(--blue);}
   .legend{display:flex;gap:20px;padding:10px 32px;background:var(--surface2);border-bottom:1px solid var(--border);font-family:var(--mono);font-size:11px;flex-wrap:wrap;align-items:center;}
@@ -58,12 +64,10 @@
   tbody td{padding:11px 14px;vertical-align:middle;}
   .tail-number{font-family:var(--sans);font-weight:700;font-size:16px;letter-spacing:1px;color:var(--heading);}
   .airframe-hrs{font-size:10px;color:var(--muted);margin-top:1px;}
-  .airframe-today{font-size:10px;color:var(--blue);margin-top:1px;}
   .location-badge{display:inline-block;padding:2px 8px;border-radius:2px;font-size:9px;font-family:var(--mono);margin-left:8px;letter-spacing:0.5px;vertical-align:middle;}
   .location-at-base{background:rgba(0,230,118,0.15);color:var(--green);border:1px solid rgba(0,230,118,0.3);}
   .location-away{background:rgba(255,23,68,0.12);color:var(--red);border:1px solid rgba(255,23,68,0.3);}
   .location-active{background:rgba(41,182,246,0.12);color:var(--blue);border:1px solid rgba(41,182,246,0.3);}
-  .location-unknown{background:rgba(74,85,104,0.2);color:var(--muted);border:1px solid rgba(74,85,104,0.3);}
   .hr-cell{text-align:center;min-width:80px;}
   .hr-badge{display:inline-block;padding:4px 10px;border-radius:3px;font-size:12px;text-align:center;min-width:56px;letter-spacing:0.5px;}
   .hr-green{background:rgba(0,230,118,0.08);color:var(--green);border:1px solid rgba(0,230,118,0.2);}
@@ -96,44 +100,21 @@
   .hours-stat-row:last-child{border-bottom:none;margin-bottom:0;}
   .hours-stat-label{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
   .hours-stat-value{font-family:var(--sans);font-size:24px;font-weight:900;color:var(--heading);}
-  .hours-stat-value.positive{color:var(--green);} .hours-stat-value.low{color:var(--amber);}
-  .hours-stat-sub{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:2px;}
-  .mini-chart{height:80px;margin-top:12px;}
-  .bases-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:24px;}
-  .base-card{background:var(--surface);border:1px solid var(--border);border-radius:4px;overflow:hidden;}
-  .base-card.occupied{border-color:var(--green);box-shadow:0 0 0 1px var(--green);}
-  .base-header{padding:12px 16px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
-  .base-name{font-family:var(--sans);font-weight:900;font-size:18px;letter-spacing:1px;color:var(--heading);}
-  .base-capacity{font-family:var(--mono);font-size:10px;color:var(--muted);}
-  .base-body{padding:16px;min-height:80px;}
-  .base-aircraft{display:flex;align-items:center;gap:10px;padding:10px;background:rgba(0,230,118,0.08);border:1px solid rgba(0,230,118,0.2);border-radius:3px;margin-bottom:8px;}
-  .base-aircraft.away{background:rgba(255,171,0,0.10);border-color:rgba(255,171,0,0.25);}
-  .base-aircraft.airborne{background:rgba(41,182,246,0.10);border-color:rgba(41,182,246,0.25);}
-  .base-aircraft-tail{font-family:var(--sans);font-weight:700;font-size:14px;color:var(--heading);}
-  .base-aircraft-hours{font-family:var(--mono);font-size:11px;color:var(--muted);margin-left:auto;}
-  .base-status-badge{display:inline-block;padding:4px 10px;border-radius:3px;font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:1px;}
-  .base-status-at{background:rgba(0,230,118,0.15);color:var(--green);border:1px solid rgba(0,230,118,0.3);}
-  .base-status-away{background:rgba(255,171,0,0.15);color:var(--amber);border:1px solid rgba(255,171,0,0.3);}
-  .base-status-airborne{background:rgba(41,182,246,0.15);color:var(--blue);border:1px solid rgba(41,182,246,0.3);}
-  .base-empty{font-family:var(--mono);font-size:11px;color:var(--muted);text-align:center;padding:20px;}
-  .away-section{margin-top:24px;}
-  .away-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;}
-  .away-card{background:var(--surface);border:1px solid var(--border);border-radius:3px;padding:12px;}
-  .away-tail{font-family:var(--sans);font-weight:700;font-size:14px;color:var(--heading);margin-bottom:4px;}
-  .away-info{font-family:var(--mono);font-size:10px;color:var(--muted);}
-  .cal-months-wrap{display:flex;flex-direction:column;gap:32px;}
   footer{margin-top:48px;padding:16px 32px;border-top:1px solid var(--border);font-family:var(--mono);font-size:10px;color:var(--muted);display:flex;justify-content:space-between;letter-spacing:1px;}
 </style>
 </head>
 <body>
 <header>
-  <div>
-    <div class="logo">IHC <span>HEALTH</span> SERVICES</div>
-    <div class="subtitle">AW109SP Fleet &nbsp;—&nbsp; Maintenance Due List</div>
+  <div class="header-left">
+    <div>
+      <div class="logo">IHC <span>HEALTH</span> SERVICES</div>
+      <div class="subtitle">AW109SP Fleet &nbsp;—&nbsp; Maintenance Due List</div>
+    </div>
+    <img class="header-photo" src="data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22180%22%20height%3D%2260%22%20viewBox%3D%220%200%20180%2060%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22bg%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%221%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%230f1622%22/%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%231f2a3d%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%22180%22%20height%3D%2260%22%20rx%3D%224%22%20fill%3D%22url%28%23bg%29%22/%3E%3Ctext%20x%3D%2290%22%20y%3D%2227%22%20text-anchor%3D%22middle%22%20font-family%3D%22Barlow%2CArial%2Csans-serif%22%20font-size%3D%2214%22%20fill%3D%22%2329b6f6%22%20font-weight%3D%22700%22%3EIHC%20FLEET%3C/text%3E%3Ctext%20x%3D%2290%22%20y%3D%2244%22%20text-anchor%3D%22middle%22%20font-family%3D%22Barlow%2CArial%2Csans-serif%22%20font-size%3D%2211%22%20fill%3D%22%23d9e2ef%22%3EMAINTENANCE%20DASHBOARD%3C/text%3E%3C/svg%3E" alt="IHC Fleet">
   </div>
   <div class="header-meta">
     <div class="date">REPORT DATE: 04 MAR 2026</div>
-    <div>FLEET: 9 AIRCRAFT &nbsp;|&nbsp; 0 AIRBORNE &nbsp;|&nbsp; 0 AT BASE &nbsp;|&nbsp; GENERATED: 07 MAR 2026 13:08</div>
+    <div>FLEET: 9 AIRCRAFT &nbsp;|&nbsp; 0 AIRBORNE &nbsp;|&nbsp; 0 AT BASE &nbsp;|&nbsp; GENERATED: 08 MAR 2026 02:52</div>
   </div>
 </header>
 <div class="legend">
@@ -148,7 +129,7 @@
     <button class="tab-btn active" onclick="switchTab('maintenance',this)">Maintenance Due List</button>
     <button class="tab-btn" onclick="switchTab('flight-hours',this)">Flight Hours Tracking</button>
     <button class="tab-btn" onclick="switchTab('calendar',this)">Calendar</button>
-    <button class="tab-btn" onclick="switchTab('bases',this)">Bases</button>
+    <button class="tab-btn" onclick="switchTab('location',this)">Aircraft Location</button>
   </div>
 
   <!-- MAINTENANCE TAB -->
@@ -156,8 +137,8 @@
     <div class="summary-bar">
       <div class="summary-stat"><div class="stat-value" style="color:var(--blue)">9</div><div class="divider-line" style="background:var(--blue)"></div><div class="stat-label">Aircraft</div></div>
       <div class="summary-stat"><div class="stat-value" style="color:var(--blue)">0</div><div class="divider-line" style="background:var(--blue)"></div><div class="stat-label">Airborne</div></div>
-      <div class="summary-stat"><div class="stat-value" style="color:var(--red)">7</div><div class="divider-line" style="background:var(--red)"></div><div class="stat-label">Insp. Critical / OD</div></div>
-      <div class="summary-stat"><div class="stat-value" style="color:var(--amber)">15</div><div class="divider-line" style="background:var(--amber)"></div><div class="stat-label">Insp. Coming Due</div></div>
+      <div class="summary-stat"><div class="stat-value" style="color:var(--red)">8</div><div class="divider-line" style="background:var(--red)"></div><div class="stat-label">Insp. Critical / OD</div></div>
+      <div class="summary-stat"><div class="stat-value" style="color:var(--amber)">19</div><div class="divider-line" style="background:var(--amber)"></div><div class="stat-label">Insp. Coming Due</div></div>
       <div class="summary-stat"><div class="stat-value" style="color:var(--overdue)">4</div><div class="divider-line" style="background:var(--overdue)"></div><div class="stat-label">Components Overdue</div></div>
     </div>
     <div class="chart-card">
@@ -184,508 +165,679 @@
           </tr>
         </thead>
         <tbody id="insp-tbody">
-<tr data-tail="N251HC"><td>
-          <div class="tail-number">N251HC</div>
-          <div class="airframe-hrs">6,053.0 TT</div>
-          
-        </td><td class="hr-cell"><span class="hr-na">—</span></td><td class="hr-cell"><span class="hr-badge hr-amber">87.6</span></td><td class="hr-cell"><span class="hr-badge hr-amber">90.2</span></td><td class="hr-cell"><span class="hr-badge hr-green">290.2</span></td><td class="hr-cell"><span class="hr-badge hr-green">300.9</span></td><td class="hr-cell"><span class="hr-badge hr-green">1103.1</span></td><td class="hr-cell"><span class="hr-badge hr-green">282.6</span></td></tr>
-<tr data-tail="N261HC"><td>
-          <div class="tail-number">N261HC</div>
-          <div class="airframe-hrs">6,078.2 TT</div>
-          
-        </td><td class="hr-cell"><span class="hr-badge hr-red">9.2</span></td><td class="hr-cell"><span class="hr-badge hr-amber">59.2</span></td><td class="hr-cell"><span class="hr-badge hr-amber">57.7</span></td><td class="hr-cell"><span class="hr-badge hr-green">257.7</span></td><td class="hr-cell"><span class="hr-badge hr-green">253.0</span></td><td class="hr-cell"><span class="hr-badge hr-green">1062.0</span></td><td class="hr-cell"><span class="hr-badge hr-green">296.1</span></td></tr>
-<tr data-tail="N271HC"><td>
-          <div class="tail-number">N271HC</div>
-          <div class="airframe-hrs">6,969.9 TT</div>
-          
-        </td><td class="hr-cell"><span class="hr-badge hr-amber">44.9</span></td><td class="hr-cell"><span class="hr-badge hr-amber">45.0</span></td><td class="hr-cell"><span class="hr-badge hr-green">145.0</span></td><td class="hr-cell"><span class="hr-badge hr-green">173.0</span></td><td class="hr-cell"><span class="hr-badge hr-green">182.3</span></td><td class="hr-cell"><span class="hr-badge hr-green">167.8</span></td><td class="hr-cell"><span class="hr-badge hr-green">2582.3</span></td></tr>
-<tr data-tail="N281HC"><td>
-          <div class="tail-number">N281HC</div>
-          <div class="airframe-hrs">6,499.7 TT</div>
-          
-        </td><td class="hr-cell"><span class="hr-badge hr-red">23.1</span></td><td class="hr-cell"><span class="hr-badge hr-red">24.5</span></td><td class="hr-cell"><span class="hr-badge hr-red">20.6</span></td><td class="hr-cell"><span class="hr-badge hr-green">220.6</span></td><td class="hr-cell"><span class="hr-badge hr-green">620.6</span></td><td class="hr-cell"><span class="hr-badge hr-green">224.1</span></td><td class="hr-cell"><span class="hr-badge hr-green">3020.6</span></td></tr>
-<tr data-tail="N291HC"><td>
-          <div class="tail-number">N291HC</div>
-          <div class="airframe-hrs">5,892.0 TT</div>
-          
-        </td><td class="hr-cell"><span class="hr-badge hr-red">13.5</span></td><td class="hr-cell"><span class="hr-badge hr-amber">63.5</span></td><td class="hr-cell"><span class="hr-badge hr-amber">64.2</span></td><td class="hr-cell"><span class="hr-badge hr-amber">68.6</span></td><td class="hr-cell"><span class="hr-badge hr-green">468.6</span></td><td class="hr-cell"><span class="hr-badge hr-green">1273.1</span></td><td class="hr-cell"><span class="hr-badge hr-green">480.2</span></td></tr>
-<tr data-tail="N431HC"><td>
-          <div class="tail-number">N431HC</div>
-          <div class="airframe-hrs">1,999.4 TT</div>
-          
-        </td><td class="hr-cell"><span class="hr-badge hr-amber">32.5</span></td><td class="hr-cell"><span class="hr-badge hr-amber">82.5</span></td><td class="hr-cell"><span class="hr-badge hr-green">182.5</span></td><td class="hr-cell"><span class="hr-badge hr-green">382.5</span></td><td class="hr-cell"><span class="hr-badge hr-green">389.3</span></td><td class="hr-cell"><span class="hr-badge hr-green">400.6</span></td><td class="hr-cell"><span class="hr-badge hr-green">1200.6</span></td></tr>
-<tr data-tail="N531HC"><td>
-          <div class="tail-number">N531HC</div>
-          <div class="airframe-hrs">3,323.1 TT</div>
-          
-        </td><td class="hr-cell"><span class="hr-badge hr-red">7.2</span></td><td class="hr-cell"><span class="hr-badge hr-red">5.4</span></td><td class="hr-cell"><span class="hr-badge hr-green">105.4</span></td><td class="hr-cell"><span class="hr-badge hr-green">107.8</span></td><td class="hr-cell"><span class="hr-badge hr-green">507.8</span></td><td class="hr-cell"><span class="hr-badge hr-green">1399.6</span></td><td class="hr-cell"><span class="hr-badge hr-green">2907.8</span></td></tr>
-<tr data-tail="N631HC"><td>
-          <div class="tail-number">N631HC</div>
-          <div class="airframe-hrs">1,847.5 TT</div>
-          
-        </td><td class="hr-cell"><span class="hr-badge hr-amber">49.6</span></td><td class="hr-cell"><span class="hr-badge hr-amber">82.4</span></td><td class="hr-cell"><span class="hr-badge hr-green">150.9</span></td><td class="hr-cell"><span class="hr-badge hr-green">151.5</span></td><td class="hr-cell"><span class="hr-badge hr-green">551.5</span></td><td class="hr-cell"><span class="hr-badge hr-green">552.5</span></td><td class="hr-cell"><span class="hr-badge hr-green">1352.5</span></td></tr>
-<tr data-tail="N731HC"><td>
-          <div class="tail-number">N731HC</div>
-          <div class="airframe-hrs">20.6 TT</div>
-          
-        </td><td class="hr-cell"><span class="hr-badge hr-amber">29.4</span></td><td class="hr-cell"><span class="hr-badge hr-amber">79.4</span></td><td class="hr-cell"><span class="hr-badge hr-green">179.4</span></td><td class="hr-cell"><span class="hr-badge hr-green">379.4</span></td><td class="hr-cell"><span class="hr-badge hr-green">779.4</span></td><td class="hr-cell"><span class="hr-badge hr-green">2379.4</span></td><td class="hr-cell"><span class="hr-badge hr-green">3179.4</span></td></tr>
+<tr data-tail="N251HC"><td><div class="tail-number">N251HC</div><div class="airframe-hrs">6,053.0 TT</div></td><td class="hr-cell"><span class="hr-badge hr-amber">37.6</span></td><td class="hr-cell"><span class="hr-badge hr-amber">87.6</span></td><td class="hr-cell"><span class="hr-badge hr-amber">90.2</span></td><td class="hr-cell"><span class="hr-badge hr-green">290.2</span></td><td class="hr-cell"><span class="hr-badge hr-green">300.9</span></td><td class="hr-cell"><span class="hr-badge hr-green">1103.1</span></td><td class="hr-cell"><span class="hr-badge hr-green">282.6</span></td></tr>
+<tr data-tail="N261HC"><td><div class="tail-number">N261HC</div><div class="airframe-hrs">6,078.2 TT</div></td><td class="hr-cell"><span class="hr-badge hr-red">9.2</span></td><td class="hr-cell"><span class="hr-badge hr-amber">59.2</span></td><td class="hr-cell"><span class="hr-badge hr-amber">57.7</span></td><td class="hr-cell"><span class="hr-badge hr-green">257.7</span></td><td class="hr-cell"><span class="hr-badge hr-green">253.0</span></td><td class="hr-cell"><span class="hr-badge hr-green">1062.0</span></td><td class="hr-cell"><span class="hr-badge hr-green">296.1</span></td></tr>
+<tr data-tail="N271HC"><td><div class="tail-number">N271HC</div><div class="airframe-hrs">6,969.9 TT</div></td><td class="hr-cell"><span class="hr-badge hr-amber">44.9</span></td><td class="hr-cell"><span class="hr-badge hr-amber">45.0</span></td><td class="hr-cell"><span class="hr-badge hr-green">145.0</span></td><td class="hr-cell"><span class="hr-badge hr-amber">65.4</span></td><td class="hr-cell"><span class="hr-badge hr-green">141.6</span></td><td class="hr-cell"><span class="hr-badge hr-green">167.8</span></td><td class="hr-cell"><span class="hr-badge hr-green">2582.3</span></td></tr>
+<tr data-tail="N281HC"><td><div class="tail-number">N281HC</div><div class="airframe-hrs">6,499.7 TT</div></td><td class="hr-cell"><span class="hr-badge hr-red">23.1</span></td><td class="hr-cell"><span class="hr-badge hr-red">21.3</span></td><td class="hr-cell"><span class="hr-badge hr-red">20.6</span></td><td class="hr-cell"><span class="hr-badge hr-green">178.8</span></td><td class="hr-cell"><span class="hr-badge hr-green">194.1</span></td><td class="hr-cell"><span class="hr-badge hr-green">224.1</span></td><td class="hr-cell"><span class="hr-badge hr-green">3020.6</span></td></tr>
+<tr data-tail="N291HC"><td><div class="tail-number">N291HC</div><div class="airframe-hrs">5,892.0 TT</div></td><td class="hr-cell"><span class="hr-badge hr-red">13.5</span></td><td class="hr-cell"><span class="hr-badge hr-amber">63.5</span></td><td class="hr-cell"><span class="hr-badge hr-amber">35.3</span></td><td class="hr-cell"><span class="hr-badge hr-amber">45.6</span></td><td class="hr-cell"><span class="hr-badge hr-green">263.9</span></td><td class="hr-cell"><span class="hr-badge hr-green">1273.1</span></td><td class="hr-cell"><span class="hr-badge hr-green">480.2</span></td></tr>
+<tr data-tail="N431HC"><td><div class="tail-number">N431HC</div><div class="airframe-hrs">1,999.4 TT</div></td><td class="hr-cell"><span class="hr-badge hr-amber">32.5</span></td><td class="hr-cell"><span class="hr-badge hr-amber">82.5</span></td><td class="hr-cell"><span class="hr-badge hr-green">146.8</span></td><td class="hr-cell"><span class="hr-badge hr-green">194.7</span></td><td class="hr-cell"><span class="hr-badge hr-green">381.1</span></td><td class="hr-cell"><span class="hr-badge hr-green">400.6</span></td><td class="hr-cell"><span class="hr-badge hr-green">1200.6</span></td></tr>
+<tr data-tail="N531HC"><td><div class="tail-number">N531HC</div><div class="airframe-hrs">3,323.1 TT</div></td><td class="hr-cell"><span class="hr-badge hr-red">7.2</span></td><td class="hr-cell"><span class="hr-badge hr-red">5.4</span></td><td class="hr-cell"><span class="hr-badge hr-amber">56.1</span></td><td class="hr-cell"><span class="hr-badge hr-amber">86.5</span></td><td class="hr-cell"><span class="hr-badge hr-overdue">OVRD 3</span></td><td class="hr-cell"><span class="hr-badge hr-green">814.1</span></td><td class="hr-cell"><span class="hr-badge hr-green">2907.8</span></td></tr>
+<tr data-tail="N631HC"><td><div class="tail-number">N631HC</div><div class="airframe-hrs">1,847.5 TT</div></td><td class="hr-cell"><span class="hr-badge hr-amber">49.6</span></td><td class="hr-cell"><span class="hr-badge hr-amber">50.9</span></td><td class="hr-cell"><span class="hr-badge hr-green">150.9</span></td><td class="hr-cell"><span class="hr-badge hr-green">151.5</span></td><td class="hr-cell"><span class="hr-badge hr-green">460.5</span></td><td class="hr-cell"><span class="hr-badge hr-green">552.5</span></td><td class="hr-cell"><span class="hr-badge hr-green">1352.5</span></td></tr>
+<tr data-tail="N731HC"><td><div class="tail-number">N731HC</div><div class="airframe-hrs">20.6 TT</div></td><td class="hr-cell"><span class="hr-badge hr-amber">29.4</span></td><td class="hr-cell"><span class="hr-badge hr-amber">79.4</span></td><td class="hr-cell"><span class="hr-badge hr-green">179.4</span></td><td class="hr-cell"><span class="hr-badge hr-green">379.4</span></td><td class="hr-cell"><span class="hr-badge hr-green">779.4</span></td><td class="hr-cell"><span class="hr-badge hr-green">2379.4</span></td><td class="hr-cell"><span class="hr-badge hr-green">3179.4</span></td></tr>
 
         </tbody>
       </table>
     </div>
     <div class="section-label" style="margin-top:36px;">Component Retirement / Overhaul — Within 200 Hours</div>
-    <div class="components-grid">
-        <div class="aircraft-panel">
-          <div class="panel-header">
-            <div class="panel-tail">N251HC</div>
-            <div class="panel-hours">6053.0 TT</div>
-          </div>
-          
-            <div class="component-row">
-              <div class="comp-indicator comp-amber"></div>
-              <div class="comp-info">
-                <div class="comp-name" title="Main Rotor Dampers Overhaul - #2">Main Rotor Dampers Overhaul - #2 <span class="rii-badge">RII</span></div>
-                <div class="comp-hrs" style="color:var(--amber)">95.4 hrs remaining</div>
-              </div>
-            </div>
-        </div>
-        <div class="aircraft-panel">
-          <div class="panel-header">
-            <div class="panel-tail">N261HC</div>
-            <div class="panel-hours">6078.2 TT</div>
-          </div>
-          
-            <div class="component-row">
-              <div class="comp-indicator comp-amber"></div>
-              <div class="comp-info">
-                <div class="comp-name" title="Tail Rotor Servo Actuator Assembly - Overhaul [67-04]">Tail Rotor Servo Actuator Assembly - Overhaul [67-04] <span class="rii-badge">RII</span></div>
-                <div class="comp-hrs" style="color:var(--amber)">63.8 hrs remaining</div>
-              </div>
-            </div>
-        </div>
-        <div class="aircraft-panel">
-          <div class="panel-header">
-            <div class="panel-tail">N271HC</div>
-            <div class="panel-hours">6969.9 TT</div>
-          </div>
-          
-            <div class="component-row">
-              <div class="comp-indicator comp-amber"></div>
-              <div class="comp-info">
-                <div class="comp-name" title="Engine - No. 1 Bearing Retaining Nut - Remove And Replace With New Part At Every Tbo">Engine - No. 1 Bearing Retaining Nut - Remove And Replace With New Part At Every Tbo</div>
-                <div class="comp-hrs" style="color:var(--amber)">59.4 hrs remaining</div>
-              </div>
-            </div>
-            <div class="component-row">
-              <div class="comp-indicator comp-amber"></div>
-              <div class="comp-info">
-                <div class="comp-name" title="Engine - No. 3 Bearing Inner Race Retaining Nut Keywasher - Remove And Replace With New Part At Every Tbo Or Every 5000 Hours Whichever Comes First ( Ref. To Notes 1, 2, 3 And 4)">Engine - No. 3 Bearing Inner Race Retaining Nut Keywasher - Remove And Replace With New Part At Every Tbo Or Every 5000 Hours Whichever Comes First ( Ref. To Notes 1, 2, 3 And 4)</div>
-                <div class="comp-hrs" style="color:var(--amber)">59.4 hrs remaining</div>
-              </div>
-            </div>
-            <div class="component-row">
-              <div class="comp-indicator comp-amber"></div>
-              <div class="comp-info">
-                <div class="comp-name" title="Engine - Ct Disk Retaining Nut Keywasher (No.4 Bearing Keywasher) - Remove And Replace With New Part At Every Tbo Or Every 5000 Hours Whichever Comes First">Engine - Ct Disk Retaining Nut Keywasher (No.4 Bearing Keywasher) - Remove And Replace With New Part At Every Tbo Or Every 5000 Hours Whichever Comes First</div>
-                <div class="comp-hrs" style="color:var(--amber)">59.4 hrs remaining</div>
-              </div>
-            </div>
-            <div class="component-row">
-              <div class="comp-indicator comp-amber"></div>
-              <div class="comp-info">
-                <div class="comp-name" title="Engine - Ct Disk Retaining Nut - Remove And Replace With New Part At Every Tbo Or Every 5000 Hours Whichever Comes First">Engine - Ct Disk Retaining Nut - Remove And Replace With New Part At Every Tbo Or Every 5000 Hours Whichever Comes First</div>
-                <div class="comp-hrs" style="color:var(--amber)">59.4 hrs remaining</div>
-              </div>
-            </div>
-            <div class="component-row">
-              <div class="comp-indicator comp-amber"></div>
-              <div class="comp-info">
-                <div class="comp-name" title="Engine -  Turbo Machinery Module Overhaul">Engine -  Turbo Machinery Module Overhaul</div>
-                <div class="comp-hrs" style="color:var(--amber)">59.4 hrs remaining</div>
-              </div>
-            </div>
-            <div class="component-row">
-              <div class="comp-indicator comp-amber"></div>
-              <div class="comp-info">
-                <div class="comp-name" title="Engine -  Reduction Gearbox Overhaul">Engine -  Reduction Gearbox Overhaul</div>
-                <div class="comp-hrs" style="color:var(--amber)">59.4 hrs remaining</div>
-              </div>
-            </div>
-            <div class="component-row">
-              <div class="comp-indicator comp-green"></div>
-              <div class="comp-info">
-                <div class="comp-name" title="Main Rotor Dampers Overhaul - #4">Main Rotor Dampers Overhaul - #4 <span class="rii-badge">RII</span></div>
-                <div class="comp-hrs" style="color:var(--green)">143.8 hrs remaining</div>
-              </div>
-            </div>
-            <div class="component-row">
-              <div class="comp-indicator comp-green"></div>
-              <div class="comp-info">
-                <div class="comp-name" title="Engine -  Fuel Nozzles Clean & Functional Check">Engine -  Fuel Nozzles Clean & Functional Check <span class="rii-badge">RII</span></div>
-                <div class="comp-hrs" style="color:var(--green)">165.9 hrs remaining</div>
-              </div>
-            </div>
-            <div class="component-row">
-              <div class="comp-indicator comp-green"></div>
-              <div class="comp-info">
-                <div class="comp-name" title="Fuel Filter Element - Discard [28-01] - #1">Fuel Filter Element - Discard [28-01] - #1 <span class="rii-badge">RII</span></div>
-                <div class="comp-hrs" style="color:var(--green)">173.0 hrs remaining</div>
-              </div>
-            </div>
-        </div>
-        <div class="aircraft-panel">
-          <div class="panel-header">
-            <div class="panel-tail">N281HC</div>
-            <div class="panel-hours">6499.7 TT</div>
-          </div>
-          
-            <div class="component-row">
-              <div class="comp-indicator comp-amber"></div>
-              <div class="comp-info">
-                <div class="comp-name" title="Main Rotor Dampers Overhaul - #3">Main Rotor Dampers Overhaul - #3 <span class="rii-badge">RII</span></div>
-                <div class="comp-hrs" style="color:var(--amber)">62.7 hrs remaining</div>
-              </div>
-            </div>
-            <div class="component-row">
-              <div class="comp-indicator comp-green"></div>
-              <div class="comp-info">
-                <div class="comp-name" title="Efis Cooling Fan - Overhaul [21-03] - #3">Efis Cooling Fan - Overhaul [21-03] - #3</div>
-                <div class="comp-hrs" style="color:var(--green)">181.2 hrs remaining</div>
-              </div>
-            </div>
-            <div class="component-row">
-              <div class="comp-indicator comp-green"></div>
-              <div class="comp-info">
-                <div class="comp-name" title="Main Rotor Dampers Overhaul - #2">Main Rotor Dampers Overhaul - #2 <span class="rii-badge">RII</span></div>
-                <div class="comp-hrs" style="color:var(--green)">191.7 hrs remaining</div>
-              </div>
-            </div>
-        </div>
-        <div class="aircraft-panel">
-          <div class="panel-header">
-            <div class="panel-tail">N291HC</div>
-            <div class="panel-hours">5892.0 TT</div>
-          </div>
-          
-            <div class="component-row">
-              <div class="comp-indicator comp-amber"></div>
-              <div class="comp-info">
-                <div class="comp-name" title="Rescue Hoist Assy - Drain And Replace Gearbox Lube Oil Mil - Prf-23699">Rescue Hoist Assy - Drain And Replace Gearbox Lube Oil Mil - Prf-23699 <span class="rii-badge">RII</span></div>
-                <div class="comp-hrs" style="color:var(--amber)">25 days remaining</div>
-              </div>
-            </div>
-            <div class="component-row">
-              <div class="comp-indicator comp-amber"></div>
-              <div class="comp-info">
-                <div class="comp-name" title="Rescue Hoist Cable Cutter Cartridge Life Limit">Rescue Hoist Cable Cutter Cartridge Life Limit</div>
-                <div class="comp-hrs" style="color:var(--amber)">26 days remaining</div>
-              </div>
-            </div>
-            <div class="component-row">
-              <div class="comp-indicator comp-amber"></div>
-              <div class="comp-info">
-                <div class="comp-name" title="Engine Fire Extinguisher Lh">Engine Fire Extinguisher Lh <span class="rii-badge">RII</span></div>
-                <div class="comp-hrs" style="color:var(--amber)">26 days remaining</div>
-              </div>
-            </div>
-            <div class="component-row">
-              <div class="comp-indicator comp-red"></div>
-              <div class="comp-info">
-                <div class="comp-name" title="Toothed Belt - Discard [63-01] - #1">Toothed Belt - Discard [63-01] - #1 <span class="rii-badge">RII</span></div>
-                <div class="comp-hrs" style="color:var(--red)">21.3 hrs remaining</div>
-              </div>
-            </div>
-            <div class="component-row">
-              <div class="comp-indicator comp-amber"></div>
-              <div class="comp-info">
-                <div class="comp-name" title="Fuel Filter Element - Discard [28-01] - #1">Fuel Filter Element - Discard [28-01] - #1 <span class="rii-badge">RII</span></div>
-                <div class="comp-hrs" style="color:var(--amber)">68.6 hrs remaining</div>
-              </div>
-            </div>
-            <div class="component-row">
-              <div class="comp-indicator comp-amber"></div>
-              <div class="comp-info">
-                <div class="comp-name" title="Efis Cooling Fan - Overhaul [21-03] - #1">Efis Cooling Fan - Overhaul [21-03] - #1</div>
-                <div class="comp-hrs" style="color:var(--amber)">79.5 hrs remaining</div>
-              </div>
-            </div>
-            <div class="component-row">
-              <div class="comp-indicator comp-amber"></div>
-              <div class="comp-info">
-                <div class="comp-name" title="Efis Cooling Fan - Overhaul [21-03] - #2">Efis Cooling Fan - Overhaul [21-03] - #2</div>
-                <div class="comp-hrs" style="color:var(--amber)">79.5 hrs remaining</div>
-              </div>
-            </div>
-            <div class="component-row">
-              <div class="comp-indicator comp-amber"></div>
-              <div class="comp-info">
-                <div class="comp-name" title="Overhaul Of Rescue Hoist S/N 40336">Overhaul Of Rescue Hoist S/N 40336 <span class="rii-badge">RII</span></div>
-                <div class="comp-hrs" style="color:var(--amber)">81.5 hrs remaining</div>
-              </div>
-            </div>
-            <div class="component-row">
-              <div class="comp-indicator comp-green"></div>
-              <div class="comp-info">
-                <div class="comp-name" title="Starter Generator - Overhaul [24-01] - #2 (Pn 200Sgl147Q-3, - 4)">Starter Generator - Overhaul [24-01] - #2 (Pn 200Sgl147Q-3, - 4) <span class="rii-badge">RII</span></div>
-                <div class="comp-hrs" style="color:var(--green)">169.0 hrs remaining</div>
-              </div>
-            </div>
-        </div>
-        <div class="aircraft-panel">
-          <div class="panel-header">
-            <div class="panel-tail">N431HC</div>
-            <div class="panel-hours">1999.4 TT</div>
-          </div>
-          
-            <div class="component-row">
-              <div class="comp-indicator comp-green"></div>
-              <div class="comp-info">
-                <div class="comp-name" title="Fuel Filter Element - Discard [28-01]- #1">Fuel Filter Element - Discard [28-01]- #1 <span class="rii-badge">RII</span></div>
-                <div class="comp-hrs" style="color:var(--green)">194.7 hrs remaining</div>
-              </div>
-            </div>
-            <div class="component-row">
-              <div class="comp-indicator comp-green"></div>
-              <div class="comp-info">
-                <div class="comp-name" title="Fuel Filter Element - Discard [28-01] #2">Fuel Filter Element - Discard [28-01] #2 <span class="rii-badge">RII</span></div>
-                <div class="comp-hrs" style="color:var(--green)">194.7 hrs remaining</div>
-              </div>
-            </div>
-        </div>
-        <div class="aircraft-panel">
-          <div class="panel-header">
-            <div class="panel-tail">N531HC</div>
-            <div class="panel-hours">3323.1 TT</div>
-          </div>
-          
-            <div class="component-row">
-              <div class="comp-indicator comp-amber"></div>
-              <div class="comp-info">
-                <div class="comp-name" title="Upper Fixed Half-Scissor Attachment Fitting - Retirement">Upper Fixed Half-Scissor Attachment Fitting - Retirement <span class="rii-badge">RII</span></div>
-                <div class="comp-hrs" style="color:var(--amber)">76.9 hrs remaining</div>
-              </div>
-            </div>
-        </div>
-        <div class="aircraft-panel">
-          <div class="panel-header">
-            <div class="panel-tail">N631HC</div>
-            <div class="panel-hours">1847.5 TT</div>
-          </div>
-          
-            <div class="component-row">
-              <div class="comp-indicator comp-overdue"></div>
-              <div class="comp-info">
-                <div class="comp-name" title="No. 1 Engine - Fuel Nozzles Clean & Functional Check">No. 1 Engine - Fuel Nozzles Clean & Functional Check <span class="rii-badge">RII</span></div>
-                <div class="comp-hrs" style="color:var(--overdue)">OVERDUE — 60.3 hrs past limit</div>
-              </div>
-            </div>
-            <div class="component-row">
-              <div class="comp-indicator comp-overdue"></div>
-              <div class="comp-info">
-                <div class="comp-name" title="No. 2 Engine - Fuel Nozzles Clean & Functional Check">No. 2 Engine - Fuel Nozzles Clean & Functional Check <span class="rii-badge">RII</span></div>
-                <div class="comp-hrs" style="color:var(--overdue)">OVERDUE — 60.3 hrs past limit</div>
-              </div>
-            </div>
-            <div class="component-row">
-              <div class="comp-indicator comp-green"></div>
-              <div class="comp-info">
-                <div class="comp-name" title="Starter Generator #1 - Overhaul">Starter Generator #1 - Overhaul</div>
-                <div class="comp-hrs" style="color:var(--green)">139.7 hrs remaining</div>
-              </div>
-            </div>
-            <div class="component-row">
-              <div class="comp-indicator comp-green"></div>
-              <div class="comp-info">
-                <div class="comp-name" title="Starter Generator #2 - Overhaul">Starter Generator #2 - Overhaul</div>
-                <div class="comp-hrs" style="color:var(--green)">139.7 hrs remaining</div>
-              </div>
-            </div>
-            <div class="component-row">
-              <div class="comp-indicator comp-overdue"></div>
-              <div class="comp-info">
-                <div class="comp-name" title="Copilot Ids Indicator">Copilot Ids Indicator</div>
-                <div class="comp-hrs" style="color:var(--overdue)">Past Due</div>
-              </div>
-            </div>
-        </div>
-        <div class="aircraft-panel">
-          <div class="panel-header">
-            <div class="panel-tail">N731HC</div>
-            <div class="panel-hours">20.6 TT</div>
-          </div>
-          
-            <div class="component-row">
-              <div class="comp-indicator comp-overdue"></div>
-              <div class="comp-info">
-                <div class="comp-name" title="24 Month Replacement Of Digital Pilot/Co-Pilot Clock Battery "Aaa" Size Akaline Battery Commercial Available">24 Month Replacement Of Digital Pilot/Co-Pilot Clock Battery "Aaa" Size Akaline Battery Commercial Available</div>
-                <div class="comp-hrs" style="color:var(--overdue)">OVERDUE — 5 days past limit</div>
-              </div>
-            </div>
-            <div class="component-row">
-              <div class="comp-indicator comp-overdue"></div>
-              <div class="comp-info">
-                <div class="comp-name" title="Fire Extinguishing Cartridges - Discard [26-02] - #3">Fire Extinguishing Cartridges - Discard [26-02] - #3 <span class="rii-badge">RII</span></div>
-                <div class="comp-hrs" style="color:var(--overdue)">OVERDUE — 4 days past limit</div>
-              </div>
-            </div>
-            <div class="component-row">
-              <div class="comp-indicator comp-overdue"></div>
-              <div class="comp-info">
-                <div class="comp-name" title="Standby Attitude Indicator">Standby Attitude Indicator</div>
-                <div class="comp-hrs" style="color:var(--overdue)">Past Due</div>
-              </div>
-            </div>
-        </div></div>
+    <div class="components-grid"><div class="aircraft-panel">
+  <div class="panel-header">
+    <div class="panel-tail">N251HC</div>
+    <div class="panel-hours">6053.0 TT</div>
+  </div>
+  <div class="component-row">
+  <div class="comp-indicator comp-amber"></div>
+  <div class="comp-info">
+    <div class="comp-name" title="Main Rotor Dampers Overhaul - #2">Main Rotor Dampers Overhaul - #2 <span class="rii-badge">RII</span></div>
+    <div class="comp-hrs" style="color:var(--amber)">95.4 hrs remaining</div>
+  </div>
+</div>
+</div><div class="aircraft-panel">
+  <div class="panel-header">
+    <div class="panel-tail">N261HC</div>
+    <div class="panel-hours">6078.2 TT</div>
+  </div>
+  <div class="component-row">
+  <div class="comp-indicator comp-amber"></div>
+  <div class="comp-info">
+    <div class="comp-name" title="Tail Rotor Servo Actuator Assembly - Overhaul [67-04]">Tail Rotor Servo Actuator Assembly - Overhaul [67-04] <span class="rii-badge">RII</span></div>
+    <div class="comp-hrs" style="color:var(--amber)">63.8 hrs remaining</div>
+  </div>
+</div>
+</div><div class="aircraft-panel">
+  <div class="panel-header">
+    <div class="panel-tail">N271HC</div>
+    <div class="panel-hours">6969.9 TT</div>
+  </div>
+  <div class="component-row">
+  <div class="comp-indicator comp-amber"></div>
+  <div class="comp-info">
+    <div class="comp-name" title="Engine - No. 1 Bearing Retaining Nut - Remove And Replace With New Part At Every Tbo">Engine - No. 1 Bearing Retaining Nut - Remove And Replace With New Part At Every Tbo</div>
+    <div class="comp-hrs" style="color:var(--amber)">59.4 hrs remaining</div>
+  </div>
+</div><div class="component-row">
+  <div class="comp-indicator comp-amber"></div>
+  <div class="comp-info">
+    <div class="comp-name" title="Engine - No. 3 Bearing Inner Race Retaining Nut Keywasher - Remove And Replace With New Part At Every Tbo Or Every 5000 Hours Whichever Comes First ( Ref. To Notes 1, 2, 3 And 4)">Engine - No. 3 Bearing Inner Race Retaining Nut Keywasher - Remove And Replace With New Part At Every Tbo Or Every 5000 Hours Whichever Comes First ( Ref. To Notes 1, 2, 3 And 4)</div>
+    <div class="comp-hrs" style="color:var(--amber)">59.4 hrs remaining</div>
+  </div>
+</div><div class="component-row">
+  <div class="comp-indicator comp-amber"></div>
+  <div class="comp-info">
+    <div class="comp-name" title="Engine - Ct Disk Retaining Nut Keywasher (No.4 Bearing Keywasher) - Remove And Replace With New Part At Every Tbo Or Every 5000 Hours Whichever Comes First">Engine - Ct Disk Retaining Nut Keywasher (No.4 Bearing Keywasher) - Remove And Replace With New Part At Every Tbo Or Every 5000 Hours Whichever Comes First</div>
+    <div class="comp-hrs" style="color:var(--amber)">59.4 hrs remaining</div>
+  </div>
+</div><div class="component-row">
+  <div class="comp-indicator comp-amber"></div>
+  <div class="comp-info">
+    <div class="comp-name" title="Engine - Ct Disk Retaining Nut - Remove And Replace With New Part At Every Tbo Or Every 5000 Hours Whichever Comes First">Engine - Ct Disk Retaining Nut - Remove And Replace With New Part At Every Tbo Or Every 5000 Hours Whichever Comes First</div>
+    <div class="comp-hrs" style="color:var(--amber)">59.4 hrs remaining</div>
+  </div>
+</div><div class="component-row">
+  <div class="comp-indicator comp-amber"></div>
+  <div class="comp-info">
+    <div class="comp-name" title="Engine -  Turbo Machinery Module Overhaul">Engine -  Turbo Machinery Module Overhaul</div>
+    <div class="comp-hrs" style="color:var(--amber)">59.4 hrs remaining</div>
+  </div>
+</div><div class="component-row">
+  <div class="comp-indicator comp-amber"></div>
+  <div class="comp-info">
+    <div class="comp-name" title="Engine -  Reduction Gearbox Overhaul">Engine -  Reduction Gearbox Overhaul</div>
+    <div class="comp-hrs" style="color:var(--amber)">59.4 hrs remaining</div>
+  </div>
+</div><div class="component-row">
+  <div class="comp-indicator comp-green"></div>
+  <div class="comp-info">
+    <div class="comp-name" title="Main Rotor Dampers Overhaul - #4">Main Rotor Dampers Overhaul - #4 <span class="rii-badge">RII</span></div>
+    <div class="comp-hrs" style="color:var(--green)">143.8 hrs remaining</div>
+  </div>
+</div><div class="component-row">
+  <div class="comp-indicator comp-green"></div>
+  <div class="comp-info">
+    <div class="comp-name" title="Engine -  Fuel Nozzles Clean & Functional Check">Engine -  Fuel Nozzles Clean & Functional Check <span class="rii-badge">RII</span></div>
+    <div class="comp-hrs" style="color:var(--green)">165.9 hrs remaining</div>
+  </div>
+</div><div class="component-row">
+  <div class="comp-indicator comp-green"></div>
+  <div class="comp-info">
+    <div class="comp-name" title="Fuel Filter Element - Discard [28-01] - #1">Fuel Filter Element - Discard [28-01] - #1 <span class="rii-badge">RII</span></div>
+    <div class="comp-hrs" style="color:var(--green)">173.0 hrs remaining</div>
+  </div>
+</div>
+</div><div class="aircraft-panel">
+  <div class="panel-header">
+    <div class="panel-tail">N281HC</div>
+    <div class="panel-hours">6499.7 TT</div>
+  </div>
+  <div class="component-row">
+  <div class="comp-indicator comp-amber"></div>
+  <div class="comp-info">
+    <div class="comp-name" title="Main Rotor Dampers Overhaul - #3">Main Rotor Dampers Overhaul - #3 <span class="rii-badge">RII</span></div>
+    <div class="comp-hrs" style="color:var(--amber)">62.7 hrs remaining</div>
+  </div>
+</div><div class="component-row">
+  <div class="comp-indicator comp-green"></div>
+  <div class="comp-info">
+    <div class="comp-name" title="Efis Cooling Fan - Overhaul [21-03] - #3">Efis Cooling Fan - Overhaul [21-03] - #3</div>
+    <div class="comp-hrs" style="color:var(--green)">181.2 hrs remaining</div>
+  </div>
+</div><div class="component-row">
+  <div class="comp-indicator comp-green"></div>
+  <div class="comp-info">
+    <div class="comp-name" title="Main Rotor Dampers Overhaul - #2">Main Rotor Dampers Overhaul - #2 <span class="rii-badge">RII</span></div>
+    <div class="comp-hrs" style="color:var(--green)">191.7 hrs remaining</div>
+  </div>
+</div>
+</div><div class="aircraft-panel">
+  <div class="panel-header">
+    <div class="panel-tail">N291HC</div>
+    <div class="panel-hours">5892.0 TT</div>
+  </div>
+  <div class="component-row">
+  <div class="comp-indicator comp-amber"></div>
+  <div class="comp-info">
+    <div class="comp-name" title="Rescue Hoist Assy - Drain And Replace Gearbox Lube Oil Mil - Prf-23699">Rescue Hoist Assy - Drain And Replace Gearbox Lube Oil Mil - Prf-23699 <span class="rii-badge">RII</span></div>
+    <div class="comp-hrs" style="color:var(--amber)">25 days remaining</div>
+  </div>
+</div><div class="component-row">
+  <div class="comp-indicator comp-amber"></div>
+  <div class="comp-info">
+    <div class="comp-name" title="Rescue Hoist Cable Cutter Cartridge Life Limit">Rescue Hoist Cable Cutter Cartridge Life Limit</div>
+    <div class="comp-hrs" style="color:var(--amber)">26 days remaining</div>
+  </div>
+</div><div class="component-row">
+  <div class="comp-indicator comp-amber"></div>
+  <div class="comp-info">
+    <div class="comp-name" title="Engine Fire Extinguisher Lh">Engine Fire Extinguisher Lh <span class="rii-badge">RII</span></div>
+    <div class="comp-hrs" style="color:var(--amber)">26 days remaining</div>
+  </div>
+</div><div class="component-row">
+  <div class="comp-indicator comp-red"></div>
+  <div class="comp-info">
+    <div class="comp-name" title="Toothed Belt - Discard [63-01] - #1">Toothed Belt - Discard [63-01] - #1 <span class="rii-badge">RII</span></div>
+    <div class="comp-hrs" style="color:var(--red)">21.3 hrs remaining</div>
+  </div>
+</div><div class="component-row">
+  <div class="comp-indicator comp-amber"></div>
+  <div class="comp-info">
+    <div class="comp-name" title="Fuel Filter Element - Discard [28-01] - #1">Fuel Filter Element - Discard [28-01] - #1 <span class="rii-badge">RII</span></div>
+    <div class="comp-hrs" style="color:var(--amber)">68.6 hrs remaining</div>
+  </div>
+</div><div class="component-row">
+  <div class="comp-indicator comp-amber"></div>
+  <div class="comp-info">
+    <div class="comp-name" title="Efis Cooling Fan - Overhaul [21-03] - #1">Efis Cooling Fan - Overhaul [21-03] - #1</div>
+    <div class="comp-hrs" style="color:var(--amber)">79.5 hrs remaining</div>
+  </div>
+</div><div class="component-row">
+  <div class="comp-indicator comp-amber"></div>
+  <div class="comp-info">
+    <div class="comp-name" title="Efis Cooling Fan - Overhaul [21-03] - #2">Efis Cooling Fan - Overhaul [21-03] - #2</div>
+    <div class="comp-hrs" style="color:var(--amber)">79.5 hrs remaining</div>
+  </div>
+</div><div class="component-row">
+  <div class="comp-indicator comp-amber"></div>
+  <div class="comp-info">
+    <div class="comp-name" title="Overhaul Of Rescue Hoist S/N 40336">Overhaul Of Rescue Hoist S/N 40336 <span class="rii-badge">RII</span></div>
+    <div class="comp-hrs" style="color:var(--amber)">81.5 hrs remaining</div>
+  </div>
+</div><div class="component-row">
+  <div class="comp-indicator comp-green"></div>
+  <div class="comp-info">
+    <div class="comp-name" title="Starter Generator - Overhaul [24-01] - #2 (Pn 200Sgl147Q-3, - 4)">Starter Generator - Overhaul [24-01] - #2 (Pn 200Sgl147Q-3, - 4) <span class="rii-badge">RII</span></div>
+    <div class="comp-hrs" style="color:var(--green)">169.0 hrs remaining</div>
+  </div>
+</div>
+</div><div class="aircraft-panel">
+  <div class="panel-header">
+    <div class="panel-tail">N431HC</div>
+    <div class="panel-hours">1999.4 TT</div>
+  </div>
+  <div class="component-row">
+  <div class="comp-indicator comp-green"></div>
+  <div class="comp-info">
+    <div class="comp-name" title="Fuel Filter Element - Discard [28-01]- #1">Fuel Filter Element - Discard [28-01]- #1 <span class="rii-badge">RII</span></div>
+    <div class="comp-hrs" style="color:var(--green)">194.7 hrs remaining</div>
+  </div>
+</div><div class="component-row">
+  <div class="comp-indicator comp-green"></div>
+  <div class="comp-info">
+    <div class="comp-name" title="Fuel Filter Element - Discard [28-01] #2">Fuel Filter Element - Discard [28-01] #2 <span class="rii-badge">RII</span></div>
+    <div class="comp-hrs" style="color:var(--green)">194.7 hrs remaining</div>
+  </div>
+</div>
+</div><div class="aircraft-panel">
+  <div class="panel-header">
+    <div class="panel-tail">N531HC</div>
+    <div class="panel-hours">3323.1 TT</div>
+  </div>
+  <div class="component-row">
+  <div class="comp-indicator comp-amber"></div>
+  <div class="comp-info">
+    <div class="comp-name" title="Upper Fixed Half-Scissor Attachment Fitting - Retirement">Upper Fixed Half-Scissor Attachment Fitting - Retirement <span class="rii-badge">RII</span></div>
+    <div class="comp-hrs" style="color:var(--amber)">76.9 hrs remaining</div>
+  </div>
+</div>
+</div><div class="aircraft-panel">
+  <div class="panel-header">
+    <div class="panel-tail">N631HC</div>
+    <div class="panel-hours">1847.5 TT</div>
+  </div>
+  <div class="component-row">
+  <div class="comp-indicator comp-overdue"></div>
+  <div class="comp-info">
+    <div class="comp-name" title="No. 1 Engine - Fuel Nozzles Clean & Functional Check">No. 1 Engine - Fuel Nozzles Clean & Functional Check <span class="rii-badge">RII</span></div>
+    <div class="comp-hrs" style="color:var(--overdue)">OVERDUE — 60.3 hrs past limit</div>
+  </div>
+</div><div class="component-row">
+  <div class="comp-indicator comp-overdue"></div>
+  <div class="comp-info">
+    <div class="comp-name" title="No. 2 Engine - Fuel Nozzles Clean & Functional Check">No. 2 Engine - Fuel Nozzles Clean & Functional Check <span class="rii-badge">RII</span></div>
+    <div class="comp-hrs" style="color:var(--overdue)">OVERDUE — 60.3 hrs past limit</div>
+  </div>
+</div><div class="component-row">
+  <div class="comp-indicator comp-green"></div>
+  <div class="comp-info">
+    <div class="comp-name" title="Starter Generator #1 - Overhaul">Starter Generator #1 - Overhaul</div>
+    <div class="comp-hrs" style="color:var(--green)">139.7 hrs remaining</div>
+  </div>
+</div><div class="component-row">
+  <div class="comp-indicator comp-green"></div>
+  <div class="comp-info">
+    <div class="comp-name" title="Starter Generator #2 - Overhaul">Starter Generator #2 - Overhaul</div>
+    <div class="comp-hrs" style="color:var(--green)">139.7 hrs remaining</div>
+  </div>
+</div><div class="component-row">
+  <div class="comp-indicator comp-overdue"></div>
+  <div class="comp-info">
+    <div class="comp-name" title="Copilot Ids Indicator">Copilot Ids Indicator</div>
+    <div class="comp-hrs" style="color:var(--overdue)">Past Due</div>
+  </div>
+</div>
+</div><div class="aircraft-panel">
+  <div class="panel-header">
+    <div class="panel-tail">N731HC</div>
+    <div class="panel-hours">20.6 TT</div>
+  </div>
+  <div class="component-row">
+  <div class="comp-indicator comp-overdue"></div>
+  <div class="comp-info">
+    <div class="comp-name" title="24 Month Replacement Of Digital Pilot/Co-Pilot Clock Battery "Aaa" Size Akaline Battery Commercial Available">24 Month Replacement Of Digital Pilot/Co-Pilot Clock Battery "Aaa" Size Akaline Battery Commercial Available</div>
+    <div class="comp-hrs" style="color:var(--overdue)">OVERDUE — 5 days past limit</div>
+  </div>
+</div><div class="component-row">
+  <div class="comp-indicator comp-overdue"></div>
+  <div class="comp-info">
+    <div class="comp-name" title="Fire Extinguishing Cartridges - Discard [26-02] - #3">Fire Extinguishing Cartridges - Discard [26-02] - #3 <span class="rii-badge">RII</span></div>
+    <div class="comp-hrs" style="color:var(--overdue)">OVERDUE — 4 days past limit</div>
+  </div>
+</div><div class="component-row">
+  <div class="comp-indicator comp-overdue"></div>
+  <div class="comp-info">
+    <div class="comp-name" title="Standby Attitude Indicator">Standby Attitude Indicator</div>
+    <div class="comp-hrs" style="color:var(--overdue)">Past Due</div>
+  </div>
+</div>
+</div></div>
   </div>
 
   <!-- FLIGHT HOURS TAB -->
   <div id="tab-flight-hours" class="tab-content">
-
     <div class="section-label">Fleet Utilization Rates</div>
-    <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:20px;">
-      Average based on available history. Updates as more data accumulates.
-    </div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:20px;">Average based on available history. Updates as more data accumulates.</div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:24px;margin-bottom:32px;">
       <canvas id="utilChart" style="width:100%;height:320px;"></canvas>
     </div>
-    <div class="hours-grid">
-    
-      <div class="hours-card">
-        <div class="hours-card-header">
-          <div class="hours-card-tail">N251HC</div>
-          <div class="hours-card-current">6,053.0 TT</div>
-        </div>
-        <div class="hours-card-body">
-          <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div>
-            <div class="hours-stat-value">1.30 hrs</div></div>
-          <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div>
-            <div class="hours-stat-value">9.1 hrs</div></div>
-          <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div>
-            <div class="hours-stat-value">39.0 hrs</div></div>
-        </div>
-      </div>
-      <div class="hours-card">
-        <div class="hours-card-header">
-          <div class="hours-card-tail">N261HC</div>
-          <div class="hours-card-current">6,078.2 TT</div>
-        </div>
-        <div class="hours-card-body">
-          <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div>
-            <div class="hours-stat-value">0.64 hrs</div></div>
-          <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div>
-            <div class="hours-stat-value">4.5 hrs</div></div>
-          <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div>
-            <div class="hours-stat-value">19.3 hrs</div></div>
-        </div>
-      </div>
-      <div class="hours-card">
-        <div class="hours-card-header">
-          <div class="hours-card-tail">N271HC</div>
-          <div class="hours-card-current">6,969.9 TT</div>
-        </div>
-        <div class="hours-card-body">
-          <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div>
-            <div class="hours-stat-value">0.13 hrs</div></div>
-          <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div>
-            <div class="hours-stat-value">0.9 hrs</div></div>
-          <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div>
-            <div class="hours-stat-value">3.9 hrs</div></div>
-        </div>
-      </div>
-      <div class="hours-card">
-        <div class="hours-card-header">
-          <div class="hours-card-tail">N281HC</div>
-          <div class="hours-card-current">6,499.7 TT</div>
-        </div>
-        <div class="hours-card-body">
-          <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div>
-            <div class="hours-stat-value">0.71 hrs</div></div>
-          <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div>
-            <div class="hours-stat-value">5.0 hrs</div></div>
-          <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div>
-            <div class="hours-stat-value">21.4 hrs</div></div>
-        </div>
-      </div>
-      <div class="hours-card">
-        <div class="hours-card-header">
-          <div class="hours-card-tail">N291HC</div>
-          <div class="hours-card-current">5,892.0 TT</div>
-        </div>
-        <div class="hours-card-body">
-          <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div>
-            <div class="hours-stat-value">0.50 hrs</div></div>
-          <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div>
-            <div class="hours-stat-value">3.5 hrs</div></div>
-          <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div>
-            <div class="hours-stat-value">15.0 hrs</div></div>
-        </div>
-      </div>
-      <div class="hours-card">
-        <div class="hours-card-header">
-          <div class="hours-card-tail">N431HC</div>
-          <div class="hours-card-current">1,999.4 TT</div>
-        </div>
-        <div class="hours-card-body">
-          <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div>
-            <div class="hours-stat-value">0.10 hrs</div></div>
-          <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div>
-            <div class="hours-stat-value">0.7 hrs</div></div>
-          <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div>
-            <div class="hours-stat-value">3.0 hrs</div></div>
-        </div>
-      </div>
-      <div class="hours-card">
-        <div class="hours-card-header">
-          <div class="hours-card-tail">N531HC</div>
-          <div class="hours-card-current">3,323.1 TT</div>
-        </div>
-        <div class="hours-card-body">
-          <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div>
-            <div class="hours-stat-value">0.49 hrs</div></div>
-          <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div>
-            <div class="hours-stat-value">3.4 hrs</div></div>
-          <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div>
-            <div class="hours-stat-value">14.6 hrs</div></div>
-        </div>
-      </div>
-      <div class="hours-card">
-        <div class="hours-card-header">
-          <div class="hours-card-tail">N631HC</div>
-          <div class="hours-card-current">1,847.5 TT</div>
-        </div>
-        <div class="hours-card-body">
-          <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div>
-            <div class="hours-stat-value">0.06 hrs</div></div>
-          <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div>
-            <div class="hours-stat-value">0.4 hrs</div></div>
-          <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div>
-            <div class="hours-stat-value">1.7 hrs</div></div>
-        </div>
-      </div>
-      <div class="hours-card">
-        <div class="hours-card-header">
-          <div class="hours-card-tail">N731HC</div>
-          <div class="hours-card-current">20.6 TT</div>
-        </div>
-        <div class="hours-card-body">
-          <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div>
-            <div class="hours-stat-value">1.36 hrs</div></div>
-          <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div>
-            <div class="hours-stat-value">9.5 hrs</div></div>
-          <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div>
-            <div class="hours-stat-value">40.7 hrs</div></div>
-        </div>
-      </div></div>
+    <div class="hours-grid"><div class="hours-card">
+  <div class="hours-card-header">
+    <div class="hours-card-tail">N251HC</div>
+    <div class="hours-card-current">6,053.0 TT</div>
+  </div>
+  <div class="hours-card-body">
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div><div class="hours-stat-value">0.81 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div><div class="hours-stat-value">5.7 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div><div class="hours-stat-value">24.4 hrs</div></div>
+  </div>
+</div><div class="hours-card">
+  <div class="hours-card-header">
+    <div class="hours-card-tail">N261HC</div>
+    <div class="hours-card-current">6,078.2 TT</div>
+  </div>
+  <div class="hours-card-body">
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div><div class="hours-stat-value">0.53 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div><div class="hours-stat-value">3.7 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div><div class="hours-stat-value">15.9 hrs</div></div>
+  </div>
+</div><div class="hours-card">
+  <div class="hours-card-header">
+    <div class="hours-card-tail">N271HC</div>
+    <div class="hours-card-current">6,969.9 TT</div>
+  </div>
+  <div class="hours-card-body">
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div><div class="hours-stat-value">0.13 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div><div class="hours-stat-value">0.9 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div><div class="hours-stat-value">3.9 hrs</div></div>
+  </div>
+</div><div class="hours-card">
+  <div class="hours-card-header">
+    <div class="hours-card-tail">N281HC</div>
+    <div class="hours-card-current">6,499.7 TT</div>
+  </div>
+  <div class="hours-card-body">
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div><div class="hours-stat-value">0.43 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div><div class="hours-stat-value">3.0 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div><div class="hours-stat-value">12.9 hrs</div></div>
+  </div>
+</div><div class="hours-card">
+  <div class="hours-card-header">
+    <div class="hours-card-tail">N291HC</div>
+    <div class="hours-card-current">5,892.0 TT</div>
+  </div>
+  <div class="hours-card-body">
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div><div class="hours-stat-value">0.16 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div><div class="hours-stat-value">1.1 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div><div class="hours-stat-value">4.7 hrs</div></div>
+  </div>
+</div><div class="hours-card">
+  <div class="hours-card-header">
+    <div class="hours-card-tail">N431HC</div>
+    <div class="hours-card-current">1,999.4 TT</div>
+  </div>
+  <div class="hours-card-body">
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div><div class="hours-stat-value">0.10 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div><div class="hours-stat-value">0.7 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div><div class="hours-stat-value">3.0 hrs</div></div>
+  </div>
+</div><div class="hours-card">
+  <div class="hours-card-header">
+    <div class="hours-card-tail">N531HC</div>
+    <div class="hours-card-current">3,323.1 TT</div>
+  </div>
+  <div class="hours-card-body">
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div><div class="hours-stat-value">0.17 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div><div class="hours-stat-value">1.2 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div><div class="hours-stat-value">5.1 hrs</div></div>
+  </div>
+</div><div class="hours-card">
+  <div class="hours-card-header">
+    <div class="hours-card-tail">N631HC</div>
+    <div class="hours-card-current">1,847.5 TT</div>
+  </div>
+  <div class="hours-card-body">
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div><div class="hours-stat-value">0.06 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div><div class="hours-stat-value">0.4 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div><div class="hours-stat-value">1.7 hrs</div></div>
+  </div>
+</div><div class="hours-card">
+  <div class="hours-card-header">
+    <div class="hours-card-tail">N731HC</div>
+    <div class="hours-card-current">20.6 TT</div>
+  </div>
+  <div class="hours-card-body">
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div><div class="hours-stat-value">1.36 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div><div class="hours-stat-value">9.5 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div><div class="hours-stat-value">40.7 hrs</div></div>
+  </div>
+</div></div>
   </div>
 
   <!-- CALENDAR TAB -->
   <div id="tab-calendar" class="tab-content">
-<style>.cal-wrap{font-family:var(--mono)}.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}.cal-nav-btn{background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:var(--sans);font-weight:700;font-size:14px;letter-spacing:2px;padding:8px 20px;border-radius:3px;cursor:pointer}.cal-nav-btn:hover{border-color:var(--blue);color:var(--blue)}.cal-month-label{font-family:var(--sans);font-weight:900;font-size:22px;letter-spacing:3px;color:var(--heading)}.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}.cal-dow-hdr{font-family:var(--mono);font-size:10px;color:var(--muted);text-align:center;padding:6px 0;letter-spacing:2px}.cal-cell{background:var(--surface);border:1px solid var(--border);border-radius:4px;min-height:110px;padding:6px;cursor:pointer;transition:border-color .15s}.cal-cell:hover{border-color:var(--blue)}.cal-cell.other-month{opacity:.25}.cal-cell.is-today{border-color:var(--blue)!important;border-width:2px}.cal-cell.is-past{opacity:.5}.cal-cell.has-overdue{background:#1c0a0a;border-color:#c0392b}.cal-cell.has-urgent{background:#1a1200;border-color:#e67e22}.cal-cell.has-soon{background:#0d1a0d;border-color:#27ae60}.cal-cell.has-ok{background:#0a1520;border-color:#2980b9}.cal-day-num{font-family:var(--sans);font-weight:700;font-size:16px;color:var(--muted);margin-bottom:5px;line-height:1}.cal-cell.is-today .cal-day-num{color:var(--blue)}.cal-ev-bar{font-size:11px;font-weight:700;padding:3px 7px;border-radius:3px;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.3px;cursor:default}.ev-overdue{background:#c0392b;color:#fff}.ev-urgent{background:#e67e22;color:#000}.ev-soon{background:#27ae60;color:#fff}.ev-ok{background:#2980b9;color:#fff}.cal-user-note{font-size:10px;padding:3px 6px;border-radius:2px;margin-bottom:2px;background:#2d3748;color:#e2e8f0;border-left:3px solid #f6ad55;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cal-legend{display:flex;gap:16px;margin-bottom:16px;flex-wrap:wrap;align-items:center}.cal-leg{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--muted)}.cal-leg-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}</style><div class="section-label">PROJECTED MAINTENANCE CALENDAR</div><div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:14px;">Dates projected from average daily utilization &nbsp;&middot;&nbsp; Click any day to add a note</div><div class="cal-legend"><div class="cal-leg"><div class="cal-leg-dot ev-overdue"></div>OVERDUE</div><div class="cal-leg"><div class="cal-leg-dot ev-urgent"></div>DUE &le;30 DAYS</div><div class="cal-leg"><div class="cal-leg-dot ev-soon"></div>DUE &le;90 DAYS</div><div class="cal-leg"><div class="cal-leg-dot ev-ok"></div>SCHEDULED</div><div style="margin-left:auto;font-size:10px;color:var(--muted);">Click any day to add a note</div></div><div class="cal-wrap"><div class="cal-nav"><button class="cal-nav-btn" id="cal-prev">&#8592; PREV</button><div class="cal-month-label" id="cal-month-label"></div><button class="cal-nav-btn" id="cal-next">NEXT &#8594;</button></div><div class="cal-grid"><div class="cal-dow-hdr">MON</div><div class="cal-dow-hdr">TUE</div><div class="cal-dow-hdr">WED</div><div class="cal-dow-hdr">THU</div><div class="cal-dow-hdr">FRI</div><div class="cal-dow-hdr">SAT</div><div class="cal-dow-hdr">SUN</div><div id="cal-grid-body" style="display:contents"></div></div></div><script>(function(){var EVENTS={"2026-05-13": [["N251HC", 100, "soon", 87.6]], "2026-05-15": [["N251HC", 200, "soon", 90.2]], "2026-10-16": [["N251HC", 400, "ok", 290.2]], "2026-10-25": [["N251HC", 800, "ok", 300.9]], "2028-07-03": [["N251HC", 2400, "ok", 1103.1]], "2026-10-10": [["N251HC", 3200, "ok", 282.6], ["N531HC", 200, "ok", 105.4]], "2026-03-21": [["N261HC", 50, "urgent", 9.2]], "2026-06-07": [["N261HC", 100, "ok", 59.2]], "2026-06-05": [["N261HC", 200, "soon", 57.7]], "2027-04-12": [["N261HC", 400, "ok", 257.7]], "2027-04-05": [["N261HC", 800, "ok", 253.0]], "2030-09-14": [["N261HC", 2400, "ok", 1062.0]], "2027-06-11": [["N261HC", 3200, "ok", 296.1]], "2027-02-19": [["N271HC", 50, "ok", 44.9]], "2027-02-20": [["N271HC", 100, "ok", 45.0]], "2029-04-08": [["N271HC", 200, "ok", 145.0]], "2029-11-12": [["N271HC", 400, "ok", 173.0]], "2030-01-23": [["N271HC", 800, "ok", 182.3]], "2029-10-02": [["N271HC", 2400, "ok", 167.8]], "2081-03-03": [["N271HC", 3200, "ok", 2582.3]], "2026-04-08": [["N281HC", 50, "soon", 23.1]], "2026-04-10": [["N281HC", 100, "soon", 24.5]], "2026-04-05": [["N281HC", 200, "urgent", 20.6]], "2027-01-10": [["N281HC", 400, "ok", 220.6]], "2028-07-23": [["N281HC", 800, "ok", 620.6]], "2027-01-15": [["N281HC", 2400, "ok", 224.1]], "2037-10-04": [["N281HC", 3200, "ok", 3020.6]], "2026-04-03": [["N291HC", 50, "urgent", 13.5]], "2026-07-12": [["N291HC", 100, "ok", 63.5]], "2026-07-13": [["N291HC", 200, "ok", 64.2]], "2026-07-22": [["N291HC", 400, "ok", 68.6]], "2028-09-29": [["N291HC", 800, "ok", 468.6]], "2033-02-24": [["N291HC", 2400, "ok", 1273.1]], "2028-10-22": [["N291HC", 3200, "ok", 480.2]], "2027-01-26": [["N431HC", 50, "ok", 32.5]], "2028-06-09": [["N431HC", 100, "ok", 82.5]], "2031-03-06": [["N431HC", 200, "ok", 182.5]], "2036-08-26": [["N431HC", 400, "ok", 382.5]], "2036-11-02": [["N431HC", 800, "ok", 389.3]], "2037-02-23": [["N431HC", 2400, "ok", 400.6]], "2059-01-19": [["N431HC", 3200, "ok", 1200.6]], "2026-03-22": [["N531HC", 50, "urgent", 7.2]], "2026-03-18": [["N531HC", 100, "urgent", 5.4]], "2026-10-15": [["N531HC", 400, "ok", 107.8]], "2029-01-16": [["N531HC", 800, "ok", 507.8]], "2034-01-26": [["N531HC", 2400, "ok", 1399.6]], "2042-07-28": [["N531HC", 3200, "ok", 2907.8]], "2028-07-22": [["N631HC", 50, "ok", 49.6]], "2030-02-16": [["N631HC", 100, "ok", 82.4]], "2033-05-30": [["N631HC", 200, "ok", 150.9]], "2033-06-09": [["N631HC", 400, "ok", 151.5]], "2052-08-08": [["N631HC", 800, "ok", 551.5]], "2052-08-26": [["N631HC", 2400, "ok", 552.5]], "2090-12-25": [["N631HC", 3200, "ok", 1352.5]], "2026-03-29": [["N731HC", 50, "urgent", 29.4]], "2026-05-05": [["N731HC", 100, "soon", 79.4]], "2026-07-17": [["N731HC", 200, "ok", 179.4]], "2026-12-12": [["N731HC", 400, "ok", 379.4]], "2027-10-02": [["N731HC", 800, "ok", 779.4]], "2030-12-24": [["N731HC", 2400, "ok", 2379.4]], "2032-08-05": [["N731HC", 3200, "ok", 3179.4]]};var curYear=2026,curMonth=2;var NOTES_KEY='ihc_cal_notes_v2';function loadNotes(){try{return JSON.parse(localStorage.getItem(NOTES_KEY)||'{}');}catch(e){return {};}}function saveNotes(n){localStorage.setItem(NOTES_KEY,JSON.stringify(n));}function fmt(y,m,d){return y+'-'+(m<9?'0':'')+(m+1)+'-'+(d<10?'0':'')+d;}function render(){var today=new Date();var td=fmt(today.getFullYear(),today.getMonth(),today.getDate());var notes=loadNotes();var daysInMonth=new Date(curYear,curMonth+1,0).getDate();var startDow=(new Date(curYear,curMonth,1).getDay()+6)%7;var MNAMES=['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];document.getElementById('cal-month-label').textContent=MNAMES[curMonth]+' '+curYear;var grid=document.getElementById('cal-grid-body');grid.innerHTML='';for(var b=0;b<startDow;b++){var bl=document.createElement('div');bl.className='cal-cell other-month';grid.appendChild(bl);}for(var d=1;d<=daysInMonth;d++){var key=fmt(curYear,curMonth,d);var evs=EVENTS[key]||[];var note=notes[key];var cell=document.createElement('div');cell.className='cal-cell';cell.setAttribute('data-date',key);if(key===td)cell.classList.add('is-today');else if(key<td)cell.classList.add('is-past');var urg=evs.map(function(e){return e[2];});if(urg.indexOf('overdue')>=0)cell.classList.add('has-overdue');else if(urg.indexOf('urgent')>=0)cell.classList.add('has-urgent');else if(urg.indexOf('soon')>=0)cell.classList.add('has-soon');else if(urg.length)cell.classList.add('has-ok');var num=document.createElement('div');num.className='cal-day-num';num.textContent=d;cell.appendChild(num);evs.forEach(function(ev){var bar=document.createElement('div');var cls={overdue:'ev-overdue',urgent:'ev-urgent',soon:'ev-soon',ok:'ev-ok'}[ev[2]]||'ev-ok';bar.className='cal-ev-bar '+cls;bar.textContent=ev[0]+' '+ev[1]+'h';bar.title=ev[0]+' '+ev[1]+' Hr — '+(ev[3]<0?'OVERDUE '+Math.abs(ev[3]).toFixed(0)+' hrs past':ev[3].toFixed(1)+' hrs remaining');cell.appendChild(bar);});if(note&&(note.label||note.text)){var nd=document.createElement('div');nd.className='cal-user-note';nd.textContent=(note.label||'NOTE')+(note.text?': '+note.text:'');cell.appendChild(nd);}cell.addEventListener('click',function(){openModal(this.getAttribute('data-date'),loadNotes());}.bind(cell));grid.appendChild(cell);}}function openModal(dateKey,notes){var ex=notes[dateKey]||{};document.getElementById('cal-modal-date').textContent=dateKey;document.getElementById('cal-modal-label').value=ex.label||'';document.getElementById('cal-modal-text').value=ex.text||'';document.getElementById('cal-modal-color').value=ex.color||'#f6ad55';document.getElementById('cal-modal').style.display='flex';document.getElementById('cal-modal-text').focus();}function closeModal(){document.getElementById('cal-modal').style.display='none';}document.getElementById('cal-prev').addEventListener('click',function(){curMonth--;if(curMonth<0){curMonth=11;curYear--;}render();});document.getElementById('cal-next').addEventListener('click',function(){curMonth++;if(curMonth>11){curMonth=0;curYear++;}render();});document.getElementById('cal-modal-save').addEventListener('click',function(){var dk=document.getElementById('cal-modal-date').textContent;var label=document.getElementById('cal-modal-label').value.trim();var text=document.getElementById('cal-modal-text').value.trim();var color=document.getElementById('cal-modal-color').value;var notes=loadNotes();if(label||text)notes[dk]={label:label,text:text,color:color};else delete notes[dk];saveNotes(notes);closeModal();render();});document.getElementById('cal-modal-clear').addEventListener('click',function(){var dk=document.getElementById('cal-modal-date').textContent;var notes=loadNotes();delete notes[dk];saveNotes(notes);closeModal();render();});document.getElementById('cal-modal-cancel').addEventListener('click',closeModal);document.getElementById('cal-modal').addEventListener('click',function(e){if(e.target===this)closeModal();});render();})();</script>
+<style>
+.cal-months-wrap{display:flex;flex-direction:column;gap:28px;}
+.cal-month{width:100%;}
+.cal-month-title{font-family:var(--mono);font-size:11px;font-weight:700;
+  color:var(--blue);letter-spacing:2px;margin-bottom:6px;}
+.cal-dow-row{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:2px;}
+.cal-dow{font-family:var(--mono);font-size:9px;color:var(--muted);
+  text-align:center;padding:4px 0;letter-spacing:1px;}
+.cal-week-block{margin-bottom:3px;}
+.cal-day-row{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}
+.cal-ev-row{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-top:1px;min-height:18px;}
+.cal-day{background:#0d1117;border:1px solid #1e2533;border-radius:3px;
+  min-height:32px;padding:4px;}
+.cal-empty{background:transparent!important;border-color:transparent!important;}
+.cal-day-num{font-family:var(--mono);font-size:9px;color:var(--muted);}
+.cal-today{border-color:var(--blue)!important;}
+.cal-today .cal-day-num{color:var(--blue);font-weight:700;}
+.cal-past{opacity:0.4;}
+.cal-span-ev{font-family:var(--mono);font-size:9px;padding:2px 5px;
+  color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  height:18px;display:flex;align-items:center;cursor:default;}
+.cal-legend{display:flex;gap:20px;margin-bottom:16px;font-family:var(--mono);
+  font-size:10px;color:var(--muted);flex-wrap:wrap;}
+.cal-leg-item{display:flex;align-items:center;gap:6px;}
+.cal-leg-dot{width:10px;height:10px;border-radius:2px;display:inline-block;}
+</style><div class="section-label">PROJECTED MAINTENANCE CALENDAR</div><div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:12px;">Bars span from warning zone to projected due date based on average daily utilization.</div><div class="cal-legend"><span class="cal-leg-item"><span class="cal-leg-dot" style="background:#c0392b"></span>OVERDUE</span><span class="cal-leg-item"><span class="cal-leg-dot" style="background:#e67e22"></span>DUE ≤30 DAYS</span><span class="cal-leg-item"><span class="cal-leg-dot" style="background:#f39c12"></span>DUE ≤90 DAYS</span><span class="cal-leg-item"><span class="cal-leg-dot" style="background:#2980b9"></span>SCHEDULED</span></div><div class="cal-months-wrap"><div class="cal-month">
+  <div class="cal-month-title">MARCH 2026</div>
+  <div class="cal-dow-row">
+    <div class="cal-dow">MON</div><div class="cal-dow">TUE</div>
+    <div class="cal-dow">WED</div><div class="cal-dow">THU</div>
+    <div class="cal-dow">FRI</div><div class="cal-dow">SAT</div>
+    <div class="cal-dow">SUN</div>
+  </div>
+  <div class="cal-week-block">
+  <div class="cal-day-row"><div class="cal-day cal-empty"></div><div class="cal-day cal-empty"></div><div class="cal-day cal-empty"></div><div class="cal-day cal-empty"></div><div class="cal-day cal-empty"></div><div class="cal-day cal-empty"></div><div class="cal-day cal-past" data-date="2026-03-01"><div class="cal-day-num">1</div></div></div>
+  
+</div><div class="cal-week-block">
+  <div class="cal-day-row"><div class="cal-day cal-past" data-date="2026-03-02"><div class="cal-day-num">2</div></div><div class="cal-day cal-past" data-date="2026-03-03"><div class="cal-day-num">3</div></div><div class="cal-day cal-past" data-date="2026-03-04"><div class="cal-day-num">4</div></div><div class="cal-day cal-past" data-date="2026-03-05"><div class="cal-day-num">5</div></div><div class="cal-day cal-past" data-date="2026-03-06"><div class="cal-day-num">6</div></div><div class="cal-day cal-past" data-date="2026-03-07"><div class="cal-day-num">7</div></div><div class="cal-day cal-today" data-date="2026-03-08"><div class="cal-day-num">8</div></div></div>
+  <div class="cal-ev-row"><div style="grid-column:span 6"></div><div class="cal-span-ev" style="grid-column:span 1;background:#c0392b;border-radius:2px 2px 2px 2px;" title="N531HC 800h">N531HC 800h</div></div>
+</div><div class="cal-week-block">
+  <div class="cal-day-row"><div class="cal-day" data-date="2026-03-09"><div class="cal-day-num">9</div></div><div class="cal-day" data-date="2026-03-10"><div class="cal-day-num">10</div></div><div class="cal-day" data-date="2026-03-11"><div class="cal-day-num">11</div></div><div class="cal-day" data-date="2026-03-12"><div class="cal-day-num">12</div></div><div class="cal-day" data-date="2026-03-13"><div class="cal-day-num">13</div></div><div class="cal-day" data-date="2026-03-14"><div class="cal-day-num">14</div></div><div class="cal-day" data-date="2026-03-15"><div class="cal-day-num">15</div></div></div>
+  
+</div><div class="cal-week-block">
+  <div class="cal-day-row"><div class="cal-day" data-date="2026-03-16"><div class="cal-day-num">16</div></div><div class="cal-day" data-date="2026-03-17"><div class="cal-day-num">17</div></div><div class="cal-day" data-date="2026-03-18"><div class="cal-day-num">18</div></div><div class="cal-day" data-date="2026-03-19"><div class="cal-day-num">19</div></div><div class="cal-day" data-date="2026-03-20"><div class="cal-day-num">20</div></div><div class="cal-day" data-date="2026-03-21"><div class="cal-day-num">21</div></div><div class="cal-day" data-date="2026-03-22"><div class="cal-day-num">22</div></div></div>
+  <div class="cal-ev-row"><div style="grid-column:span 2"></div><div class="cal-span-ev" style="grid-column:span 5;background:#e67e22;border-radius:2px 0 0 2px;" title="N261HC 50h">N261HC 50h</div></div><div class="cal-ev-row"><div style="grid-column:span 6"></div><div class="cal-span-ev" style="grid-column:span 1;background:#e67e22;border-radius:2px 0 0 2px;" title="N731HC 50h">N731HC 50h</div></div>
+</div><div class="cal-week-block">
+  <div class="cal-day-row"><div class="cal-day" data-date="2026-03-23"><div class="cal-day-num">23</div></div><div class="cal-day" data-date="2026-03-24"><div class="cal-day-num">24</div></div><div class="cal-day" data-date="2026-03-25"><div class="cal-day-num">25</div></div><div class="cal-day" data-date="2026-03-26"><div class="cal-day-num">26</div></div><div class="cal-day" data-date="2026-03-27"><div class="cal-day-num">27</div></div><div class="cal-day" data-date="2026-03-28"><div class="cal-day-num">28</div></div><div class="cal-day" data-date="2026-03-29"><div class="cal-day-num">29</div></div></div>
+  <div class="cal-ev-row"><div class="cal-span-ev" style="grid-column:span 3;background:#e67e22;border-radius:0 2px 2px 0;" title="N261HC 50h">N261HC 50h</div><div style="grid-column:span 4"></div></div><div class="cal-ev-row"><div class="cal-span-ev" style="grid-column:span 7;background:#e67e22;border-radius:0 2px 2px 0;" title="N731HC 50h">N731HC 50h</div></div>
+</div><div class="cal-week-block">
+  <div class="cal-day-row"><div class="cal-day" data-date="2026-03-30"><div class="cal-day-num">30</div></div><div class="cal-day" data-date="2026-03-31"><div class="cal-day-num">31</div></div><div class="cal-day cal-empty"></div><div class="cal-day cal-empty"></div><div class="cal-day cal-empty"></div><div class="cal-day cal-empty"></div><div class="cal-day cal-empty"></div></div>
+  <div class="cal-ev-row"><div class="cal-span-ev" style="grid-column:span 7;background:#f39c12;border-radius:2px 0 0 2px;" title="N531HC 100h">N531HC 100h</div></div>
+</div>
+</div><div class="cal-month">
+  <div class="cal-month-title">APRIL 2026</div>
+  <div class="cal-dow-row">
+    <div class="cal-dow">MON</div><div class="cal-dow">TUE</div>
+    <div class="cal-dow">WED</div><div class="cal-dow">THU</div>
+    <div class="cal-dow">FRI</div><div class="cal-dow">SAT</div>
+    <div class="cal-dow">SUN</div>
+  </div>
+  <div class="cal-week-block">
+  <div class="cal-day-row"><div class="cal-day cal-empty"></div><div class="cal-day cal-empty"></div><div class="cal-day" data-date="2026-04-01"><div class="cal-day-num">1</div></div><div class="cal-day" data-date="2026-04-02"><div class="cal-day-num">2</div></div><div class="cal-day" data-date="2026-04-03"><div class="cal-day-num">3</div></div><div class="cal-day" data-date="2026-04-04"><div class="cal-day-num">4</div></div><div class="cal-day" data-date="2026-04-05"><div class="cal-day-num">5</div></div></div>
+  <div class="cal-ev-row"><div class="cal-span-ev" style="grid-column:span 7;background:#f39c12;border-radius:0 0 0 0;" title="N531HC 100h">N531HC 100h</div></div>
+</div><div class="cal-week-block">
+  <div class="cal-day-row"><div class="cal-day" data-date="2026-04-06"><div class="cal-day-num">6</div></div><div class="cal-day" data-date="2026-04-07"><div class="cal-day-num">7</div></div><div class="cal-day" data-date="2026-04-08"><div class="cal-day-num">8</div></div><div class="cal-day" data-date="2026-04-09"><div class="cal-day-num">9</div></div><div class="cal-day" data-date="2026-04-10"><div class="cal-day-num">10</div></div><div class="cal-day" data-date="2026-04-11"><div class="cal-day-num">11</div></div><div class="cal-day" data-date="2026-04-12"><div class="cal-day-num">12</div></div></div>
+  <div class="cal-ev-row"><div class="cal-span-ev" style="grid-column:span 3;background:#f39c12;border-radius:0 2px 2px 0;" title="N531HC 100h">N531HC 100h</div><div style="grid-column:span 1"></div><div class="cal-span-ev" style="grid-column:span 3;background:#f39c12;border-radius:2px 0 0 2px;" title="N251HC 50h">N251HC 50h</div></div><div class="cal-ev-row"><div style="grid-column:span 1"></div><div class="cal-span-ev" style="grid-column:span 6;background:#f39c12;border-radius:2px 0 0 2px;" title="N531HC 50h">N531HC 50h</div></div><div class="cal-ev-row"><div style="grid-column:span 5"></div><div class="cal-span-ev" style="grid-column:span 2;background:#f39c12;border-radius:2px 0 0 2px;" title="N281HC 200h">N281HC 200h</div></div><div class="cal-ev-row"><div style="grid-column:span 6"></div><div class="cal-span-ev" style="grid-column:span 1;background:#f39c12;border-radius:2px 0 0 2px;" title="N281HC 100h">N281HC 100h</div></div>
+</div><div class="cal-week-block">
+  <div class="cal-day-row"><div class="cal-day" data-date="2026-04-13"><div class="cal-day-num">13</div></div><div class="cal-day" data-date="2026-04-14"><div class="cal-day-num">14</div></div><div class="cal-day" data-date="2026-04-15"><div class="cal-day-num">15</div></div><div class="cal-day" data-date="2026-04-16"><div class="cal-day-num">16</div></div><div class="cal-day" data-date="2026-04-17"><div class="cal-day-num">17</div></div><div class="cal-day" data-date="2026-04-18"><div class="cal-day-num">18</div></div><div class="cal-day" data-date="2026-04-19"><div class="cal-day-num">19</div></div></div>
+  <div class="cal-ev-row"><div class="cal-span-ev" style="grid-column:span 7;background:#f39c12;border-radius:0 2px 2px 0;" title="N531HC 50h">N531HC 50h</div></div><div class="cal-ev-row"><div class="cal-span-ev" style="grid-column:span 7;background:#f39c12;border-radius:0 0 0 0;" title="N251HC 50h">N251HC 50h</div></div><div class="cal-ev-row"><div class="cal-span-ev" style="grid-column:span 7;background:#f39c12;border-radius:0 0 0 0;" title="N281HC 200h">N281HC 200h</div></div><div class="cal-ev-row"><div class="cal-span-ev" style="grid-column:span 7;background:#f39c12;border-radius:0 0 0 0;" title="N281HC 100h">N281HC 100h</div></div>
+</div><div class="cal-week-block">
+  <div class="cal-day-row"><div class="cal-day" data-date="2026-04-20"><div class="cal-day-num">20</div></div><div class="cal-day" data-date="2026-04-21"><div class="cal-day-num">21</div></div><div class="cal-day" data-date="2026-04-22"><div class="cal-day-num">22</div></div><div class="cal-day" data-date="2026-04-23"><div class="cal-day-num">23</div></div><div class="cal-day" data-date="2026-04-24"><div class="cal-day-num">24</div></div><div class="cal-day" data-date="2026-04-25"><div class="cal-day-num">25</div></div><div class="cal-day" data-date="2026-04-26"><div class="cal-day-num">26</div></div></div>
+  <div class="cal-ev-row"><div class="cal-span-ev" style="grid-column:span 4;background:#f39c12;border-radius:0 2px 2px 0;" title="N251HC 50h">N251HC 50h</div><div style="grid-column:span 3"></div></div><div class="cal-ev-row"><div class="cal-span-ev" style="grid-column:span 6;background:#f39c12;border-radius:0 2px 2px 0;" title="N281HC 200h">N281HC 200h</div><div style="grid-column:span 1"></div></div><div class="cal-ev-row"><div class="cal-span-ev" style="grid-column:span 7;background:#f39c12;border-radius:0 2px 2px 0;" title="N281HC 100h">N281HC 100h</div></div><div class="cal-ev-row"><div class="cal-span-ev" style="grid-column:span 7;background:#f39c12;border-radius:0 0 0 0;" title="N281HC 50h">N281HC 50h</div></div>
+</div><div class="cal-week-block">
+  <div class="cal-day-row"><div class="cal-day" data-date="2026-04-27"><div class="cal-day-num">27</div></div><div class="cal-day" data-date="2026-04-28"><div class="cal-day-num">28</div></div><div class="cal-day" data-date="2026-04-29"><div class="cal-day-num">29</div></div><div class="cal-day" data-date="2026-04-30"><div class="cal-day-num">30</div></div><div class="cal-day cal-empty"></div><div class="cal-day cal-empty"></div><div class="cal-day cal-empty"></div></div>
+  <div class="cal-ev-row"><div class="cal-span-ev" style="grid-column:span 4;background:#f39c12;border-radius:0 2px 2px 0;" title="N281HC 50h">N281HC 50h</div><div style="grid-column:span 3"></div></div><div class="cal-ev-row"><div class="cal-span-ev" style="grid-column:span 7;background:#f39c12;border-radius:0 0 0 0;" title="N731HC 100h">N731HC 100h</div></div>
+</div>
+</div><div class="cal-month">
+  <div class="cal-month-title">MAY 2026</div>
+  <div class="cal-dow-row">
+    <div class="cal-dow">MON</div><div class="cal-dow">TUE</div>
+    <div class="cal-dow">WED</div><div class="cal-dow">THU</div>
+    <div class="cal-dow">FRI</div><div class="cal-dow">SAT</div>
+    <div class="cal-dow">SUN</div>
+  </div>
+  <div class="cal-week-block">
+  <div class="cal-day-row"><div class="cal-day cal-empty"></div><div class="cal-day cal-empty"></div><div class="cal-day cal-empty"></div><div class="cal-day cal-empty"></div><div class="cal-day" data-date="2026-05-01"><div class="cal-day-num">1</div></div><div class="cal-day" data-date="2026-05-02"><div class="cal-day-num">2</div></div><div class="cal-day" data-date="2026-05-03"><div class="cal-day-num">3</div></div></div>
+  <div class="cal-ev-row"><div class="cal-span-ev" style="grid-column:span 5;background:#f39c12;border-radius:0 2px 2px 0;" title="N731HC 100h">N731HC 100h</div><div style="grid-column:span 2"></div></div>
+</div><div class="cal-week-block">
+  <div class="cal-day-row"><div class="cal-day" data-date="2026-05-04"><div class="cal-day-num">4</div></div><div class="cal-day" data-date="2026-05-05"><div class="cal-day-num">5</div></div><div class="cal-day" data-date="2026-05-06"><div class="cal-day-num">6</div></div><div class="cal-day" data-date="2026-05-07"><div class="cal-day-num">7</div></div><div class="cal-day" data-date="2026-05-08"><div class="cal-day-num">8</div></div><div class="cal-day" data-date="2026-05-09"><div class="cal-day-num">9</div></div><div class="cal-day" data-date="2026-05-10"><div class="cal-day-num">10</div></div></div>
+  <div class="cal-ev-row"><div class="cal-span-ev" style="grid-column:span 2;background:#f39c12;border-radius:0 2px 2px 0;" title="N731HC 100h">N731HC 100h</div><div style="grid-column:span 5"></div></div>
+</div><div class="cal-week-block">
+  <div class="cal-day-row"><div class="cal-day" data-date="2026-05-11"><div class="cal-day-num">11</div></div><div class="cal-day" data-date="2026-05-12"><div class="cal-day-num">12</div></div><div class="cal-day" data-date="2026-05-13"><div class="cal-day-num">13</div></div><div class="cal-day" data-date="2026-05-14"><div class="cal-day-num">14</div></div><div class="cal-day" data-date="2026-05-15"><div class="cal-day-num">15</div></div><div class="cal-day" data-date="2026-05-16"><div class="cal-day-num">16</div></div><div class="cal-day" data-date="2026-05-17"><div class="cal-day-num">17</div></div></div>
+  
+</div><div class="cal-week-block">
+  <div class="cal-day-row"><div class="cal-day" data-date="2026-05-18"><div class="cal-day-num">18</div></div><div class="cal-day" data-date="2026-05-19"><div class="cal-day-num">19</div></div><div class="cal-day" data-date="2026-05-20"><div class="cal-day-num">20</div></div><div class="cal-day" data-date="2026-05-21"><div class="cal-day-num">21</div></div><div class="cal-day" data-date="2026-05-22"><div class="cal-day-num">22</div></div><div class="cal-day" data-date="2026-05-23"><div class="cal-day-num">23</div></div><div class="cal-day" data-date="2026-05-24"><div class="cal-day-num">24</div></div></div>
+  <div class="cal-ev-row"><div class="cal-span-ev" style="grid-column:span 7;background:#f39c12;border-radius:2px 0 0 2px;" title="N291HC 50h">N291HC 50h</div></div>
+</div><div class="cal-week-block">
+  <div class="cal-day-row"><div class="cal-day" data-date="2026-05-25"><div class="cal-day-num">25</div></div><div class="cal-day" data-date="2026-05-26"><div class="cal-day-num">26</div></div><div class="cal-day" data-date="2026-05-27"><div class="cal-day-num">27</div></div><div class="cal-day" data-date="2026-05-28"><div class="cal-day-num">28</div></div><div class="cal-day" data-date="2026-05-29"><div class="cal-day-num">29</div></div><div class="cal-day" data-date="2026-05-30"><div class="cal-day-num">30</div></div><div class="cal-day" data-date="2026-05-31"><div class="cal-day-num">31</div></div></div>
+  <div class="cal-ev-row"><div class="cal-span-ev" style="grid-column:span 7;background:#f39c12;border-radius:0 0 0 0;" title="N291HC 50h">N291HC 50h</div></div>
+</div>
+</div></div>
   </div>
 
-  <!-- BASES TAB -->
-  <div id="tab-bases" class="tab-content">
-<div style="font-family:var(--mono);font-size:12px;color:var(--muted);padding:20px;">No position data available. Runs after fetch_positions.py completes.</div>
+  <!-- AIRCRAFT LOCATION TAB -->
+  <div id="tab-location" class="tab-content">
+<style>
+.ac-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:16px;}
+.ac-card{background:var(--surface);border:1px solid var(--border);border-radius:4px;overflow:hidden;transition:border-color .2s;}
+.ac-card-base{border-color:rgba(0,230,118,0.35);}
+.ac-card-air{border-color:rgba(41,182,246,0.4);}
+.ac-card-away{border-color:rgba(255,171,0,0.35);}
+.ac-card-nodata{opacity:.6;}
+.ac-card-header{display:flex;justify-content:space-between;align-items:baseline;
+  padding:10px 14px 8px;background:var(--surface2);border-bottom:1px solid var(--border);}
+.ac-tail{font-family:var(--sans);font-weight:900;font-size:18px;letter-spacing:1px;color:var(--heading);}
+.ac-hours{font-family:var(--mono);font-size:10px;color:var(--muted);}
+.ac-card-body{padding:12px 14px;}
+.ac-loc{font-family:var(--mono);font-size:11px;line-height:1.6;}
+.ac-loc-base{color:var(--green);font-weight:700;letter-spacing:.5px;}
+.ac-loc-air{color:var(--blue);font-weight:700;letter-spacing:.5px;}
+.ac-loc-away{color:var(--amber);font-weight:700;letter-spacing:.5px;}
+.ac-loc-unknown{color:var(--muted);}
+.ac-loc-detail{color:var(--muted);font-size:10px;}
+.ac-age{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:4px;opacity:.6;}
+</style>
+<div class="section-label">Aircraft Location</div>
+<div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:4px;">
+  Live positions via SkyRouter GPS &middot; refreshes every 60 seconds
+</div>
+<div class="ac-grid" id="ac-location-grid">
+<div class="ac-card ac-card-nodata">
+  <div class="ac-card-header">
+    <div class="ac-tail">N251HC</div>
+    <div class="ac-hours">6,053.0 TT</div>
+  </div>
+  <div class="ac-card-body">
+    <div class="ac-loc"><span class="ac-loc-unknown">NO DATA</span></div>
+  </div>
+</div><div class="ac-card ac-card-nodata">
+  <div class="ac-card-header">
+    <div class="ac-tail">N261HC</div>
+    <div class="ac-hours">6,078.2 TT</div>
+  </div>
+  <div class="ac-card-body">
+    <div class="ac-loc"><span class="ac-loc-unknown">NO DATA</span></div>
+  </div>
+</div><div class="ac-card ac-card-nodata">
+  <div class="ac-card-header">
+    <div class="ac-tail">N271HC</div>
+    <div class="ac-hours">6,969.9 TT</div>
+  </div>
+  <div class="ac-card-body">
+    <div class="ac-loc"><span class="ac-loc-unknown">NO DATA</span></div>
+  </div>
+</div><div class="ac-card ac-card-nodata">
+  <div class="ac-card-header">
+    <div class="ac-tail">N281HC</div>
+    <div class="ac-hours">6,499.7 TT</div>
+  </div>
+  <div class="ac-card-body">
+    <div class="ac-loc"><span class="ac-loc-unknown">NO DATA</span></div>
+  </div>
+</div><div class="ac-card ac-card-nodata">
+  <div class="ac-card-header">
+    <div class="ac-tail">N291HC</div>
+    <div class="ac-hours">5,892.0 TT</div>
+  </div>
+  <div class="ac-card-body">
+    <div class="ac-loc"><span class="ac-loc-unknown">NO DATA</span></div>
+  </div>
+</div><div class="ac-card ac-card-nodata">
+  <div class="ac-card-header">
+    <div class="ac-tail">N431HC</div>
+    <div class="ac-hours">1,999.4 TT</div>
+  </div>
+  <div class="ac-card-body">
+    <div class="ac-loc"><span class="ac-loc-unknown">NO DATA</span></div>
+  </div>
+</div><div class="ac-card ac-card-nodata">
+  <div class="ac-card-header">
+    <div class="ac-tail">N531HC</div>
+    <div class="ac-hours">3,323.1 TT</div>
+  </div>
+  <div class="ac-card-body">
+    <div class="ac-loc"><span class="ac-loc-unknown">NO DATA</span></div>
+  </div>
+</div><div class="ac-card ac-card-nodata">
+  <div class="ac-card-header">
+    <div class="ac-tail">N631HC</div>
+    <div class="ac-hours">1,847.5 TT</div>
+  </div>
+  <div class="ac-card-body">
+    <div class="ac-loc"><span class="ac-loc-unknown">NO DATA</span></div>
+  </div>
+</div><div class="ac-card ac-card-nodata">
+  <div class="ac-card-header">
+    <div class="ac-tail">N731HC</div>
+    <div class="ac-hours">20.6 TT</div>
+  </div>
+  <div class="ac-card-body">
+    <div class="ac-loc"><span class="ac-loc-unknown">NO DATA</span></div>
+  </div>
+</div>
+</div>
+<script>
+(function() {
+  var HAS_POSITIONS = false;
+  var AC_HRS = {"N251HC": "6,053.0", "N261HC": "6,078.2", "N271HC": "6,969.9", "N281HC": "6,499.7", "N291HC": "5,892.0", "N431HC": "1,999.4", "N531HC": "3,323.1", "N631HC": "1,847.5", "N731HC": "20.6"};
+
+  var BASES = {
+    LOGAN:      {name:'Logan',      lat:41.7912,  lon:-111.8522},
+    MCKAY:      {name:'McKay-Dee',  lat:41.2545,  lon:-112.0126},
+    IMED:       {name:'IMed',       lat:40.2338,  lon:-111.6585},
+    PROVO:      {name:'Provo',      lat:40.2192,  lon:-111.7233},
+    ROOSEVELT:  {name:'Roosevelt',  lat:40.2765,  lon:-110.0518},
+    CEDAR_CITY: {name:'Cedar City', lat:37.7010,  lon:-113.0989},
+    ST_GEORGE:  {name:'St George',  lat:37.0365,  lon:-113.5101},
+    KSLC:       {name:'KSLC',       lat:40.7884,  lon:-111.9778},
+  };
+
+  function bearing(lat1,lon1,lat2,lon2) {
+    var dLon=(lon2-lon1)*Math.PI/180;
+    lat1=lat1*Math.PI/180; lat2=lat2*Math.PI/180;
+    var y=Math.sin(dLon)*Math.cos(lat2);
+    var x=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLon);
+    return ((Math.atan2(y,x)*180/Math.PI)+360)%360;
+  }
+  function cardinal(d) { return ['N','NE','E','SE','S','SW','W','NW'][Math.round(d/45)%8]; }
+  function esc(t) { return String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function ageFmt(utcStr) {
+    if (!utcStr) return '';
+    var dt=new Date(utcStr),now=new Date();
+    var m=Math.round((now-dt)/60000);
+    if (isNaN(m)||m<0) return '';
+    return m<60 ? m+'m ago' : (m/60).toFixed(1)+'h ago';
+  }
+
+  function locLine(d, bases) {
+    if (!d) return '<span class="ac-loc-unknown">NO DATA</span>';
+    var status=(d.status||'').toUpperCase();
+    var baseId=d.closest_base||'';
+    var baseMeta=bases[baseId]||BASES[baseId]||{};
+    var baseName=baseMeta.name||baseId;
+    var distMi=d.dist_miles||0;
+    var dir='';
+    if (d.lat && d.lon && baseMeta.lat) dir=cardinal(bearing(baseMeta.lat,baseMeta.lon,d.lat,d.lon));
+    if (status==='AT_BASE') return '<span class="ac-loc-base">AT '+esc(baseName.toUpperCase())+'</span>';
+    if (status==='AIRBORNE') {
+      var alt=d.alt_ft ? parseInt(d.alt_ft).toLocaleString()+' ft' : '';
+      var spd=d.speed_kts ? Math.round(d.speed_kts)+' kts' : '';
+      var pos=distMi&&baseName ? (Math.round(distMi)+' mi '+(dir?dir+' of ':' from ')+baseName) : '';
+      var parts=[pos,alt,spd].filter(Boolean).join(' · ');
+      return '<span class="ac-loc-air">AIRBORNE</span>'+(parts?'<span class="ac-loc-detail"> '+esc(parts)+'</span>':'');
+    }
+    if (status==='AWAY') {
+      var pos=distMi&&baseName ? (Math.round(distMi)+' mi '+(dir?dir+' of ':' from ')+baseName) : (baseName||'unknown');
+      return '<span class="ac-loc-away">AWAY</span><span class="ac-loc-detail"> · '+esc(pos)+'</span>';
+    }
+    return '<span class="ac-loc-unknown">'+esc(status||'UNKNOWN')+'</span>';
+  }
+
+  function render(payload) {
+    var grid=document.getElementById('ac-location-grid');
+    if (!grid||!payload) return;
+    var detail=payload.aircraft_detail||{};
+    var bases=payload.bases||{};
+    var cards=Object.keys(AC_HRS).map(function(tail) {
+      var d=detail[tail];
+      var status=d?(d.status||'UNKNOWN').toUpperCase():'NO DATA';
+      var hrs=AC_HRS[tail]||'N/A';
+      var cardCls={AT_BASE:'ac-card-base',AIRBORNE:'ac-card-air',AWAY:'ac-card-away'}[status]||'ac-card-nodata';
+      var age=d?ageFmt(d.utc):'';
+      return '<div class="ac-card '+cardCls+'">'
+        +'<div class="ac-card-header">'
+          +'<div class="ac-tail">'+esc(tail)+'</div>'
+          +'<div class="ac-hours">'+esc(hrs)+' TT</div>'
+        +'</div>'
+        +'<div class="ac-card-body">'
+          +'<div class="ac-loc">'+locLine(d,bases)+'</div>'
+          +(age?'<div class="ac-age">'+esc(age)+'</div>':'')
+        +'</div></div>';
+    });
+    grid.innerHTML=cards.join('');
+  }
+
+  function refresh() {
+    // base_assignments.json is at root because Pages serves from data/
+    fetch('base_assignments.json?ts='+Date.now(),{cache:'no-store'})
+      .then(function(r){ if(!r.ok) throw new Error('failed'); return r.json(); })
+      .then(render)
+      .catch(function(){});
+  }
+
+  refresh();
+  setInterval(refresh, 60000);
+})();</script>
   </div>
 </main>
 <footer>
@@ -695,21 +847,39 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 <script>
+  const DASHBOARD_VERSION = "20260308025229";
+
+  // Auto-reload when a newer build is deployed
+  (function() {
+    var versionUrl = 'dashboard_version.json?ts=' + Date.now();
+    fetch(versionUrl, {cache:'no-store'})
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(data) {
+        if (!data || !data.version || data.version === DASHBOARD_VERSION) return;
+        var next = new URL(window.location.href);
+        if (next.searchParams.get('v') === data.version) return;
+        next.searchParams.set('v', data.version);
+        window.location.replace(next.toString());
+      })
+      .catch(function(){});
+  })();
+
   function switchTab(tabName, btn) {
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
     btn.classList.add('active');
-    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(function(t){ t.classList.remove('active'); });
     document.getElementById('tab-' + tabName).classList.add('active');
   }
+
   function filterTable(filter, btn) {
-    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.filter-btn').forEach(function(b){ b.classList.remove('active'); });
     btn.classList.add('active');
-    document.querySelectorAll('#insp-tbody tr').forEach(tr => {
-      const badges = tr.querySelectorAll('.hr-badge, .hr-na');
-      let show = filter === 'all';
+    document.querySelectorAll('#insp-tbody tr').forEach(function(tr) {
+      var badges = tr.querySelectorAll('.hr-badge, .hr-na');
+      var show = filter === 'all';
       if (!show) {
-        badges.forEach(b => {
-          const cls = b.className;
+        badges.forEach(function(b) {
+          var cls = b.className;
           if (filter === 'overdue' && cls.includes('hr-overdue')) show = true;
           if (filter === 'critical' && cls.includes('hr-red'))    show = true;
           if (filter === 'coming'   && cls.includes('hr-amber'))  show = true;
@@ -719,11 +889,13 @@
       tr.style.display = show ? '' : 'none';
     });
   }
-  const labels200 = ['N281HC','N261HC','N291HC','N251HC','N531HC','N271HC','N631HC','N731HC','N431HC'];
-  const values200 = [20.60,57.70,64.20,90.20,105.40,145.00,150.90,179.40,182.50];
-  if (!labels200 || labels200.length === 0) {
+
+  // 200hr bar chart
+  var labels200 = ['N281HC','N291HC','N531HC','N261HC','N251HC','N271HC','N431HC','N631HC','N731HC'];
+  var values200 = [20.60,35.30,56.10,57.70,90.20,145.00,146.80,150.90,179.40];
+  if (labels200.length === 0) {
     document.getElementById('bar200').parentElement.innerHTML =
-      "<div style='font-family:var(--mono);font-size:12px;color:var(--muted);padding:10px;'>No numeric 200-hr remaining hours found.</div>";
+      "<div style='font-family:var(--mono);font-size:12px;color:var(--muted);padding:10px;'>No numeric 200-hr data found.</div>";
   } else {
     new Chart(document.getElementById('bar200'), {
       type: 'bar',
@@ -733,10 +905,9 @@
         plugins: {
           legend: { display: true },
           datalabels: {
-            anchor: 'end', align: 'top',
-            color: '#cdd6e0',
+            anchor: 'end', align: 'top', color: '#cdd6e0',
             font: { family: 'Share Tech Mono', size: 11 },
-            formatter: function(value) { return value.toFixed(1); }
+            formatter: function(v) { return v.toFixed(1); }
           }
         },
         scales: {
@@ -747,193 +918,39 @@
       plugins: [ChartDataLabels]
     });
   }
-  
-    (function() {
-      var ctx = document.getElementById('utilChart');
-      if (!ctx) return;
-      new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: ["N251HC","N261HC","N271HC","N281HC","N291HC","N431HC","N531HC","N631HC","N731HC"],
-          datasets: [
-            {
-              label: 'Avg Daily (hrs)',
-              data: [1.3,0.64,0.13,0.71,0.5,0.1,0.49,0.06,1.36],
-              backgroundColor: 'rgba(41,182,246,0.8)',
-              borderColor: '#29b6f6',
-              borderWidth: 1,
-              yAxisID: 'yDaily'
-            },
-            {
-              label: 'Avg Weekly (hrs)',
-              data: [9.1,4.5,0.9,5.0,3.5,0.7,3.4,0.4,9.5],
-              backgroundColor: 'rgba(246,173,85,0.8)',
-              borderColor: '#f6ad55',
-              borderWidth: 1,
-              yAxisID: 'yWeekly'
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { labels: { color: '#a0aec0', font: { family: 'monospace', size: 11 } } },
-            datalabels: {
-              anchor: 'end', align: 'top',
-              color: '#a0aec0',
-              font: { size: 9, family: 'monospace' },
-              formatter: function(v) { return v > 0 ? v.toFixed(2) : ''; }
-            }
-          },
-          scales: {
-            yDaily: {
-              type: 'linear', position: 'left',
-              beginAtZero: true,
-              title: { display: true, text: 'Daily Avg (hrs)', color: '#29b6f6', font: { size: 10 } },
-              ticks: { color: '#4a5568', font: { size: 10 } },
-              grid: { color: 'rgba(30,37,48,0.8)' }
-            },
-            yWeekly: {
-              type: 'linear', position: 'right',
-              beginAtZero: true,
-              title: { display: true, text: 'Weekly Avg (hrs)', color: '#f6ad55', font: { size: 10 } },
-              ticks: { color: '#4a5568', font: { size: 10 } },
-              grid: { drawOnChartArea: false }
-            },
-            x: {
-              ticks: { color: '#a0aec0', font: { size: 10, family: 'monospace' } },
-              grid: { display: false }
-            }
+
+  // Utilization chart
+  (function() {
+    var ctx = document.getElementById('utilChart');
+    if (!ctx) return;
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ["N251HC","N261HC","N271HC","N281HC","N291HC","N431HC","N531HC","N631HC","N731HC"],
+        datasets: [
+          { label: 'Avg Daily (hrs)', data: [0.81,0.53,0.13,0.43,0.16,0.1,0.17,0.06,1.36], backgroundColor: 'rgba(41,182,246,0.8)', borderColor: '#29b6f6', borderWidth: 1, yAxisID: 'yDaily' },
+          { label: 'Avg Weekly (hrs)', data: [5.7,3.7,0.9,3.0,1.1,0.7,1.2,0.4,9.5], backgroundColor: 'rgba(246,173,85,0.8)', borderColor: '#f6ad55', borderWidth: 1, yAxisID: 'yWeekly' }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { labels: { color: '#a0aec0', font: { family: 'monospace', size: 11 } } },
+          datalabels: {
+            anchor: 'end', align: 'top', color: '#a0aec0',
+            font: { size: 9, family: 'monospace' },
+            formatter: function(v) { return v > 0 ? v.toFixed(2) : ''; }
           }
         },
-        plugins: [ChartDataLabels]
-      });
-    })();
-
-  // ── EDITABLE CALENDAR ─────────────────────────────────────────────────────
-  (function() {
-    var STORAGE_KEY = 'ihc_cal_notes';
-
-    function loadNotes() {
-      try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch(e) { return {}; }
-    }
-    function saveNotes(notes) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(notes));
-    }
-
-    function renderUserEvents() {
-      var notes = loadNotes();
-      Object.keys(notes).forEach(function(dateKey) {
-        var note = notes[dateKey];
-        if (!note || (!note.text && !note.label)) return;
-        var cell = document.querySelector('.cal-day[data-date="' + dateKey + '"]');
-        if (!cell) return;
-        var existing = cell.querySelector('.cal-user-ev');
-        if (existing) existing.remove();
-        var el = document.createElement('div');
-        el.className = 'cal-user-ev';
-        el.textContent = (note.label || 'NOTE') + (note.text ? ': ' + note.text : '');
-        el.title = note.text || '';
-        cell.appendChild(el);
-      });
-    }
-
-    function openModal(dateKey) {
-      var notes = loadNotes();
-      var existing = notes[dateKey] || {};
-      var modal = document.getElementById('cal-modal');
-      document.getElementById('cal-modal-date').textContent = dateKey;
-      document.getElementById('cal-modal-label').value = existing.label || '';
-      document.getElementById('cal-modal-text').value = existing.text || '';
-      document.getElementById('cal-modal-color').value = existing.color || '#f6ad55';
-      modal.style.display = 'flex';
-      document.getElementById('cal-modal-text').focus();
-    }
-
-    function closeModal() {
-      document.getElementById('cal-modal').style.display = 'none';
-    }
-
-    function saveModal() {
-      var dateKey = document.getElementById('cal-modal-date').textContent;
-      var label = document.getElementById('cal-modal-label').value.trim();
-      var text  = document.getElementById('cal-modal-text').value.trim();
-      var color = document.getElementById('cal-modal-color').value;
-      var notes = loadNotes();
-      if (label || text) {
-        notes[dateKey] = { label: label, text: text, color: color };
-      } else {
-        delete notes[dateKey];
-      }
-      saveNotes(notes);
-      closeModal();
-      renderUserEvents();
-    }
-
-    function clearModal() {
-      var dateKey = document.getElementById('cal-modal-date').textContent;
-      var notes = loadNotes();
-      delete notes[dateKey];
-      saveNotes(notes);
-      closeModal();
-      renderUserEvents();
-    }
-
-    // Attach click handlers to all cal-day cells
-    document.querySelectorAll('.cal-day').forEach(function(cell) {
-      cell.style.cursor = 'pointer';
-      cell.addEventListener('click', function() {
-        var dateKey = cell.getAttribute('data-date');
-        if (dateKey) openModal(dateKey);
-      });
+        scales: {
+          yDaily:  { type: 'linear', position: 'left', beginAtZero: true, title: { display: true, text: 'Daily Avg (hrs)', color: '#29b6f6', font: { size: 10 } }, ticks: { color: '#4a5568', font: { size: 10 } }, grid: { color: 'rgba(30,37,48,0.8)' } },
+          yWeekly: { type: 'linear', position: 'right', beginAtZero: true, title: { display: true, text: 'Weekly Avg (hrs)', color: '#f6ad55', font: { size: 10 } }, ticks: { color: '#4a5568', font: { size: 10 } }, grid: { drawOnChartArea: false } },
+          x: { ticks: { color: '#a0aec0', font: { size: 10, family: 'monospace' } }, grid: { display: false } }
+        }
+      },
+      plugins: [ChartDataLabels]
     });
-
-    document.getElementById('cal-modal-save').addEventListener('click', saveModal);
-    document.getElementById('cal-modal-clear').addEventListener('click', clearModal);
-    document.getElementById('cal-modal-cancel').addEventListener('click', closeModal);
-    document.getElementById('cal-modal').addEventListener('click', function(e) {
-      if (e.target === this) closeModal();
-    });
-
-    renderUserEvents();
   })();
 </script>
-
-<!-- Calendar Note Modal -->
-<div id="cal-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);
-  z-index:9999;align-items:center;justify-content:center;">
-  <div style="background:#0d1117;border:1px solid #29b6f6;border-radius:6px;padding:28px;
-    min-width:340px;max-width:480px;width:90%;font-family:monospace;">
-    <div style="font-size:11px;color:#4a9eff;letter-spacing:2px;margin-bottom:4px;">SCHEDULE / NOTE</div>
-    <div id="cal-modal-date" style="font-size:16px;color:#e2e8f0;font-weight:700;margin-bottom:20px;"></div>
-    <label style="display:block;font-size:10px;color:#718096;letter-spacing:1px;margin-bottom:4px;">LABEL (e.g. 50 HR INSP)</label>
-    <input id="cal-modal-label" type="text" maxlength="30"
-      style="width:100%;box-sizing:border-box;background:#161c25;border:1px solid #2d3748;
-      border-radius:3px;color:#e2e8f0;padding:8px;font-family:monospace;font-size:13px;margin-bottom:14px;">
-    <label style="display:block;font-size:10px;color:#718096;letter-spacing:1px;margin-bottom:4px;">NOTES</label>
-    <textarea id="cal-modal-text" rows="3" maxlength="200"
-      style="width:100%;box-sizing:border-box;background:#161c25;border:1px solid #2d3748;
-      border-radius:3px;color:#e2e8f0;padding:8px;font-family:monospace;font-size:12px;
-      resize:vertical;margin-bottom:14px;"></textarea>
-    <label style="display:block;font-size:10px;color:#718096;letter-spacing:1px;margin-bottom:4px;">COLOR</label>
-    <input id="cal-modal-color" type="color" value="#f6ad55"
-      style="width:48px;height:32px;border:none;background:none;cursor:pointer;margin-bottom:20px;">
-    <div style="display:flex;gap:10px;justify-content:flex-end;">
-      <button id="cal-modal-clear"
-        style="background:transparent;border:1px solid #c0392b;color:#c0392b;
-        padding:7px 16px;border-radius:3px;cursor:pointer;font-family:monospace;font-size:11px;">
-        CLEAR</button>
-      <button id="cal-modal-cancel"
-        style="background:transparent;border:1px solid #4a5568;color:#718096;
-        padding:7px 16px;border-radius:3px;cursor:pointer;font-family:monospace;font-size:11px;">
-        CANCEL</button>
-      <button id="cal-modal-save"
-        style="background:#29b6f6;border:none;color:#000;
-        padding:7px 16px;border-radius:3px;cursor:pointer;font-family:monospace;font-size:11px;font-weight:700;">
-        SAVE</button>
-    </div>
-  </div>
-</div>
 </body>
 </html>
