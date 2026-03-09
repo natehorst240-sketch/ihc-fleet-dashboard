@@ -976,8 +976,8 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
 
     if (!evs.length) {{
       panEvList.innerHTML =
-        '<div style="font-family:\'Share Tech Mono\',monospace;font-size:10px;' +
-        'color:#2a3240;padding:20px 16px;letter-spacing:1px;">NO EVENTS</div>';
+        "<div style=\"font-family:'Share Tech Mono',monospace;font-size:10px;" +
+        "color:#2a3240;padding:20px 16px;letter-spacing:1px;\">NO EVENTS</div>";
       document.getElementById('btn-add-note').textContent = '+ ADD NOTE';
       return;
     }}
@@ -1119,6 +1119,12 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
     }});
 
     cal.render();
+
+    window.addEventListener('fleet:calendar:shown', function() {{
+      if (!cal) return;
+      cal.updateSize();
+      cal.render();
+    }});
   }}
 
   document.readyState === 'loading'
@@ -1696,6 +1702,9 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
     btn.classList.add('active');
     document.querySelectorAll('.tab-content').forEach(function(t){{ t.classList.remove('active'); }});
     document.getElementById('tab-' + tabName).classList.add('active');
+    if (tabName === 'calendar') {{
+      setTimeout(function(){{ window.dispatchEvent(new Event('fleet:calendar:shown')); }}, 0);
+    }}
   }}
 
   function filterTable(filter, btn) {{
