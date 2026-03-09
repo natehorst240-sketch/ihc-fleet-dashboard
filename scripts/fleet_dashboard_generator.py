@@ -565,6 +565,16 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
         3200: '#6d4c41',   # brown
     }
 
+    # Planned maintenance downtime shown on calendar (in days)
+    INTERVAL_DURATION_DAYS = {
+        50: 1,
+        100: 1,
+        200: 3,
+        400: 4,
+        800: 4,
+        3200: 21,
+    }
+
     URGENCY_LABEL = {
         'overdue': 'OVERDUE',
         'urgent':  'DUE ≤30 DAYS',
@@ -593,11 +603,13 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
             color = INTERVAL_COLOR.get(interval, '#4a5568')
 
             if rem_hrs < 0:
-                bar_start = today - timedelta(days=7)
-                bar_end   = today + timedelta(days=1)
+                due       = today
+                due_str   = due.isoformat()
+                days_long = INTERVAL_DURATION_DAYS.get(interval, 1)
+                bar_start = due
+                bar_end   = due + timedelta(days=days_long)
                 urgency   = 'overdue'
                 rem_label = f'{abs(rem_hrs):.1f} hrs PAST LIMIT'
-                due_str   = today.isoformat()
             else:
                 days_away = rem_hrs / avg_daily
                 due       = today + timedelta(days=int(days_away))
@@ -606,15 +618,9 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
                              'soon'   if days_away <= 90 else 'ok')
                 rem_label = f'{rem_hrs:.1f} hrs remaining (~{int(days_away)} days)'
 
-                if urgency == 'urgent':
-                    warn_days = max(3, int(days_away * 0.4))
-                elif urgency == 'soon':
-                    warn_days = max(7, int(days_away * 0.25))
-                else:
-                    warn_days = max(14, int(days_away * 0.15))
-
-                bar_start = max(today, due - timedelta(days=warn_days))
-                bar_end   = due + timedelta(days=1)
+                days_long = INTERVAL_DURATION_DAYS.get(interval, 1)
+                bar_start = due
+                bar_end   = due + timedelta(days=days_long)
 
             maint_events.append({
                 'id':              f'maint_{tail}_{interval}',
