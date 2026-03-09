@@ -517,8 +517,8 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
     }
     URGENCY_LABEL = {
         'overdue': 'OVERDUE',
-        'urgent':  'DUE â‰¤30 DAYS',
-        'soon':    'DUE â‰¤90 DAYS',
+        'urgent':  'DUE <=30 DAYS',
+        'soon':    'DUE <=90 DAYS',
         'ok':      'SCHEDULED >90 DAYS',
     }
 
@@ -551,10 +551,15 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
                               'soon'   if days_until <= 90 else 'ok')
                 rem_label  = f'{rem_hrs:.1f} hrs remaining'
 
+            display_days = {50:1, 100:1, 200:3, 400:4, 800:5, 2400:10, 3200:21}.get(interval, 1)
+            bar_start    = due - timedelta(days=display_days - 1)
+            bar_end      = due + timedelta(days=1)  # FullCalendar end is exclusive
+
             maint_events.append({
                 'id':              f'maint_{tail}_{interval}',
-                'title':           f'{tail} â€” {interval}h',
-                'start':           due.isoformat(),
+                'title':           f'{tail} - {interval}h',
+                'start':           bar_start.isoformat(),
+                'end':             bar_end.isoformat(),
                 'allDay':          True,
                 'backgroundColor': URGENCY_COLOR[urgency],
                 'borderColor':     URGENCY_COLOR[urgency],
@@ -717,8 +722,8 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
 <div class="section-label">PROJECTED MAINTENANCE CALENDAR</div>
 <div class="fc-legend">
   <span class="fc-leg-item"><span class="fc-leg-dot" style="background:#c0392b"></span>OVERDUE</span>
-  <span class="fc-leg-item"><span class="fc-leg-dot" style="background:#e67e22"></span>DUE â‰¤30 DAYS</span>
-  <span class="fc-leg-item"><span class="fc-leg-dot" style="background:#f39c12"></span>DUE â‰¤90 DAYS</span>
+  <span class="fc-leg-item"><span class="fc-leg-dot" style="background:#e67e22"></span>DUE <=30 DAYS</span>
+  <span class="fc-leg-item"><span class="fc-leg-dot" style="background:#f39c12"></span>DUE <=90 DAYS</span>
   <span class="fc-leg-item"><span class="fc-leg-dot" style="background:#2980b9"></span>SCHEDULED</span>
   <span class="fc-leg-item"><span class="fc-leg-dot" style="background:rgba(255,171,0,0.5);border:1px solid #ffab00"></span>MY NOTES</span>
   <span style="margin-left:auto;font-family:'Share Tech Mono',monospace;font-size:9px;color:#4a5568;">
@@ -929,7 +934,7 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
 
   function initCalendar() {{
     if (typeof FullCalendar === 'undefined') {{
-      // FC not yet loaded â€” retry after a short delay
+      // FC not yet loaded - retry after a short delay
       setTimeout(initCalendar, 200);
       return;
     }}
@@ -1175,7 +1180,7 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
 
     def fmt_hrs(val_dict):
         if val_dict is None:
-            return '<span class="hr-na">â€”</span>'
+            return '<span class="hr-na">-</span>'
         hrs    = val_dict['rem_hrs']
         status = val_dict['status']
         if hrs is not None:
@@ -1261,9 +1266,9 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
             txt_color = {'overdue':'var(--overdue)','red':'var(--red)','amber':'var(--amber)','green':'var(--green)'}.get(cls,'var(--green)')
             rii_badge = ' <span class="rii-badge">RII</span>' if c.get('rii') else ''
             if rem is not None:
-                rem_label = f'OVERDUE â€” {abs(rem):.1f} hrs past limit' if rem < 0 else f'{rem:.1f} hrs remaining'
+                rem_label = f'OVERDUE - {abs(rem):.1f} hrs past limit' if rem < 0 else f'{rem:.1f} hrs remaining'
             elif rem_days is not None:
-                rem_label = f'OVERDUE â€” {abs(rem_days):.0f} days past limit' if rem_days < 0 else f'{rem_days:.0f} days remaining'
+                rem_label = f'OVERDUE - {abs(rem_days):.0f} days past limit' if rem_days < 0 else f'{rem_days:.0f} days remaining'
             else:
                 rem_label = status
             rows_html += f'''<div class="component-row">
@@ -1302,9 +1307,9 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
         stats = flight_hours_stats.get(tail, {})
         avg   = stats.get('avg_daily')
         ah    = f"{stats.get('current_hours'):,.1f}" if stats.get('current_hours') else 'N/A'
-        d_str = f"{avg:.2f}" if avg else "â€”"
-        w_str = f"{avg*7:.1f}" if avg else "â€”"
-        m_str = f"{avg*30:.1f}" if avg else "â€”"
+        d_str = f"{avg:.2f}" if avg else "-"
+        w_str = f"{avg*7:.1f}" if avg else "-"
+        m_str = f"{avg*30:.1f}" if avg else "-"
         hours_cards_html += f'''<div class="hours-card">
   <div class="hours-card-header">
     <div class="hours-card-tail">{tail}</div>
@@ -1339,7 +1344,7 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>IHC Health Services â€” Fleet Due List</title>
+<title>IHC Health Services - Fleet Due List</title>
 <link rel="icon" href="data:,">
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -1442,7 +1447,7 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
   <div class="header-left">
     <div>
       <div class="logo">IHC <span>HEALTH</span> SERVICES</div>
-      <div class="subtitle">AW109SP Fleet &nbsp;â€”&nbsp; Maintenance Due List</div>
+      <div class="subtitle">AW109SP Fleet &nbsp;-&nbsp; Maintenance Due List</div>
     </div>
     {photo_tag}
   </div>
@@ -1456,7 +1461,7 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
   <div class="legend-item"><div class="dot dot-amber"></div> Coming Due (26â€“100 hrs)</div>
   <div class="legend-item"><div class="dot dot-red"></div> Critical (0â€“25 hrs)</div>
   <div class="legend-item"><div class="dot dot-overdue"></div> Past Due / Overdue</div>
-  <div style="margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:1px;">â€” = Not due this cycle</div>
+  <div style="margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:1px;">- = Not due this cycle</div>
 </div>
 <main>
   <div class="tabs">
@@ -1479,7 +1484,7 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
       <div class="chart-title">200 Hr Remaining (Bar)</div>
       <canvas id="bar200"></canvas>
     </div>
-    <div class="section-label">Scheduled Phase Inspections â€” Hours Remaining</div>
+    <div class="section-label">Scheduled Phase Inspections - Hours Remaining</div>
     <div class="filter-row">
       <button class="filter-btn active" onclick="filterTable('all',this)">All</button>
       <button class="filter-btn" onclick="filterTable('overdue',this)">Past Due</button>
@@ -1503,7 +1508,7 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
         </tbody>
       </table>
     </div>
-    <div class="section-label" style="margin-top:36px;">Component Retirement / Overhaul â€” Within {COMPONENT_WINDOW_HRS} Hours</div>
+    <div class="section-label" style="margin-top:36px;">Component Retirement / Overhaul - Within {COMPONENT_WINDOW_HRS} Hours</div>
     <div class="components-grid">{comp_panels_html}</div>
   </div>
 
@@ -1529,7 +1534,7 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
 </main>
 <footer>
   <span>SOURCE: VERYON MAINTENANCE TRACKING &nbsp;|&nbsp; {source_filename}</span>
-  <span>IHC HEALTH SERVICES â€” AVIATION MAINTENANCE</span>
+  <span>IHC HEALTH SERVICES - AVIATION MAINTENANCE</span>
 </footer>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
@@ -1732,3 +1737,7 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
+
+
