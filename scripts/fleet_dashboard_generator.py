@@ -22,7 +22,7 @@ try:
 except ImportError:
     _HAS_PIL = False
 
-# â”€â”€ CONFIGURATION â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# -- CONFIGURATION -------------------------------------------------------------
 
 OUTPUT_FOLDER = "data"
 
@@ -52,7 +52,7 @@ RETIREMENT_KEYWORDS = [
     'REPLACEMENT', 'REPLACE', 'CHANGE OIL', 'NOZZLE'
 ]
 
-# â”€â”€ COLUMN INDICES (0-based) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# -- COLUMN INDICES (0-based) --------------------------------------------------
 COL_REG          = 0
 COL_AIRFRAME_RPT = 2
 COL_AIRFRAME_HRS = 3
@@ -68,7 +68,7 @@ COL_REM_HRS      = 54
 COL_STATUS       = 63
 
 
-# â”€â”€ HELPERS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# -- HELPERS -------------------------------------------------------------------
 
 def safe_float(val):
     if val is None:
@@ -163,7 +163,7 @@ def load_photo_b64(data_dir):
         return ''
 
 
-# â”€â”€ FLIGHT HOURS TRACKING â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# -- FLIGHT HOURS TRACKING -----------------------------------------------------
 
 def load_flight_hours_history(history_path):
     if not history_path.exists():
@@ -266,7 +266,7 @@ def calculate_flight_hours_stats(history_data, aircraft_list):
     return stats
 
 
-# â”€â”€ POSITIONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# -- POSITIONS -----------------------------------------------------------------
 
 def load_positions(positions_path):
     if not positions_path.exists():
@@ -353,7 +353,7 @@ def get_location_badge(tail, positions):
     return ''
 
 
-# â”€â”€ CSV PARSING â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# -- CSV PARSING ---------------------------------------------------------------
 
 def parse_due_list_parts(filepath):
     with open(filepath, "r", encoding="utf-8-sig", newline="") as f:
@@ -493,7 +493,7 @@ def parse_due_list(input_path):
     return report_date_str, aircraft_list, components
 
 
-# â”€â”€ CALENDAR TAB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# -- CALENDAR TAB --------------------------------------------------------------
 
 import json
 from datetime import datetime, timedelta, date
@@ -1139,7 +1139,7 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
 
 
 
-# â”€â”€ AIRCRAFT LOCATION TAB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# -- AIRCRAFT LOCATION TAB -----------------------------------------------------
 
 def _build_location_tab(aircraft_list, positions):
     """Aircraft location tab with ac-cards. JS refreshes from base_assignments.json."""
@@ -1314,7 +1314,7 @@ def _build_location_tab(aircraft_list, positions):
 <script>{refresh_js}</script>'''
 
 
-# â”€â”€ BUILD HTML â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# -- BUILD HTML ----------------------------------------------------------------
 
 def build_html(report_date, aircraft_list, components, flight_hours_stats, positions,
                source_filename, photo_b64=''):
@@ -1599,8 +1599,8 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
 </header>
 <div class="legend">
   <div class="legend-item"><div class="dot dot-green"></div> OK (&gt;100 hrs)</div>
-  <div class="legend-item"><div class="dot dot-amber"></div> Coming Due (26â€“100 hrs)</div>
-  <div class="legend-item"><div class="dot dot-red"></div> Critical (0â€“25 hrs)</div>
+  <div class="legend-item"><div class="dot dot-amber"></div> Coming Due (26-100 hrs)</div>
+  <div class="legend-item"><div class="dot dot-red"></div> Critical (0-25 hrs)</div>
   <div class="legend-item"><div class="dot dot-overdue"></div> Past Due / Overdue</div>
   <div style="margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:1px;">- = Not due this cycle</div>
 </div>
@@ -1792,7 +1792,7 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
 </html>"""
 
 
-# â”€â”€ MAIN â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# -- MAIN ----------------------------------------------------------------------
 
 def main():
     data_dir       = Path(OUTPUT_FOLDER)
