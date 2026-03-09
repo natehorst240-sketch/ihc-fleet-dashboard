@@ -357,8 +357,11 @@ def get_location_badge(tail, positions):
 
 def parse_due_list_parts(filepath):
     with open(filepath, "r", encoding="utf-8-sig", newline="") as f:
-        reader = csv.reader(f)
-        rows = list(reader)
+        raw = f.read()
+    # Rejoin lines where Veryon splits a row across lines (continuation starts with ,)
+    raw = re.sub(r'\n(?=,)', '', raw)
+    reader = csv.reader(raw.splitlines())
+    rows = list(reader)
 
     if not rows or len(rows) < 2:
         raise ValueError(f"CSV appears empty or missing data rows: {filepath}")
