@@ -1,2 +1,5 @@
 *.csv text eol=lf
 
+data/index.html merge=ours
+data/dashboard_version.json merge=ours
+data/flight_hours_history.json merge=ours
