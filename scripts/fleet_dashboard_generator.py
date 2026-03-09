@@ -597,12 +597,13 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
             if v is None:
                 continue
             rem_hrs = v.get('rem_hrs')
-            if rem_hrs is None:
+            rem_days = v.get('rem_days')
+            if rem_hrs is None and rem_days is None:
                 continue
 
             color = INTERVAL_COLOR.get(interval, '#4a5568')
 
-            if rem_hrs < 0:
+            if rem_hrs is not None and rem_hrs < 0:
                 due       = today
                 due_str   = due.isoformat()
                 days_long = INTERVAL_DURATION_DAYS.get(interval, 1)
@@ -610,6 +611,20 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
                 bar_end   = due + timedelta(days=days_long)
                 urgency   = 'overdue'
                 rem_label = f'{abs(rem_hrs):.1f} hrs PAST LIMIT'
+            elif rem_days is not None:
+                days_away = rem_days
+                due       = today + timedelta(days=int(days_away))
+                due_str   = due.isoformat()
+                urgency   = ('overdue' if days_away < 0 else
+                             'urgent'  if days_away <= 30 else
+                             'soon'    if days_away <= 90 else 'ok')
+                rem_label = (f'{abs(days_away):.0f} days PAST LIMIT'
+                             if days_away < 0 else
+                             f'~{days_away:.0f} days remaining')
+
+                days_long = INTERVAL_DURATION_DAYS.get(interval, 1)
+                bar_start = due
+                bar_end   = due + timedelta(days=days_long)
             else:
                 days_away = rem_hrs / avg_daily
                 due       = today + timedelta(days=int(days_away))
