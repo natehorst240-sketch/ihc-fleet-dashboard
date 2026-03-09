@@ -64328,9 +64328,9 @@ RII</td>
   <div id="note-modal-box" onclick="event.stopPropagation()">
     <div style="font-size:10px;color:#29b6f6;letter-spacing:2px;margin-bottom:4px;font-family:'Share Tech Mono',monospace;">NOTE</div>
     <div id="nm-date-lbl" style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:18px;color:#e8edf2;letter-spacing:1px;margin-bottom:18px;"></div>
-    <label class="nm-label">LABEL <span style="color:#2a3240">(shows on calendar)</span></label>
+    <label class="nm-label" for="nm-label-inp">LABEL <span style="color:#2a3240">(shows on calendar)</span></label>
     <input id="nm-label-inp" type="text" maxlength="40" class="nm-input" placeholder="e.g. 50 HR INSP BOOKED">
-    <label class="nm-label">NOTES</label>
+    <label class="nm-label" for="nm-text-inp">NOTES</label>
     <textarea id="nm-text-inp" rows="3" maxlength="400" class="nm-textarea" placeholder="Additional details..."></textarea>
     <div class="nm-row">
       <button class="nm-btn nm-clear"  id="nm-btn-clear">CLEAR</button>
@@ -64409,8 +64409,7 @@ RII</td>
 
     if (!evs.length) {
       panEvList.innerHTML =
-        "<div style="font-family:'Share Tech Mono',monospace;font-size:10px;" +
-        "color:#2a3240;padding:20px 16px;letter-spacing:1px;">NO EVENTS</div>";
+        '<div style="font-family:&quot;Share Tech Mono&quot;,monospace;font-size:10px;color:#2a3240;padding:20px 16px;letter-spacing:1px;">NO EVENTS</div>';
       document.getElementById('btn-add-note').textContent = '+ ADD NOTE';
       return;
     }
