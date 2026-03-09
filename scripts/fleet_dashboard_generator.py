@@ -22,7 +22,7 @@ try:
 except ImportError:
     _HAS_PIL = False
 
-# ── CONFIGURATION ─────────────────────────────────────────────────────────────
+# â”€â”€ CONFIGURATION â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 OUTPUT_FOLDER = "data"
 
@@ -52,7 +52,7 @@ RETIREMENT_KEYWORDS = [
     'REPLACEMENT', 'REPLACE', 'CHANGE OIL', 'NOZZLE'
 ]
 
-# ── COLUMN INDICES (0-based) ──────────────────────────────────────────────────
+# â”€â”€ COLUMN INDICES (0-based) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 COL_REG          = 0
 COL_AIRFRAME_RPT = 2
 COL_AIRFRAME_HRS = 3
@@ -68,7 +68,7 @@ COL_REM_HRS      = 54
 COL_STATUS       = 63
 
 
-# ── HELPERS ───────────────────────────────────────────────────────────────────
+# â”€â”€ HELPERS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def safe_float(val):
     if val is None:
@@ -163,7 +163,7 @@ def load_photo_b64(data_dir):
         return ''
 
 
-# ── FLIGHT HOURS TRACKING ─────────────────────────────────────────────────────
+# â”€â”€ FLIGHT HOURS TRACKING â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def load_flight_hours_history(history_path):
     if not history_path.exists():
@@ -266,7 +266,7 @@ def calculate_flight_hours_stats(history_data, aircraft_list):
     return stats
 
 
-# ── POSITIONS ─────────────────────────────────────────────────────────────────
+# â”€â”€ POSITIONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def load_positions(positions_path):
     if not positions_path.exists():
@@ -342,18 +342,18 @@ def get_location_badge(tail, positions):
         return f'<span class="location-badge location-active">AIRBORNE{alt_str}</span>'
     if status == 'AT_BASE':
         name = curr.get('name', '') if curr else ''
-        label = 'AT BASE' + (f' · {name}' if name else '')
+        label = 'AT BASE' + (f' Â· {name}' if name else '')
         return f'<span class="location-badge location-at-base">{label}</span>'
     if status == 'AWAY':
         near = ac.get('nearest_base')
         near_str = ''
         if near:
-            near_str = f" · {near.get('dist_nm', '?')}nm from {near.get('name', '?')}"
+            near_str = f" Â· {near.get('dist_nm', '?')}nm from {near.get('name', '?')}"
         return f'<span class="location-badge location-away">AWAY{near_str}</span>'
     return ''
 
 
-# ── CSV PARSING ───────────────────────────────────────────────────────────────
+# â”€â”€ CSV PARSING â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def parse_due_list_parts(filepath):
     with open(filepath, "r", encoding="utf-8-sig", newline="") as f:
@@ -493,7 +493,7 @@ def parse_due_list(input_path):
     return report_date_str, aircraft_list, components
 
 
-# ── CALENDAR TAB ──────────────────────────────────────────────────────────────
+# â”€â”€ CALENDAR TAB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def _build_calendar_tab(aircraft_list, flight_hours_stats):
     """
@@ -501,8 +501,8 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
     - Maintenance events projected from flight-hours stats (same logic as before)
     - User notes stored in localStorage as FullCalendar-compatible event objects
     - Month view + List view toggle
-    - Click a day → add/edit a note (modal)
-    - Click a maintenance event → details popup
+    - Click a day â†’ add/edit a note (modal)
+    - Click a maintenance event â†’ details popup
     - Full dark theme via FC CSS custom properties
     """
 
@@ -517,12 +517,12 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
     }
     URGENCY_LABEL = {
         'overdue': 'OVERDUE',
-        'urgent':  'DUE ≤30 DAYS',
-        'soon':    'DUE ≤90 DAYS',
+        'urgent':  'DUE â‰¤30 DAYS',
+        'soon':    'DUE â‰¤90 DAYS',
         'ok':      'SCHEDULED >90 DAYS',
     }
 
-    # ── Build projected maintenance events ────────────────────────────────────
+    # â”€â”€ Build projected maintenance events â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     maint_events = []
     for ac in aircraft_list:
         tail = ac['tail']
@@ -553,7 +553,7 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
 
             maint_events.append({
                 'id':              f'maint_{tail}_{interval}',
-                'title':           f'{tail} — {interval}h',
+                'title':           f'{tail} â€” {interval}h',
                 'start':           due.isoformat(),
                 'allDay':          True,
                 'backgroundColor': URGENCY_COLOR[urgency],
@@ -572,10 +572,10 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
 
     events_json = json.dumps(maint_events, indent=2)
 
-    # ── HTML / CSS / JS ───────────────────────────────────────────────────────
+    # â”€â”€ HTML / CSS / JS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     return f"""
 <style>
-/* ── FullCalendar dark-theme overrides ─────────────────────────────────────── */
+/* â”€â”€ FullCalendar dark-theme overrides â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 #fc-wrap {{
   --fc-border-color:              #1e2530;
   --fc-button-bg-color:           #111418;
@@ -640,14 +640,14 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
 #fc-wrap .fc-daygrid-day:hover {{ background: #111418; }}
 #fc-wrap .fc-list-empty {{ color: #4a5568; font-family: 'Share Tech Mono', monospace; }}
 
-/* ── User-note events (amber) ──────────────────────────────────────────────── */
+/* â”€â”€ User-note events (amber) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 #fc-wrap .fc-event.user-note-ev {{
   background-color: rgba(255,171,0,0.18) !important;
   border-color:     #ffab00 !important;
   color:            #ffab00 !important;
 }}
 
-/* ── Legend ────────────────────────────────────────────────────────────────── */
+/* â”€â”€ Legend â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .fc-legend {{
   display: flex; gap: 20px; margin-bottom: 16px;
   font-family: 'Share Tech Mono', monospace;
@@ -656,7 +656,7 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
 .fc-leg-item {{ display: flex; align-items: center; gap: 6px; }}
 .fc-leg-dot {{ width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }}
 
-/* ── Event detail popup ─────────────────────────────────────────────────────── */
+/* â”€â”€ Event detail popup â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 #ev-popup {{
   display: none; position: fixed; z-index: 9998;
   background: #0d1117; border: 1px solid #29b6f6;
@@ -677,7 +677,7 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
 }}
 #ev-popup-close:hover {{ color: #e8edf2; }}
 
-/* ── Note modal ─────────────────────────────────────────────────────────────── */
+/* â”€â”€ Note modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 #cal-note-modal {{
   display: none; position: fixed; inset: 0;
   background: rgba(0,0,0,0.72); z-index: 9999;
@@ -717,12 +717,12 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
 <div class="section-label">PROJECTED MAINTENANCE CALENDAR</div>
 <div class="fc-legend">
   <span class="fc-leg-item"><span class="fc-leg-dot" style="background:#c0392b"></span>OVERDUE</span>
-  <span class="fc-leg-item"><span class="fc-leg-dot" style="background:#e67e22"></span>DUE ≤30 DAYS</span>
-  <span class="fc-leg-item"><span class="fc-leg-dot" style="background:#f39c12"></span>DUE ≤90 DAYS</span>
+  <span class="fc-leg-item"><span class="fc-leg-dot" style="background:#e67e22"></span>DUE â‰¤30 DAYS</span>
+  <span class="fc-leg-item"><span class="fc-leg-dot" style="background:#f39c12"></span>DUE â‰¤90 DAYS</span>
   <span class="fc-leg-item"><span class="fc-leg-dot" style="background:#2980b9"></span>SCHEDULED</span>
   <span class="fc-leg-item"><span class="fc-leg-dot" style="background:rgba(255,171,0,0.5);border:1px solid #ffab00"></span>MY NOTES</span>
   <span style="margin-left:auto;font-family:'Share Tech Mono',monospace;font-size:9px;color:#4a5568;">
-    Click any blank day to add a note &nbsp;·&nbsp; Click an event to view details
+    Click any blank day to add a note &nbsp;Â·&nbsp; Click an event to view details
   </span>
 </div>
 
@@ -732,7 +732,7 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
 
 <!-- Event detail popup -->
 <div id="ev-popup">
-  <button id="ev-popup-close">✕</button>
+  <button id="ev-popup-close">âœ•</button>
   <div id="ev-popup-title"></div>
   <div class="ev-popup-row">DATE &nbsp;&nbsp;&nbsp;<span id="ev-popup-date"></span></div>
   <div class="ev-popup-row" id="ev-popup-status-row">STATUS &nbsp;<span id="ev-popup-status"></span></div>
@@ -771,7 +771,7 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
 (function() {{
   var STORAGE_KEY = 'ihc_cal_notes_v3';
 
-  // ── localStorage helpers ──────────────────────────────────────────────────
+  // â”€â”€ localStorage helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   function loadNotes() {{
     try {{ return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{{}}'); }}
     catch(e) {{ return {{}}; }}
@@ -782,7 +782,7 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
     return Object.entries(notes).map(function([dateKey, note]) {{
       return {{
         id:              'note_' + dateKey,
-        title:           note.label || '📌 Note',
+        title:           note.label || 'ðŸ“Œ Note',
         start:           dateKey,
         allDay:          true,
         classNames:      ['user-note-ev'],
@@ -796,10 +796,10 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
     }});
   }}
 
-  // ── Maintenance events (baked in by Python) ───────────────────────────────
+  // â”€â”€ Maintenance events (baked in by Python) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   var MAINT_EVENTS = {events_json};
 
-  // ── Popup helpers ─────────────────────────────────────────────────────────
+  // â”€â”€ Popup helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   var popup       = document.getElementById('ev-popup');
   var popupTitle  = document.getElementById('ev-popup-title');
   var popupDate   = document.getElementById('ev-popup-date');
@@ -859,7 +859,7 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
     }};
   }}
 
-  // ── Note modal ────────────────────────────────────────────────────────────
+  // â”€â”€ Note modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   var modal      = document.getElementById('cal-note-modal');
   var noteDateEl = document.getElementById('cal-note-date');
   var noteLabelEl= document.getElementById('cal-note-label');
@@ -913,7 +913,7 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
     if (e.key === 'Enter') {{ e.preventDefault(); noteTextEl.focus(); }}
   }});
 
-  // ── FullCalendar init ─────────────────────────────────────────────────────
+  // â”€â”€ FullCalendar init â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   var cal;  // reference so we can refresh note events
 
   function refreshNoteEvents() {{
@@ -929,7 +929,7 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
 
   function initCalendar() {{
     if (typeof FullCalendar === 'undefined') {{
-      // FC not yet loaded — retry after a short delay
+      // FC not yet loaded â€” retry after a short delay
       setTimeout(initCalendar, 200);
       return;
     }}
@@ -958,13 +958,13 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
         return MAINT_EVENTS.concat(noteEvs);
       }})(),
 
-      // Click blank day → open note modal
+      // Click blank day â†’ open note modal
       dateClick: function(info) {{
         hidePopup();
         openNoteModal(info.dateStr);
       }},
 
-      // Click an event → show detail popup
+      // Click an event â†’ show detail popup
       eventClick: function(info) {{
         info.jsEvent.stopPropagation();
         showPopup(info);
@@ -993,7 +993,7 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
 
 
 
-# ── AIRCRAFT LOCATION TAB ─────────────────────────────────────────────────────
+# â”€â”€ AIRCRAFT LOCATION TAB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def _build_location_tab(aircraft_list, positions):
     """Aircraft location tab with ac-cards. JS refreshes from base_assignments.json."""
@@ -1019,7 +1019,7 @@ def _build_location_tab(aircraft_list, positions):
             card_cls = 'ac-card-air'
             alt = pos.get('last_alt_ft', '')
             spd = pos.get('last_gs_kts', '')
-            detail = (f' · {int(alt):,} ft' if alt else '') + (f' · {int(float(spd))} kts' if spd else '')
+            detail = (f' Â· {int(alt):,} ft' if alt else '') + (f' Â· {int(float(spd))} kts' if spd else '')
             loc_html = f'<span class="ac-loc-air">AIRBORNE</span><span class="ac-loc-detail">{detail}</span>'
         elif status == 'AWAY':
             card_cls = 'ac-card-away'
@@ -1111,12 +1111,12 @@ def _build_location_tab(aircraft_list, positions):
       var alt=d.alt_ft ? parseInt(d.alt_ft).toLocaleString()+' ft' : '';
       var spd=d.speed_kts ? Math.round(d.speed_kts)+' kts' : '';
       var pos=distMi&&baseName ? (Math.round(distMi)+' mi '+(dir?dir+' of ':' from ')+baseName) : '';
-      var parts=[pos,alt,spd].filter(Boolean).join(' · ');
+      var parts=[pos,alt,spd].filter(Boolean).join(' Â· ');
       return '<span class="ac-loc-air">AIRBORNE</span>'+(parts?'<span class="ac-loc-detail"> '+esc(parts)+'</span>':'');
     }}
     if (status==='AWAY') {{
       var pos=distMi&&baseName ? (Math.round(distMi)+' mi '+(dir?dir+' of ':' from ')+baseName) : (baseName||'unknown');
-      return '<span class="ac-loc-away">AWAY</span><span class="ac-loc-detail"> · '+esc(pos)+'</span>';
+      return '<span class="ac-loc-away">AWAY</span><span class="ac-loc-detail"> Â· '+esc(pos)+'</span>';
     }}
     return '<span class="ac-loc-unknown">'+esc(status||'UNKNOWN')+'</span>';
   }}
@@ -1168,14 +1168,14 @@ def _build_location_tab(aircraft_list, positions):
 <script>{refresh_js}</script>'''
 
 
-# ── BUILD HTML ────────────────────────────────────────────────────────────────
+# â”€â”€ BUILD HTML â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def build_html(report_date, aircraft_list, components, flight_hours_stats, positions,
                source_filename, photo_b64=''):
 
     def fmt_hrs(val_dict):
         if val_dict is None:
-            return '<span class="hr-na">—</span>'
+            return '<span class="hr-na">â€”</span>'
         hrs    = val_dict['rem_hrs']
         status = val_dict['status']
         if hrs is not None:
@@ -1261,9 +1261,9 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
             txt_color = {'overdue':'var(--overdue)','red':'var(--red)','amber':'var(--amber)','green':'var(--green)'}.get(cls,'var(--green)')
             rii_badge = ' <span class="rii-badge">RII</span>' if c.get('rii') else ''
             if rem is not None:
-                rem_label = f'OVERDUE — {abs(rem):.1f} hrs past limit' if rem < 0 else f'{rem:.1f} hrs remaining'
+                rem_label = f'OVERDUE â€” {abs(rem):.1f} hrs past limit' if rem < 0 else f'{rem:.1f} hrs remaining'
             elif rem_days is not None:
-                rem_label = f'OVERDUE — {abs(rem_days):.0f} days past limit' if rem_days < 0 else f'{rem_days:.0f} days remaining'
+                rem_label = f'OVERDUE â€” {abs(rem_days):.0f} days past limit' if rem_days < 0 else f'{rem_days:.0f} days remaining'
             else:
                 rem_label = status
             rows_html += f'''<div class="component-row">
@@ -1283,15 +1283,14 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
     if not comp_panels_html:
         comp_panels_html = '<div style="font-family:var(--mono);font-size:12px;color:var(--muted);padding:20px;">No components within 200 hours across fleet.</div>'
 
-    # Flight hours tab
-    util_tails    = [ac['tail'] for ac in aircraft_list]
-    util_daily    = []
-    util_weekly   = []
-    for ac in aircraft_list:
-        tail = ac['tail']
-        avg  = flight_hours_stats.get(tail, {}).get('avg_daily')
-        util_daily.append(round(avg, 2) if avg else 0)
-        util_weekly.append(round(avg * 7, 2) if avg else 0)
+    # Flight hours tab — sorted most to least by avg daily utilization
+    util_pairs = sorted(
+        [(ac['tail'], flight_hours_stats.get(ac['tail'], {}).get('avg_daily') or 0) for ac in aircraft_list],
+        key=lambda x: x[1], reverse=True
+    )
+    util_tails  = [t for t, _ in util_pairs]
+    util_daily  = [round(v, 2) for _, v in util_pairs]
+    util_weekly = [round(v * 7, 2) for _, v in util_pairs]
 
     tails_js  = '[' + ','.join(f'"{t}"' for t in util_tails) + ']'
     daily_js  = '[' + ','.join(str(v) for v in util_daily) + ']'
@@ -1303,9 +1302,9 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
         stats = flight_hours_stats.get(tail, {})
         avg   = stats.get('avg_daily')
         ah    = f"{stats.get('current_hours'):,.1f}" if stats.get('current_hours') else 'N/A'
-        d_str = f"{avg:.2f}" if avg else "—"
-        w_str = f"{avg*7:.1f}" if avg else "—"
-        m_str = f"{avg*30:.1f}" if avg else "—"
+        d_str = f"{avg:.2f}" if avg else "â€”"
+        w_str = f"{avg*7:.1f}" if avg else "â€”"
+        m_str = f"{avg*30:.1f}" if avg else "â€”"
         hours_cards_html += f'''<div class="hours-card">
   <div class="hours-card-header">
     <div class="hours-card-tail">{tail}</div>
@@ -1340,7 +1339,7 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>IHC Health Services — Fleet Due List</title>
+<title>IHC Health Services â€” Fleet Due List</title>
 <link rel="icon" href="data:,">
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -1443,7 +1442,7 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
   <div class="header-left">
     <div>
       <div class="logo">IHC <span>HEALTH</span> SERVICES</div>
-      <div class="subtitle">AW109SP Fleet &nbsp;—&nbsp; Maintenance Due List</div>
+      <div class="subtitle">AW109SP Fleet &nbsp;â€”&nbsp; Maintenance Due List</div>
     </div>
     {photo_tag}
   </div>
@@ -1454,10 +1453,10 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
 </header>
 <div class="legend">
   <div class="legend-item"><div class="dot dot-green"></div> OK (&gt;100 hrs)</div>
-  <div class="legend-item"><div class="dot dot-amber"></div> Coming Due (26–100 hrs)</div>
-  <div class="legend-item"><div class="dot dot-red"></div> Critical (0–25 hrs)</div>
+  <div class="legend-item"><div class="dot dot-amber"></div> Coming Due (26â€“100 hrs)</div>
+  <div class="legend-item"><div class="dot dot-red"></div> Critical (0â€“25 hrs)</div>
   <div class="legend-item"><div class="dot dot-overdue"></div> Past Due / Overdue</div>
-  <div style="margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:1px;">— = Not due this cycle</div>
+  <div style="margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:1px;">â€” = Not due this cycle</div>
 </div>
 <main>
   <div class="tabs">
@@ -1480,7 +1479,7 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
       <div class="chart-title">200 Hr Remaining (Bar)</div>
       <canvas id="bar200"></canvas>
     </div>
-    <div class="section-label">Scheduled Phase Inspections — Hours Remaining</div>
+    <div class="section-label">Scheduled Phase Inspections â€” Hours Remaining</div>
     <div class="filter-row">
       <button class="filter-btn active" onclick="filterTable('all',this)">All</button>
       <button class="filter-btn" onclick="filterTable('overdue',this)">Past Due</button>
@@ -1504,7 +1503,7 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
         </tbody>
       </table>
     </div>
-    <div class="section-label" style="margin-top:36px;">Component Retirement / Overhaul — Within {COMPONENT_WINDOW_HRS} Hours</div>
+    <div class="section-label" style="margin-top:36px;">Component Retirement / Overhaul â€” Within {COMPONENT_WINDOW_HRS} Hours</div>
     <div class="components-grid">{comp_panels_html}</div>
   </div>
 
@@ -1530,7 +1529,7 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
 </main>
 <footer>
   <span>SOURCE: VERYON MAINTENANCE TRACKING &nbsp;|&nbsp; {source_filename}</span>
-  <span>IHC HEALTH SERVICES — AVIATION MAINTENANCE</span>
+  <span>IHC HEALTH SERVICES â€” AVIATION MAINTENANCE</span>
 </footer>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
@@ -1644,7 +1643,7 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
 </html>"""
 
 
-# ── MAIN ──────────────────────────────────────────────────────────────────────
+# â”€â”€ MAIN â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def main():
     data_dir       = Path(OUTPUT_FOLDER)
@@ -1733,7 +1732,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
-
-
