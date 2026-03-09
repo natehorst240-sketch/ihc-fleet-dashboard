@@ -496,12 +496,14 @@ def parse_due_list(input_path):
 
 def _build_calendar_tab(aircraft_list, flight_hours_stats):
     """
-    Calendar with multi-day spanning event bars.
-    Each week uses a SINGLE CSS grid so day cells and event bars share
-    the same column definitions — bars can never overflow outside the grid.
-    Click a day number to open a note modal (localStorage, no server).
+    FullCalendar v6 powered calendar tab.
+    - Maintenance events projected from flight-hours stats (same logic as before)
+    - User notes stored in localStorage as FullCalendar-compatible event objects
+    - Month view + List view toggle
+    - Click a day → add/edit a note (modal)
+    - Click a maintenance event → details popup
+    - Full dark theme via FC CSS custom properties
     """
-    import calendar as cal_mod
 
     today_dt = datetime.today()
     today    = today_dt.date()
@@ -512,9 +514,15 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
         'soon':    '#f39c12',
         'ok':      '#2980b9',
     }
+    URGENCY_LABEL = {
+        'overdue': 'OVERDUE',
+        'urgent':  'DUE ≤30 DAYS',
+        'soon':    'DUE ≤90 DAYS',
+        'ok':      'SCHEDULED >90 DAYS',
+    }
 
-    # ── Collect projected events ──────────────────────────────────────────────
-    all_events = []
+    # ── Build projected maintenance events ────────────────────────────────────
+    maint_events = []
     for ac in aircraft_list:
         tail = ac['tail']
         if ac['airframe_hrs'] is None:
@@ -523,7 +531,7 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
         if not avg_daily or avg_daily <= 0:
             continue
 
-        for interval in TARGET_INTERVALS:
+        for interval in [50, 100, 200, 400, 800, 2400, 3200]:
             v = ac['intervals'].get(interval)
             if v is None:
                 continue
@@ -532,307 +540,456 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
                 continue
 
             if rem_hrs < 0:
-                due = today
-                urgency = 'overdue'
-                days_until = 0
+                due       = today
+                urgency   = 'overdue'
+                rem_label = f'{abs(rem_hrs):.1f} hrs past limit'
             else:
                 days_until = rem_hrs / avg_daily
-                due = today + timedelta(days=int(days_until))
-                urgency = ('urgent' if days_until <= 30 else
-                           'soon'   if days_until <= 90 else 'ok')
+                due        = today + timedelta(days=int(days_until))
+                urgency    = ('urgent' if days_until <= 30 else
+                              'soon'   if days_until <= 90 else 'ok')
+                rem_label  = f'{rem_hrs:.1f} hrs remaining'
 
-            if urgency == 'overdue':
-                bar_start = today
-            elif urgency == 'urgent':
-                bar_start = max(today, due - timedelta(days=min(7, max(3, int(days_until)))))
-            elif urgency == 'soon':
-                bar_start = max(today, due - timedelta(days=min(14, max(5, int(days_until * 0.3)))))
-            else:
-                bar_start = due
-
-            all_events.append({
-                'tail': tail, 'interval': interval,
-                'start': bar_start, 'end': due,
-                'urgency': urgency,
-                'label': f'{tail} {interval}h',
-                'color': URGENCY_COLOR[urgency],
+            maint_events.append({
+                'id':              f'maint_{tail}_{interval}',
+                'title':           f'{tail} — {interval}h',
+                'start':           due.isoformat(),
+                'allDay':          True,
+                'backgroundColor': URGENCY_COLOR[urgency],
+                'borderColor':     URGENCY_COLOR[urgency],
+                'textColor':       '#ffffff',
+                'extendedProps': {
+                    'type':         'maintenance',
+                    'tail':         tail,
+                    'interval':     interval,
+                    'urgency':      urgency,
+                    'urgencyLabel': URGENCY_LABEL[urgency],
+                    'remHrs':       rem_hrs,
+                    'remLabel':     rem_label,
+                },
             })
 
-    # ── Build month HTML ──────────────────────────────────────────────────────
-    months_html = ''
-    for month_offset in range(3):
-        m = today_dt.month + month_offset
-        y = today_dt.year + (m - 1) // 12
-        m = ((m - 1) % 12) + 1
+    events_json = json.dumps(maint_events, indent=2)
 
-        month_name    = datetime(y, m, 1).strftime('%B %Y').upper()
-        first_dow     = datetime(y, m, 1).weekday()  # 0=Monday
-        days_in_month = cal_mod.monthrange(y, m)[1]
+    # ── HTML / CSS / JS ───────────────────────────────────────────────────────
+    return f"""
+<style>
+/* ── FullCalendar dark-theme overrides ─────────────────────────────────────── */
+#fc-wrap {{
+  --fc-border-color:              #1e2530;
+  --fc-button-bg-color:           #111418;
+  --fc-button-border-color:       #1e2530;
+  --fc-button-text-color:         #cdd6e0;
+  --fc-button-hover-bg-color:     #29b6f6;
+  --fc-button-hover-border-color: #29b6f6;
+  --fc-button-hover-text-color:   #000;
+  --fc-button-active-bg-color:    #29b6f6;
+  --fc-button-active-border-color:#29b6f6;
+  --fc-button-active-text-color:  #000;
+  --fc-today-bg-color:            rgba(41,182,246,0.08);
+  --fc-neutral-bg-color:          #111418;
+  --fc-page-bg-color:             #0a0c0f;
+  --fc-neutral-text-color:        #4a5568;
+  --fc-list-event-hover-bg-color: #181c22;
+  background:                     var(--surface);
+  border:                         1px solid var(--border);
+  border-radius:                  4px;
+  padding:                        20px;
+}}
+#fc-wrap .fc-toolbar-title {{
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900;
+  font-size:   20px;
+  letter-spacing: 2px;
+  color:       #e8edf2;
+  text-transform: uppercase;
+}}
+#fc-wrap .fc-col-header-cell-cushion,
+#fc-wrap .fc-daygrid-day-number,
+#fc-wrap .fc-list-day-text,
+#fc-wrap .fc-list-day-side-text {{
+  font-family: 'Share Tech Mono', monospace;
+  font-size:   11px;
+  color:       #4a5568;
+  text-decoration: none;
+}}
+#fc-wrap .fc-daygrid-day-number:hover {{ color: #29b6f6; }}
+#fc-wrap .fc-daygrid-day.fc-day-today .fc-daygrid-day-number {{ color: #29b6f6; font-weight: 700; }}
+#fc-wrap .fc-event {{
+  font-family: 'Share Tech Mono', monospace;
+  font-size:   10px;
+  border-radius: 2px;
+  cursor: pointer;
+}}
+#fc-wrap .fc-list-event-title {{ font-family: 'Share Tech Mono', monospace; font-size: 12px; }}
+#fc-wrap .fc-list-day-cushion {{ background: #111418; }}
+#fc-wrap .fc-button {{
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size:   11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border-radius: 2px;
+}}
+#fc-wrap .fc-button:focus {{ box-shadow: none; }}
+#fc-wrap .fc-scrollgrid {{ border-color: #1e2530; }}
+#fc-wrap .fc-scrollgrid-sync-table td,
+#fc-wrap .fc-scrollgrid-sync-table th {{ border-color: #1e2530; }}
+#fc-wrap .fc-daygrid-day {{ background: #0d1117; }}
+#fc-wrap .fc-daygrid-day:hover {{ background: #111418; }}
+#fc-wrap .fc-list-empty {{ color: #4a5568; font-family: 'Share Tech Mono', monospace; }}
 
-        weeks = []
-        week  = [None] * first_dow
-        for d in range(1, days_in_month + 1):
-            week.append(date(y, m, d))
-            if len(week) == 7:
-                weeks.append(week)
-                week = []
-        if week:
-            weeks.append(week + [None] * (7 - len(week)))
+/* ── User-note events (amber) ──────────────────────────────────────────────── */
+#fc-wrap .fc-event.user-note-ev {{
+  background-color: rgba(255,171,0,0.18) !important;
+  border-color:     #ffab00 !important;
+  color:            #ffab00 !important;
+}}
 
-        weeks_html = ''
-        for week in weeks:
-            real_days  = [d for d in week if d is not None]
-            if not real_days:
-                continue
-            week_start = real_days[0]
-            week_end   = real_days[-1]
+/* ── Legend ────────────────────────────────────────────────────────────────── */
+.fc-legend {{
+  display: flex; gap: 20px; margin-bottom: 16px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px; color: #4a5568; flex-wrap: wrap; align-items: center;
+}}
+.fc-leg-item {{ display: flex; align-items: center; gap: 6px; }}
+.fc-leg-dot {{ width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }}
 
-            # ── Find & pack events for this week ──────────────────────────────
-            week_events = [e for e in all_events
-                           if e['start'] <= week_end and e['end'] >= week_start]
+/* ── Event detail popup ─────────────────────────────────────────────────────── */
+#ev-popup {{
+  display: none; position: fixed; z-index: 9998;
+  background: #0d1117; border: 1px solid #29b6f6;
+  border-radius: 6px; padding: 18px 22px; min-width: 240px; max-width: 340px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+}}
+#ev-popup-title {{
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 900;
+  font-size: 16px; color: #e8edf2; margin-bottom: 12px;
+}}
+.ev-popup-row {{ font-family: 'Share Tech Mono', monospace; font-size: 11px;
+  color: #4a5568; margin-bottom: 6px; }}
+.ev-popup-row span {{ color: #cdd6e0; }}
+#ev-popup-close {{
+  position: absolute; top: 10px; right: 12px; background: transparent;
+  border: none; color: #4a5568; font-size: 16px; cursor: pointer;
+  font-family: 'Share Tech Mono', monospace;
+}}
+#ev-popup-close:hover {{ color: #e8edf2; }}
 
-            packed_rows = []  # list of lists of items
-            for ev in sorted(week_events, key=lambda x: x['start']):
-                cs = max(0, (ev['start'] - week_start).days)
-                ce = min(6, (ev['end']   - week_start).days)
-                placed = False
-                for row in packed_rows:
-                    if cs > max(it['ce'] for it in row):
-                        row.append({**ev, 'cs': cs, 'ce': ce})
-                        placed = True
-                        break
-                if not placed:
-                    packed_rows.append([{**ev, 'cs': cs, 'ce': ce}])
+/* ── Note modal ─────────────────────────────────────────────────────────────── */
+#cal-note-modal {{
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.72); z-index: 9999;
+  align-items: center; justify-content: center;
+}}
+#cal-note-modal .modal-box {{
+  background: #0d1117; border: 1px solid #29b6f6;
+  border-radius: 6px; padding: 28px;
+  min-width: 320px; max-width: 460px; width: 90%;
+}}
+.modal-label {{
+  font-family: 'Share Tech Mono', monospace; font-size: 10px;
+  color: #4a5568; letter-spacing: 1px; display: block; margin-bottom: 4px;
+}}
+.modal-input {{
+  width: 100%; box-sizing: border-box; background: #161c25;
+  border: 1px solid #1e2530; border-radius: 3px;
+  color: #e8edf2; padding: 8px;
+  font-family: 'Share Tech Mono', monospace; font-size: 13px;
+  margin-bottom: 12px;
+}}
+.modal-textarea {{
+  width: 100%; box-sizing: border-box; background: #161c25;
+  border: 1px solid #1e2530; border-radius: 3px;
+  color: #e8edf2; padding: 8px;
+  font-family: 'Share Tech Mono', monospace; font-size: 12px;
+  resize: vertical; margin-bottom: 16px;
+}}
+.modal-btn-row {{ display: flex; gap: 8px; justify-content: flex-end; }}
+.modal-btn {{ padding: 7px 14px; border-radius: 3px; cursor: pointer;
+  font-family: 'Share Tech Mono', monospace; font-size: 11px; }}
+.modal-btn-clear  {{ background: transparent; border: 1px solid #c0392b; color: #c0392b; }}
+.modal-btn-cancel {{ background: transparent; border: 1px solid #1e2530; color: #4a5568; }}
+.modal-btn-save   {{ background: #29b6f6; border: none; color: #000; font-weight: 700; }}
+</style>
 
-            # ── Build unified grid: row 1 = day numbers, rows 2+ = event bars ─
-            # Use explicit grid-row placement so everything shares one grid.
-            grid_items = ''
+<div class="section-label">PROJECTED MAINTENANCE CALENDAR</div>
+<div class="fc-legend">
+  <span class="fc-leg-item"><span class="fc-leg-dot" style="background:#c0392b"></span>OVERDUE</span>
+  <span class="fc-leg-item"><span class="fc-leg-dot" style="background:#e67e22"></span>DUE ≤30 DAYS</span>
+  <span class="fc-leg-item"><span class="fc-leg-dot" style="background:#f39c12"></span>DUE ≤90 DAYS</span>
+  <span class="fc-leg-item"><span class="fc-leg-dot" style="background:#2980b9"></span>SCHEDULED</span>
+  <span class="fc-leg-item"><span class="fc-leg-dot" style="background:rgba(255,171,0,0.5);border:1px solid #ffab00"></span>MY NOTES</span>
+  <span style="margin-left:auto;font-family:'Share Tech Mono',monospace;font-size:9px;color:#4a5568;">
+    Click any blank day to add a note &nbsp;·&nbsp; Click an event to view details
+  </span>
+</div>
 
-            # Day number cells (grid-row: 1)
-            for col_idx, d in enumerate(week, 1):
-                if d is None:
-                    grid_items += (
-                        f'<div class="cal-empty" '
-                        f'style="grid-column:{col_idx};grid-row:1"></div>'
-                    )
-                else:
-                    cls = 'cal-day'
-                    if d == today:   cls += ' cal-today'
-                    elif d < today:  cls += ' cal-past'
-                    grid_items += (
-                        f'<div class="{cls}" data-date="{d.isoformat()}" '
-                        f'style="grid-column:{col_idx};grid-row:1" '
-                        f'onclick="calDayClick(event,\'{d.isoformat()}\')" title="Click to add note">'
-                        f'<div class="cal-day-num">{d.day}</div>'
-                        f'<div class="cal-user-ev" id="uev-{d.isoformat()}"></div>'
-                        f'</div>'
-                    )
+<div id="fc-wrap">
+  <div id="fc-calendar"></div>
+</div>
 
-            # Event bar rows (grid-row: 2, 3, …)
-            for row_idx, row in enumerate(packed_rows[:5], 2):
-                col = 0
-                for item in sorted(row, key=lambda x: x['cs']):
-                    # gap filler
-                    if item['cs'] > col:
-                        grid_items += (
-                            f'<div style="grid-column:{col+1}/{item["cs"]+1};'
-                            f'grid-row:{row_idx}"></div>'
-                        )
-                    span  = item['ce'] - item['cs'] + 1
-                    rl    = '3px' if item['start'] >= week_start else '0'
-                    rr    = '3px' if item['end']   <= week_end   else '0'
-                    grid_items += (
-                        f'<div class="cal-span-ev" '
-                        f'style="grid-column:{item["cs"]+1}/{item["ce"]+2};'
-                        f'grid-row:{row_idx};background:{item["color"]};'
-                        f'border-radius:{rl} {rr} {rr} {rl};" '
-                        f'title="{item["label"]}">{item["label"]}</div>'
-                    )
-                    col = item['ce'] + 1
+<!-- Event detail popup -->
+<div id="ev-popup">
+  <button id="ev-popup-close">✕</button>
+  <div id="ev-popup-title"></div>
+  <div class="ev-popup-row">DATE &nbsp;&nbsp;&nbsp;<span id="ev-popup-date"></span></div>
+  <div class="ev-popup-row" id="ev-popup-status-row">STATUS &nbsp;<span id="ev-popup-status"></span></div>
+  <div class="ev-popup-row" id="ev-popup-rem-row">REM &nbsp;&nbsp;&nbsp;&nbsp;<span id="ev-popup-rem"></span></div>
+  <div class="ev-popup-row" id="ev-popup-note-row" style="margin-top:8px;border-top:1px solid #1e2530;padding-top:8px;">
+    <span id="ev-popup-note" style="color:#ffab00;"></span>
+  </div>
+  <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end;">
+    <button id="ev-popup-edit"
+      style="background:transparent;border:1px solid #1e2530;color:#4a5568;
+      padding:5px 12px;border-radius:3px;cursor:pointer;
+      font-family:'Share Tech Mono',monospace;font-size:10px;">
+      EDIT NOTE
+    </button>
+  </div>
+</div>
 
-            n_ev_rows = len(packed_rows[:5])
-            grid_rows = f'36px' + (' 20px' * n_ev_rows)
-            weeks_html += (
-                f'<div class="cal-week" '
-                f'style="display:grid;grid-template-columns:repeat(7,1fr);'
-                f'grid-template-rows:{grid_rows};gap:2px;margin-bottom:4px;">'
-                f'{grid_items}</div>'
-            )
-
-        months_html += (
-            f'<div class="cal-month">'
-            f'<div class="cal-month-title">{month_name}</div>'
-            f'<div class="cal-dow-row">'
-            f'<div class="cal-dow">MON</div><div class="cal-dow">TUE</div>'
-            f'<div class="cal-dow">WED</div><div class="cal-dow">THU</div>'
-            f'<div class="cal-dow">FRI</div><div class="cal-dow">SAT</div>'
-            f'<div class="cal-dow">SUN</div></div>'
-            f'{weeks_html}</div>'
-        )
-
-    # ── CSS ───────────────────────────────────────────────────────────────────
-    css = '''<style>
-.cal-months-wrap{display:flex;flex-direction:column;gap:28px;}
-.cal-month{width:100%;}
-.cal-month-title{font-family:var(--mono);font-size:11px;font-weight:700;
-  color:var(--blue);letter-spacing:2px;margin-bottom:6px;}
-.cal-dow-row{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:2px;}
-.cal-dow{font-family:var(--mono);font-size:9px;color:var(--muted);
-  text-align:center;padding:3px 0;letter-spacing:1px;}
-.cal-day{background:#0d1117;border:1px solid #1e2533;border-radius:3px;
-  padding:3px 4px;cursor:pointer;transition:border-color .15s;}
-.cal-day:hover{border-color:var(--blue);}
-.cal-empty{background:transparent!important;border-color:transparent!important;cursor:default;}
-.cal-day-num{font-family:var(--mono);font-size:9px;color:var(--muted);}
-.cal-today{border-color:var(--blue)!important;}
-.cal-today .cal-day-num{color:var(--blue);font-weight:700;}
-.cal-past{opacity:0.45;}
-.cal-span-ev{font-family:var(--mono);font-size:9px;padding:0 5px;
-  color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  display:flex;align-items:center;cursor:default;}
-.cal-user-ev{font-family:var(--mono);font-size:8px;margin-top:1px;
-  color:#f6ad55;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;}
-.cal-legend{display:flex;gap:20px;margin-bottom:16px;font-family:var(--mono);
-  font-size:10px;color:var(--muted);flex-wrap:wrap;align-items:center;}
-.cal-leg-item{display:flex;align-items:center;gap:6px;}
-.cal-leg-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0;}
-</style>'''
-
-    # ── Note modal JS (stored in localStorage, opened by clicking day cells) ──
-    modal_js = '''<script>
-(function() {
-  var STORAGE_KEY = 'ihc_cal_notes_v2';
-  function loadNotes() {
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch(e) { return {}; }
-  }
-  function saveNotes(n) { localStorage.setItem(STORAGE_KEY, JSON.stringify(n)); }
-
-  // Render saved notes into day cells on load
-  function renderAllNotes() {
-    var notes = loadNotes();
-    Object.keys(notes).forEach(function(k) {
-      var el = document.getElementById('uev-' + k);
-      if (el) el.textContent = notes[k].label || notes[k].text || '';
-    });
-  }
-
-  // Expose click handler used inline on day cells
-  window.calDayClick = function(evt, dateKey) {
-    evt.stopPropagation();
-    var notes    = loadNotes();
-    var existing = notes[dateKey] || {};
-
-    var modal = document.getElementById('cal-note-modal');
-    document.getElementById('cal-note-date').textContent  = dateKey;
-    document.getElementById('cal-note-label').value = existing.label || '';
-    document.getElementById('cal-note-text').value  = existing.text  || '';
-    modal.style.display = 'flex';
-    setTimeout(function(){ document.getElementById('cal-note-label').focus(); }, 50);
-  };
-
-  function closeModal() {
-    document.getElementById('cal-note-modal').style.display = 'none';
-  }
-  function saveModal() {
-    var dateKey = document.getElementById('cal-note-date').textContent;
-    var label   = document.getElementById('cal-note-label').value.trim();
-    var text    = document.getElementById('cal-note-text').value.trim();
-    var notes   = loadNotes();
-    if (label || text) {
-      notes[dateKey] = { label: label, text: text };
-    } else {
-      delete notes[dateKey];
-    }
-    saveNotes(notes);
-    var el = document.getElementById('uev-' + dateKey);
-    if (el) el.textContent = label || text || '';
-    closeModal();
-  }
-  function clearModal() {
-    var dateKey = document.getElementById('cal-note-date').textContent;
-    var notes = loadNotes();
-    delete notes[dateKey];
-    saveNotes(notes);
-    var el = document.getElementById('uev-' + dateKey);
-    if (el) el.textContent = '';
-    closeModal();
-  }
-
-  document.addEventListener('DOMContentLoaded', function() {
-    renderAllNotes();
-
-    var modal     = document.getElementById('cal-note-modal');
-    var labelInp  = document.getElementById('cal-note-label');
-    var textInp   = document.getElementById('cal-note-text');
-
-    document.getElementById('cal-note-save').addEventListener('click', saveModal);
-    document.getElementById('cal-note-clear').addEventListener('click', clearModal);
-    document.getElementById('cal-note-cancel').addEventListener('click', closeModal);
-
-    // Click outside modal box → close
-    modal.addEventListener('click', function(e) { if (e.target === modal) closeModal(); });
-
-    // Keyboard shortcuts
-    modal.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape') { e.preventDefault(); closeModal(); }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); saveModal(); }
-    });
-    labelInp.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') { e.preventDefault(); textInp.focus(); }
-    });
-  });
-})();
-</script>
-
-<!-- Calendar Note Modal — placed here in body, NOT after </script> -->
-<div id="cal-note-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);
-  z-index:9999;align-items:center;justify-content:center;">
-  <div style="background:#0d1117;border:1px solid var(--blue);border-radius:6px;padding:28px;
-    min-width:320px;max-width:460px;width:90%;" onclick="event.stopPropagation()">
-    <div style="font-size:10px;color:var(--blue);letter-spacing:2px;margin-bottom:4px;font-family:var(--mono);">SCHEDULE / NOTE</div>
-    <div id="cal-note-date" style="font-size:15px;color:var(--heading);font-weight:700;margin-bottom:18px;font-family:var(--mono);"></div>
-    <label style="display:block;font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:4px;font-family:var(--mono);">LABEL (e.g. 50 HR INSP)</label>
-    <input id="cal-note-label" type="text" maxlength="30"
-      style="width:100%;box-sizing:border-box;background:#161c25;border:1px solid var(--border);
-      border-radius:3px;color:var(--heading);padding:8px;font-family:var(--mono);font-size:13px;margin-bottom:12px;">
-    <label style="display:block;font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:4px;font-family:var(--mono);">NOTES</label>
-    <textarea id="cal-note-text" rows="3" maxlength="200"
-      style="width:100%;box-sizing:border-box;background:#161c25;border:1px solid var(--border);
-      border-radius:3px;color:var(--heading);padding:8px;font-family:var(--mono);font-size:12px;
-      resize:vertical;margin-bottom:16px;"></textarea>
-    <div style="display:flex;gap:8px;justify-content:flex-end;">
-      <button id="cal-note-clear"
-        style="background:transparent;border:1px solid #c0392b;color:#c0392b;
-        padding:7px 14px;border-radius:3px;cursor:pointer;font-family:var(--mono);font-size:11px;">CLEAR</button>
-      <button id="cal-note-cancel"
-        style="background:transparent;border:1px solid var(--border);color:var(--muted);
-        padding:7px 14px;border-radius:3px;cursor:pointer;font-family:var(--mono);font-size:11px;">CANCEL</button>
-      <button id="cal-note-save"
-        style="background:var(--blue);border:none;color:#000;
-        padding:7px 14px;border-radius:3px;cursor:pointer;font-family:var(--mono);font-size:11px;font-weight:700;">SAVE</button>
+<!-- Note modal -->
+<div id="cal-note-modal">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div style="font-size:10px;color:#29b6f6;letter-spacing:2px;margin-bottom:4px;font-family:'Share Tech Mono',monospace;">SCHEDULE / NOTE</div>
+    <div id="cal-note-date" style="font-size:15px;color:#e8edf2;font-weight:700;margin-bottom:18px;font-family:'Share Tech Mono',monospace;"></div>
+    <label class="modal-label">LABEL (shown on calendar, e.g. "50 HR INSP")</label>
+    <input id="cal-note-label" type="text" maxlength="40" class="modal-input">
+    <label class="modal-label">NOTES</label>
+    <textarea id="cal-note-text" rows="3" maxlength="300" class="modal-textarea"></textarea>
+    <div class="modal-btn-row">
+      <button class="modal-btn modal-btn-clear"  id="cal-note-clear">CLEAR</button>
+      <button class="modal-btn modal-btn-cancel" id="cal-note-cancel">CANCEL</button>
+      <button class="modal-btn modal-btn-save"   id="cal-note-save">SAVE</button>
     </div>
   </div>
-</div>'''
+</div>
 
-    legend = (
-        '<div class="cal-legend">'
-        '<span class="cal-leg-item"><span class="cal-leg-dot" style="background:#c0392b"></span>OVERDUE</span>'
-        '<span class="cal-leg-item"><span class="cal-leg-dot" style="background:#e67e22"></span>DUE \u226430 DAYS</span>'
-        '<span class="cal-leg-item"><span class="cal-leg-dot" style="background:#f39c12"></span>DUE \u226490 DAYS</span>'
-        '<span class="cal-leg-item"><span class="cal-leg-dot" style="background:#2980b9"></span>SCHEDULED</span>'
-        '<span style="margin-left:auto;font-size:9px;color:var(--muted);">Click any day to add a note</span>'
-        '</div>'
-    )
+<script>
+(function() {{
+  var STORAGE_KEY = 'ihc_cal_notes_v3';
 
-    return (
-        f'{css}'
-        f'<div class="section-label">PROJECTED MAINTENANCE CALENDAR</div>'
-        f'<div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:12px;">'
-        f'Bars span from warning zone to projected due date. Click a day to add notes.</div>'
-        f'{legend}'
-        f'<div class="cal-months-wrap">{months_html}</div>'
-        f'{modal_js}'
-    )
+  // ── localStorage helpers ──────────────────────────────────────────────────
+  function loadNotes() {{
+    try {{ return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{{}}'); }}
+    catch(e) {{ return {{}}; }}
+  }}
+  function saveNotes(n) {{ localStorage.setItem(STORAGE_KEY, JSON.stringify(n)); }}
+
+  function notesToFcEvents(notes) {{
+    return Object.entries(notes).map(function([dateKey, note]) {{
+      return {{
+        id:              'note_' + dateKey,
+        title:           note.label || '📌 Note',
+        start:           dateKey,
+        allDay:          true,
+        classNames:      ['user-note-ev'],
+        extendedProps: {{
+          type:  'note',
+          label: note.label || '',
+          text:  note.text  || '',
+          dateKey: dateKey,
+        }},
+      }};
+    }});
+  }}
+
+  // ── Maintenance events (baked in by Python) ───────────────────────────────
+  var MAINT_EVENTS = {events_json};
+
+  // ── Popup helpers ─────────────────────────────────────────────────────────
+  var popup       = document.getElementById('ev-popup');
+  var popupTitle  = document.getElementById('ev-popup-title');
+  var popupDate   = document.getElementById('ev-popup-date');
+  var popupStatus = document.getElementById('ev-popup-status');
+  var popupRem    = document.getElementById('ev-popup-rem');
+  var popupNote   = document.getElementById('ev-popup-note');
+  var popupNoteRow   = document.getElementById('ev-popup-note-row');
+  var popupStatusRow = document.getElementById('ev-popup-status-row');
+  var popupRemRow    = document.getElementById('ev-popup-rem-row');
+
+  function hidePopup() {{ popup.style.display = 'none'; }}
+  document.getElementById('ev-popup-close').addEventListener('click', hidePopup);
+  document.addEventListener('click', function(e) {{
+    if (!popup.contains(e.target)) hidePopup();
+  }});
+
+  function showPopup(info) {{
+    var ep   = info.event.extendedProps;
+    var rect = info.el.getBoundingClientRect();
+    var type = ep.type;
+    popupTitle.textContent = info.event.title;
+    popupTitle.style.color = info.event.backgroundColor || '#e8edf2';
+
+    if (type === 'maintenance') {{
+      popupStatusRow.style.display = '';
+      popupRemRow.style.display    = '';
+      popupStatus.textContent = ep.urgencyLabel || '';
+      popupStatus.style.color = info.event.backgroundColor;
+      popupRem.textContent    = ep.remLabel || '';
+      var notes = loadNotes();
+      var note  = notes[info.event.startStr] || {{}};
+      if (note.text || note.label) {{
+        popupNoteRow.style.display = '';
+        popupNote.textContent = (note.label ? note.label + ': ' : '') + (note.text || '');
+      }} else {{
+        popupNoteRow.style.display = 'none';
+      }}
+    }} else {{
+      popupStatusRow.style.display = 'none';
+      popupRemRow.style.display    = 'none';
+      popupNoteRow.style.display   = '';
+      popupNote.textContent = ep.text || '';
+    }}
+    popupDate.textContent = info.event.startStr;
+
+    // Position popup near click but keep inside viewport
+    var px = rect.left + window.scrollX;
+    var py = rect.bottom + window.scrollY + 6;
+    if (px + 360 > window.innerWidth) px = window.innerWidth - 370;
+    popup.style.left    = px + 'px';
+    popup.style.top     = py + 'px';
+    popup.style.display = 'block';
+
+    document.getElementById('ev-popup-edit').onclick = function() {{
+      hidePopup();
+      openNoteModal(info.event.startStr);
+    }};
+  }}
+
+  // ── Note modal ────────────────────────────────────────────────────────────
+  var modal      = document.getElementById('cal-note-modal');
+  var noteDateEl = document.getElementById('cal-note-date');
+  var noteLabelEl= document.getElementById('cal-note-label');
+  var noteTextEl = document.getElementById('cal-note-text');
+
+  function openNoteModal(dateKey) {{
+    var notes    = loadNotes();
+    var existing = notes[dateKey] || {{}};
+    noteDateEl.textContent  = dateKey;
+    noteLabelEl.value = existing.label || '';
+    noteTextEl.value  = existing.text  || '';
+    modal.style.display = 'flex';
+    setTimeout(function() {{ noteLabelEl.focus(); }}, 50);
+  }}
+
+  function closeModal() {{ modal.style.display = 'none'; }}
+
+  function saveModal() {{
+    var dateKey = noteDateEl.textContent;
+    var label   = noteLabelEl.value.trim();
+    var text    = noteTextEl.value.trim();
+    var notes   = loadNotes();
+    if (label || text) {{
+      notes[dateKey] = {{ label: label, text: text }};
+    }} else {{
+      delete notes[dateKey];
+    }}
+    saveNotes(notes);
+    refreshNoteEvents();
+    closeModal();
+  }}
+
+  function clearModal() {{
+    var dateKey = noteDateEl.textContent;
+    var notes   = loadNotes();
+    delete notes[dateKey];
+    saveNotes(notes);
+    refreshNoteEvents();
+    closeModal();
+  }}
+
+  document.getElementById('cal-note-save').addEventListener('click', saveModal);
+  document.getElementById('cal-note-clear').addEventListener('click', clearModal);
+  document.getElementById('cal-note-cancel').addEventListener('click', closeModal);
+  modal.addEventListener('click', function(e) {{ if (e.target === modal) closeModal(); }});
+  modal.addEventListener('keydown', function(e) {{
+    if (e.key === 'Escape')                          {{ e.preventDefault(); closeModal(); }}
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {{ e.preventDefault(); saveModal(); }}
+  }});
+  noteLabelEl.addEventListener('keydown', function(e) {{
+    if (e.key === 'Enter') {{ e.preventDefault(); noteTextEl.focus(); }}
+  }});
+
+  // ── FullCalendar init ─────────────────────────────────────────────────────
+  var cal;  // reference so we can refresh note events
+
+  function refreshNoteEvents() {{
+    if (!cal) return;
+    // Remove existing note events and re-add from storage
+    cal.getEvents().forEach(function(ev) {{
+      if (ev.id && ev.id.startsWith('note_')) ev.remove();
+    }});
+    notesToFcEvents(loadNotes()).forEach(function(evDef) {{
+      cal.addEvent(evDef);
+    }});
+  }}
+
+  function initCalendar() {{
+    if (typeof FullCalendar === 'undefined') {{
+      // FC not yet loaded — retry after a short delay
+      setTimeout(initCalendar, 200);
+      return;
+    }}
+
+    cal = new FullCalendar.Calendar(document.getElementById('fc-calendar'), {{
+      initialView:  'dayGridMonth',
+      initialDate:  '{today_dt.strftime("%Y-%m-%d")}',
+      height:       'auto',
+      firstDay:     0,           // Sunday first (change to 1 for Monday)
+      headerToolbar: {{
+        left:   'prev,next today',
+        center: 'title',
+        right:  'dayGridMonth,listMonth',
+      }},
+      buttonText: {{
+        today:     'TODAY',
+        month:     'MONTH',
+        listMonth: 'LIST',
+      }},
+      views: {{
+        listMonth: {{ listDayAltFormat: 'ddd' }},
+      }},
+
+      events: (function() {{
+        var noteEvs = notesToFcEvents(loadNotes());
+        return MAINT_EVENTS.concat(noteEvs);
+      }})(),
+
+      // Click blank day → open note modal
+      dateClick: function(info) {{
+        hidePopup();
+        openNoteModal(info.dateStr);
+      }},
+
+      // Click an event → show detail popup
+      eventClick: function(info) {{
+        info.jsEvent.stopPropagation();
+        showPopup(info);
+      }},
+
+      // Style today's date number
+      dayCellClassNames: function(arg) {{
+        if (arg.isToday) return ['fc-day-today'];
+        return [];
+      }},
+    }});
+
+    cal.render();
+  }}
+
+  // Kick off after DOM is ready
+  if (document.readyState === 'loading') {{
+    document.addEventListener('DOMContentLoaded', initCalendar);
+  }} else {{
+    initCalendar();
+  }}
+}})();
+</script>
+"""
+
+
 
 
 # ── AIRCRAFT LOCATION TAB ─────────────────────────────────────────────────────
@@ -1278,6 +1435,7 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
   .hours-stat-value{{font-family:var(--sans);font-size:24px;font-weight:900;color:var(--heading);}}
   footer{{margin-top:48px;padding:16px 32px;border-top:1px solid var(--border);font-family:var(--mono);font-size:10px;color:var(--muted);display:flex;justify-content:space-between;letter-spacing:1px;}}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
 </head>
 <body>
 <header>
