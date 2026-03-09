@@ -508,11 +508,14 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
     today_dt = datetime.today()
     today    = today_dt.date()
 
-    URGENCY_COLOR = {
-        'overdue': '#c0392b',
-        'urgent':  '#e67e22',
-        'soon':    '#f39c12',
-        'ok':      '#2980b9',
+    INTERVAL_COLOR = {
+        50:   '#00bcd4',
+        100:  '#8bc34a',
+        200:  '#ffb300',
+        400:  '#ff7043',
+        800:  '#ab47bc',
+        2400: '#5c6bc0',
+        3200: '#ef5350',
     }
     URGENCY_LABEL = {
         'overdue': 'OVERDUE',
@@ -555,8 +558,8 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
                 'title':           f'{tail} — {interval}h',
                 'start':           due.isoformat(),
                 'allDay':          True,
-                'backgroundColor': URGENCY_COLOR[urgency],
-                'borderColor':     URGENCY_COLOR[urgency],
+                'backgroundColor': INTERVAL_COLOR[interval],
+                'borderColor':     INTERVAL_COLOR[interval],
                 'textColor':       '#ffffff',
                 'extendedProps': {
                     'type':         'maintenance',
@@ -621,6 +624,8 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
   border-radius: 2px;
   cursor: pointer;
 }}
+#fc-wrap .fc-daygrid-day-events {{ margin: 2px 2px 0; }}
+#fc-wrap .fc-daygrid-event {{ margin-top: 2px; }}
 #fc-wrap .fc-list-event-title {{ font-family: 'Share Tech Mono', monospace; font-size: 12px; }}
 #fc-wrap .fc-list-day-cushion {{ background: #111418; }}
 #fc-wrap .fc-button {{
@@ -715,10 +720,13 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
 
 <div class="section-label">PROJECTED MAINTENANCE CALENDAR</div>
 <div class="fc-legend">
-  <span class="fc-leg-item"><span class="fc-leg-dot" style="background:#c0392b"></span>OVERDUE</span>
-  <span class="fc-leg-item"><span class="fc-leg-dot" style="background:#e67e22"></span>DUE ≤30 DAYS</span>
-  <span class="fc-leg-item"><span class="fc-leg-dot" style="background:#f39c12"></span>DUE ≤90 DAYS</span>
-  <span class="fc-leg-item"><span class="fc-leg-dot" style="background:#2980b9"></span>SCHEDULED</span>
+  <span class="fc-leg-item"><span class="fc-leg-dot" style="background:#00bcd4"></span>50 HR</span>
+  <span class="fc-leg-item"><span class="fc-leg-dot" style="background:#8bc34a"></span>100 HR</span>
+  <span class="fc-leg-item"><span class="fc-leg-dot" style="background:#ffb300"></span>200 HR</span>
+  <span class="fc-leg-item"><span class="fc-leg-dot" style="background:#ff7043"></span>400 HR</span>
+  <span class="fc-leg-item"><span class="fc-leg-dot" style="background:#ab47bc"></span>800 HR</span>
+  <span class="fc-leg-item"><span class="fc-leg-dot" style="background:#5c6bc0"></span>2400 HR</span>
+  <span class="fc-leg-item"><span class="fc-leg-dot" style="background:#ef5350"></span>3200 HR</span>
   <span class="fc-leg-item"><span class="fc-leg-dot" style="background:rgba(255,171,0,0.5);border:1px solid #ffab00"></span>MY NOTES</span>
   <span style="margin-left:auto;font-family:'Share Tech Mono',monospace;font-size:9px;color:#4a5568;">
     Click any blank day to add a note &nbsp;·&nbsp; Click an event to view details
@@ -951,6 +959,8 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
       views: {{
         listMonth: {{ listDayAltFormat: 'ddd' }},
       }},
+      dayMaxEvents: true,
+      eventDisplay: 'block',
 
       events: (function() {{
         var noteEvs = notesToFcEvents(loadNotes());
