@@ -13,6 +13,7 @@ import re
 import json
 import base64
 import io
+from collections import Counter, defaultdict
 from datetime import datetime, timedelta, date
 from pathlib import Path
 
@@ -32,6 +33,7 @@ OUTPUT_FILENAME = "index.html"
 HISTORY_FILENAME   = "flight_hours_history.json"
 POSITIONS_FILENAME = "base_assignments.json"
 PHOTO_FILENAME     = "IMG_9250.jpeg"
+COMPONENT_CHANGE_FILENAME = "ComponentChangeReport_109SP.csv"
 
 TARGET_INTERVALS = [50, 100, 200, 400, 800, 2400, 3200]
 
@@ -491,6 +493,54 @@ def parse_due_list(input_path):
         report_date_str = datetime.today().strftime("%d %b %Y").upper()
 
     return report_date_str, aircraft_list, components
+
+
+def parse_component_change_report(filepath):
+    if not filepath.exists():
+        return []
+
+    with open(filepath, "r", encoding="utf-8-sig", newline="") as f:
+        reader = csv.DictReader(f)
+        rows = list(reader)
+
+    by_month = defaultdict(list)
+    for row in rows:
+        dt = parse_report_date(row.get('COMPLIANCE DATE'))
+        if not dt:
+            continue
+        month_key = dt.strftime('%Y-%m')
+        by_month[month_key].append({
+            'compliance_date': dt,
+            'registration': (row.get('REGISTRATION') or '').strip(),
+            'task_description': (row.get('TASK DESCRIPTION') or '').strip(),
+            'part_number_removed': (row.get('PART NUMBER REMOVED') or '').strip(),
+            'serial_number_removed': (row.get('SERIAL NUMBER REMOVED') or '').strip(),
+            'part_number_installed': (row.get('PART NUMBER INSTALLED') or '').strip(),
+            'serial_number_installed': (row.get('SERIAL NUMBER INSTALLED') or '').strip(),
+        })
+
+    monthly_groups = []
+    for month_key in sorted(by_month.keys(), reverse=True):
+        month_rows = sorted(by_month[month_key], key=lambda x: x['compliance_date'], reverse=True)
+        by_aircraft = defaultdict(list)
+        part_totals = Counter()
+
+        for item in month_rows:
+            by_aircraft[item['registration'] or 'UNKNOWN'].append(item)
+            part_number = item['part_number_removed'] or item['part_number_installed']
+            if part_number:
+                part_totals[part_number] += 1
+
+        month_label = datetime.strptime(month_key, '%Y-%m').strftime('%B %Y').upper()
+        monthly_groups.append({
+            'month_key': month_key,
+            'month_label': month_label,
+            'total_changes': len(month_rows),
+            'aircraft_changes': dict(sorted(by_aircraft.items())),
+            'part_totals': part_totals.most_common(),
+        })
+
+    return monthly_groups
 
 
 # -- CALENDAR TAB --------------------------------------------------------------
@@ -1316,7 +1366,7 @@ def _build_location_tab(aircraft_list, positions):
 
 # -- BUILD HTML ----------------------------------------------------------------
 
-def build_html(report_date, aircraft_list, components, flight_hours_stats, positions,
+def build_html(report_date, aircraft_list, components, component_changes, flight_hours_stats, positions,
                source_filename, photo_b64=''):
 
     def fmt_hrs(val_dict):
@@ -1474,6 +1524,64 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
 
     calendar_tab_html  = _build_calendar_tab(aircraft_list, flight_hours_stats)
     location_tab_html  = _build_location_tab(aircraft_list, positions)
+
+    # Component change report tab (monthly groups)
+    if component_changes:
+        month_sections = ''
+        for month in component_changes:
+            aircraft_cards = ''
+            for reg, rows in month['aircraft_changes'].items():
+                row_html = ''
+                for item in rows:
+                    comp_dt = item['compliance_date'].strftime('%Y-%m-%d')
+                    row_html += f'''<tr>
+  <td>{comp_dt}</td>
+  <td>{item['task_description'] or '-'}</td>
+  <td>{item['part_number_removed'] or '-'}</td>
+  <td>{item['serial_number_removed'] or '-'}</td>
+  <td>{item['part_number_installed'] or '-'}</td>
+  <td>{item['serial_number_installed'] or '-'}</td>
+</tr>'''
+                aircraft_cards += f'''<div class="change-aircraft-card">
+  <div class="change-aircraft-head">{reg} <span>{len(rows)} changes</span></div>
+  <div class="change-table-wrap">
+    <table class="change-table">
+      <thead>
+        <tr>
+          <th>Date</th><th>Task Description</th><th>Part # Removed</th><th>Serial # Removed</th><th>Part # Installed</th><th>Serial # Installed</th>
+        </tr>
+      </thead>
+      <tbody>
+        {row_html}
+      </tbody>
+    </table>
+  </div>
+</div>'''
+
+            totals_rows = ''
+            for part_num, count in month['part_totals']:
+                totals_rows += f'<tr><td>{part_num}</td><td>{count}</td></tr>'
+            if not totals_rows:
+                totals_rows = '<tr><td colspan="2">No part numbers recorded for this month.</td></tr>'
+
+            month_sections += f'''<div class="change-month-section">
+  <div class="change-month-header">
+    <div class="change-month-title">{month['month_label']}</div>
+    <div class="change-month-total">{month['total_changes']} total changes</div>
+  </div>
+  <div class="change-aircraft-grid">{aircraft_cards}</div>
+  <div class="change-total-card">
+    <div class="change-total-title">Monthly Part Number Totals</div>
+    <table class="change-total-table">
+      <thead><tr><th>Part Number</th><th>Qty Changed</th></tr></thead>
+      <tbody>{totals_rows}</tbody>
+    </table>
+  </div>
+</div>'''
+        component_change_tab_html = f'<div class="section-label">Component Changes by Month</div>{month_sections}'
+    else:
+        component_change_tab_html = '<div style="font-family:var(--mono);font-size:12px;color:var(--muted);padding:16px;">No component change report data found. Add data/ComponentChangeReport_109SP.csv to populate this tab.</div>'
+
     gen_time = datetime.today().strftime('%d %b %Y %H:%M').upper()
     version  = datetime.today().strftime('%Y%m%d%H%M%S')
 
@@ -1579,6 +1687,19 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
   .hours-stat-row:last-child{{border-bottom:none;margin-bottom:0;}}
   .hours-stat-label{{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}}
   .hours-stat-value{{font-family:var(--sans);font-size:24px;font-weight:900;color:var(--heading);}}
+  .change-month-section{{margin-bottom:28px;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:14px;}}
+  .change-month-header{{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;}}
+  .change-month-title{{font-family:var(--sans);font-size:20px;font-weight:900;letter-spacing:1px;color:var(--blue);}}
+  .change-month-total{{font-family:var(--mono);font-size:11px;color:var(--muted);}}
+  .change-aircraft-grid{{display:grid;grid-template-columns:1fr;gap:12px;}}
+  .change-aircraft-card{{background:var(--surface2);border:1px solid var(--border);border-radius:4px;overflow:hidden;}}
+  .change-aircraft-head{{padding:10px 12px;font-family:var(--sans);font-size:16px;font-weight:800;display:flex;justify-content:space-between;}}
+  .change-aircraft-head span{{font-family:var(--mono);font-size:11px;color:var(--muted);font-weight:400;}}
+  .change-table-wrap{{overflow-x:auto;}}
+  .change-table{{min-width:980px;}}
+  .change-total-card{{margin-top:14px;border:1px solid var(--border);border-radius:4px;padding:12px;background:rgba(17,20,24,0.6);}}
+  .change-total-title{{font-family:var(--sans);font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;color:var(--heading);}}
+  .change-total-table{{min-width:420px;}}
   footer{{margin-top:48px;padding:16px 32px;border-top:1px solid var(--border);font-family:var(--mono);font-size:10px;color:var(--muted);display:flex;justify-content:space-between;letter-spacing:1px;}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
@@ -1608,6 +1729,7 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
   <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('maintenance',this)">Maintenance Due List</button>
     <button class="tab-btn" onclick="switchTab('flight-hours',this)">Flight Hours Tracking</button>
+    <button class="tab-btn" onclick="switchTab('component-changes',this)">Component Changes</button>
     <button class="tab-btn" onclick="switchTab('calendar',this)">Calendar</button>
     <button class="tab-btn" onclick="switchTab('location',this)">Aircraft Location</button>
   </div>
@@ -1661,6 +1783,11 @@ def build_html(report_date, aircraft_list, components, flight_hours_stats, posit
       <canvas id="utilChart" style="width:100%;height:320px;"></canvas>
     </div>
     <div class="hours-grid">{hours_cards_html}</div>
+  </div>
+
+  <!-- COMPONENT CHANGES TAB -->
+  <div id="tab-component-changes" class="tab-content">
+    {component_change_tab_html}
   </div>
 
   <!-- CALENDAR TAB -->
@@ -1800,6 +1927,7 @@ def main():
     output_path    = data_dir / OUTPUT_FILENAME
     history_path   = data_dir / HISTORY_FILENAME
     positions_path = data_dir / POSITIONS_FILENAME
+    component_change_path = data_dir / COMPONENT_CHANGE_FILENAME
     version_path   = data_dir / "dashboard_version.json"
     log_path       = Path(__file__).with_name("dashboard_log.txt")
 
@@ -1855,8 +1983,12 @@ def main():
         photo_b64 = load_photo_b64(data_dir)
         log(f"Photo: {'loaded' if photo_b64 else 'not found'}")
 
+        log("Loading component change report...")
+        component_changes = parse_component_change_report(component_change_path)
+        log(f"Component change months loaded: {len(component_changes)}")
+
         html = build_html(
-            report_date, aircraft_list, components,
+            report_date, aircraft_list, components, component_changes,
             flight_hours_stats, positions,
             input_path.name, photo_b64,
         )
@@ -1881,6 +2013,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
-
