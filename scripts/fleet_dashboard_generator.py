@@ -359,6 +359,7 @@ def parse_due_list_parts(filepath):
     with open(filepath, "r", encoding="utf-8-sig", newline="") as f:
         raw = f.read()
     # Rejoin lines where Veryon splits a row across lines (continuation starts with ,)
+    raw = raw.replace('\r\n', '\n').replace('\r', '\n')
     raw = re.sub(r'\n(?=,)', '', raw)
     reader = csv.reader(raw.splitlines())
     rows = list(reader)
@@ -1732,3 +1733,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
