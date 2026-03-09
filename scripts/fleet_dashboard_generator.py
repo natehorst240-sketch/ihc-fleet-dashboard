@@ -675,26 +675,53 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
   font-size: 11px; color: #4a5568;
   text-decoration: none; padding: 4px 6px;
 }}
+#fc-wrap .fc-daygrid-day-top {{
+  position: relative;
+  min-height: 20px;
+  padding-right: 46px;
+}}
 #fc-wrap .fc-day-today .fc-daygrid-day-number {{
   color: #29b6f6; font-weight: 700;
 }}
 #fc-wrap .fc-event {{
   font-family: 'Share Tech Mono', monospace;
   font-size: 10px; font-weight: 700;
-  border-radius: 0;
+  border-radius: 999px;
   cursor: pointer;
-  padding: 2px 6px;
-  margin-top: 1px;
+  padding: 0;
+  margin-top: 0;
+  width: 9px;
+  height: 9px;
+  min-height: 9px;
   border: none !important;
-  border-left: 3px solid rgba(0,0,0,0.2) !important;
 }}
-#fc-wrap .fc-event.fc-event-start {{ border-radius: 3px 0 0 3px; }}
-#fc-wrap .fc-event.fc-event-end   {{ border-radius: 0 3px 3px 0; }}
-#fc-wrap .fc-event.fc-event-start.fc-event-end {{ border-radius: 3px; }}
+#fc-wrap .fc-event.fc-event-start {{ border-radius: 999px; }}
+#fc-wrap .fc-event.fc-event-end   {{ border-radius: 999px; }}
+#fc-wrap .fc-event.fc-event-start.fc-event-end {{ border-radius: 999px; }}
 #fc-wrap .fc-event:hover {{ filter: brightness(1.15); }}
+#fc-wrap .fc-daygrid-event-harness {{
+  margin-top: 0 !important;
+}}
+#fc-wrap .fc-daygrid-day-events {{
+  position: absolute;
+  top: 5px;
+  right: 4px;
+  left: auto;
+  bottom: auto;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  max-width: 36px;
+  justify-content: flex-end;
+}}
+#fc-wrap .fc-daygrid-day-events .fc-event-title,
+#fc-wrap .fc-daygrid-day-events .fc-event-time {{
+  display: none;
+}}
 #fc-wrap .fc-more-link {{
   font-family: 'Share Tech Mono', monospace;
-  font-size: 10px; color: #29b6f6; padding: 1px 4px;
+  font-size: 9px; color: #29b6f6; padding: 0; line-height: 1;
 }}
 #fc-wrap .fc-popover {{
   background: #0d1117 !important;
@@ -1845,7 +1872,6 @@ def main():
 
 if __name__ == '__main__':
     main()
-
 
 
 
