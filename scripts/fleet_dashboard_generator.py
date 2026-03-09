@@ -1057,7 +1057,7 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
 
     cal = new FullCalendar.Calendar(document.getElementById('fc-calendar'), {{
       initialView:    'dayGridMonth',
-      initialDate:    '{today_str}',
+      initialDate:    new Date(),
       height:         '100%',
       firstDay:       0,
       fixedWeekCount: false,
