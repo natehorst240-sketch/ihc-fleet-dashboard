@@ -26,5 +26,3 @@ __pycache__/
 # public/data/*.json
 # public/data/*.csv
 
-data/index.html
-data/dashboard_version.json
