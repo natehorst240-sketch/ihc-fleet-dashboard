@@ -25,3 +25,6 @@ __pycache__/
 # (remove the next two lines if you need public/data tracked)
 # public/data/*.json
 # public/data/*.csv
+
+data/index.html
+data/dashboard_version.json
