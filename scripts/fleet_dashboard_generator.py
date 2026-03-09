@@ -736,38 +736,22 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
 #fc-wrap .fc-event {{
   font-family: 'Share Tech Mono', monospace;
   font-size: 10px; font-weight: 700;
-  border-radius: 999px;
+  border-radius: 3px;
   cursor: pointer;
-  padding: 0;
-  margin-top: 0;
-  width: 9px;
-  height: 9px;
-  min-height: 9px;
+  padding: 1px 4px;
+  margin-top: 2px;
+  min-height: 16px;
   border: none !important;
 }}
-#fc-wrap .fc-event.fc-event-start {{ border-radius: 999px; }}
-#fc-wrap .fc-event.fc-event-end   {{ border-radius: 999px; }}
-#fc-wrap .fc-event.fc-event-start.fc-event-end {{ border-radius: 999px; }}
+#fc-wrap .fc-event.fc-event-start {{ border-radius: 3px 0 0 3px; }}
+#fc-wrap .fc-event.fc-event-end   {{ border-radius: 0 3px 3px 0; }}
+#fc-wrap .fc-event.fc-event-start.fc-event-end {{ border-radius: 3px; }}
 #fc-wrap .fc-event:hover {{ filter: brightness(1.15); }}
 #fc-wrap .fc-daygrid-event-harness {{
   margin-top: 0 !important;
 }}
 #fc-wrap .fc-daygrid-day-events {{
-  position: absolute;
-  top: 5px;
-  right: 4px;
-  left: auto;
-  bottom: auto;
-  margin: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2px;
-  max-width: 36px;
-  justify-content: flex-end;
-}}
-#fc-wrap .fc-daygrid-day-events .fc-event-title,
-#fc-wrap .fc-daygrid-day-events .fc-event-time {{
-  display: none;
+  margin: 0 2px;
 }}
 #fc-wrap .fc-more-link {{
   font-family: 'Share Tech Mono', monospace;
