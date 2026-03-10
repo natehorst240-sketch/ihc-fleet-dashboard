@@ -12,7 +12,7 @@ new CSV and the dashboard rebuilds itself — no server required.
 ┌─────────────────────────────────────────────────────────────────┐
 │                        DATA SOURCES                             │
 │                                                                 │
-│  CAMP Export                   Component Change Report          │
+│  Veryon Export                   Component Change Report        │
 │  (Due-List CSV)                (ComponentChangeReport CSV)      │
 └────────────┬───────────────────────────────┬────────────────────┘
              │  git push to main             │
@@ -43,7 +43,7 @@ new CSV and the dashboard rebuilds itself — no server required.
                              │
                              ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│         https://YOUR_USERNAME.github.io/ihc-fleet-dashboard/    │
+│   https://natehorst240-sketch.github.io/ihc-fleet-dashboard/    │
 │                                                                 │
 │  Tab 1 │ Maintenance Due List   — phase inspections, urgency    │
 │  Tab 2 │ Components             — per-aircraft component status │
