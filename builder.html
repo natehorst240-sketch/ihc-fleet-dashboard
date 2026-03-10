@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aircraft Config Builder — IHC Fleet Dashboard</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #0f1117;
+    color: #e2e8f0;
+    min-height: 100vh;
+    padding: 2rem 1rem;
+  }
+
+  .container { max-width: 860px; margin: 0 auto; }
+
+  h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: .25rem;
+  }
+  .subtitle { color: #94a3b8; font-size: .9rem; margin-bottom: 2rem; }
+
+  .card {
+    background: #1e2230;
+    border: 1px solid #2d3348;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .card-title {
+    font-size: .75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: #64748b;
+    margin-bottom: 1.1rem;
+  }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: .75rem; }
+  .full { grid-column: 1 / -1; }
+
+  label { display: block; font-size: .8rem; color: #94a3b8; margin-bottom: .35rem; }
+
+  input[type="text"],
+  input[type="number"],
+  input[type="color"] {
+    width: 100%;
+    background: #0f1117;
+    border: 1px solid #2d3348;
+    border-radius: 6px;
+    color: #e2e8f0;
+    padding: .5rem .7rem;
+    font-size: .875rem;
+    outline: none;
+    transition: border-color .15s;
+  }
+  input:focus { border-color: #3b82f6; }
+  input[type="color"] { height: 38px; padding: .2rem .4rem; cursor: pointer; }
+
+  .keywords-input {
+    width: 100%;
+    background: #0f1117;
+    border: 1px solid #2d3348;
+    border-radius: 6px;
+    color: #e2e8f0;
+    padding: .5rem .7rem;
+    font-size: .875rem;
+    outline: none;
+    resize: vertical;
+    min-height: 72px;
+    font-family: inherit;
+  }
+  .keywords-input:focus { border-color: #3b82f6; }
+
+  .hint { font-size: .72rem; color: #475569; margin-top: .25rem; }
+
+  /* Intervals */
+  .interval-list { display: flex; flex-direction: column; gap: .75rem; }
+
+  .interval-row {
+    background: #0f1117;
+    border: 1px solid #2d3348;
+    border-radius: 8px;
+    padding: .9rem 1rem;
+    display: grid;
+    grid-template-columns: auto 1fr 1fr 1fr 1fr auto auto;
+    gap: .6rem;
+    align-items: end;
+  }
+
+  .interval-color-wrap { display: flex; flex-direction: column; }
+  .interval-color-wrap input[type="color"] { width: 46px; height: 38px; }
+
+  .interval-drag {
+    cursor: grab;
+    color: #475569;
+    font-size: 1.1rem;
+    align-self: center;
+    user-select: none;
+  }
+
+  .btn-remove {
+    background: none;
+    border: 1px solid #3f3f46;
+    border-radius: 6px;
+    color: #ef4444;
+    cursor: pointer;
+    padding: .4rem .55rem;
+    font-size: .85rem;
+    align-self: end;
+    transition: background .15s;
+  }
+  .btn-remove:hover { background: #3f1212; }
+
+  .btn-add {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    background: none;
+    border: 1px dashed #2d3348;
+    border-radius: 8px;
+    color: #64748b;
+    cursor: pointer;
+    padding: .55rem 1rem;
+    font-size: .85rem;
+    margin-top: .5rem;
+    width: 100%;
+    justify-content: center;
+    transition: border-color .15s, color .15s;
+  }
+  .btn-add:hover { border-color: #3b82f6; color: #3b82f6; }
+
+  .preset-bar {
+    display: flex;
+    gap: .5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+  }
+  .preset-btn {
+    background: #1e2230;
+    border: 1px solid #2d3348;
+    border-radius: 6px;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: .4rem .9rem;
+    font-size: .8rem;
+    transition: border-color .15s, color .15s;
+  }
+  .preset-btn:hover { border-color: #3b82f6; color: #e2e8f0; }
+
+  .actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .btn-download {
+    background: #2563eb;
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    cursor: pointer;
+    padding: .65rem 1.5rem;
+    font-size: .9rem;
+    font-weight: 600;
+    transition: background .15s;
+  }
+  .btn-download:hover { background: #1d4ed8; }
+
+  .btn-preview {
+    background: #1e2230;
+    border: 1px solid #2d3348;
+    border-radius: 8px;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: .65rem 1.2rem;
+    font-size: .9rem;
+    transition: border-color .15s, color .15s;
+  }
+  .btn-preview:hover { border-color: #3b82f6; color: #e2e8f0; }
+
+  .json-preview {
+    display: none;
+    background: #0f1117;
+    border: 1px solid #2d3348;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 1rem;
+    font-family: "SFMono-Regular", Consolas, monospace;
+    font-size: .78rem;
+    color: #a3e635;
+    white-space: pre;
+    overflow-x: auto;
+    max-height: 400px;
+    overflow-y: auto;
+  }
+
+  .section-label {
+    font-size: .72rem;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: #475569;
+    margin-bottom: .5rem;
+    margin-top: .25rem;
+  }
+
+  @media (max-width: 640px) {
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .interval-row {
+      grid-template-columns: auto 1fr 1fr;
+      grid-template-rows: auto auto;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <h1>Aircraft Config Builder</h1>
+  <p class="subtitle">IHC Fleet Dashboard — generate a <code>configs/*.json</code> for a new aircraft type</p>
+
+  <div class="preset-bar">
+    <span style="font-size:.8rem;color:#475569;align-self:center;">Load preset:</span>
+    <button class="preset-btn" onclick="loadPreset('aw109sp')">AW109SP</button>
+    <button class="preset-btn" onclick="loadPreset('as350')">AS350</button>
+    <button class="preset-btn" onclick="loadPreset('blank')">Blank</button>
+  </div>
+
+  <!-- Identity -->
+  <div class="card">
+    <div class="card-title">Aircraft Identity</div>
+    <div class="grid-2">
+      <div>
+        <label>Aircraft Type (short ID)</label>
+        <input type="text" id="aircraft_type" placeholder="e.g. AS350">
+        <div class="hint">Used as the config key — no spaces</div>
+      </div>
+      <div>
+        <label>Display Name</label>
+        <input type="text" id="display_name" placeholder="e.g. Airbus AS350 B3e">
+      </div>
+      <div>
+        <label>Organization</label>
+        <input type="text" id="organization" placeholder="e.g. IHC Health Services">
+      </div>
+      <div>
+        <label>Output HTML Filename</label>
+        <input type="text" id="output_filename" placeholder="e.g. as350.html">
+        <div class="hint">GitHub Pages URL will end with this filename</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Files -->
+  <div class="card">
+    <div class="card-title">File Names</div>
+    <div class="grid-2">
+      <div>
+        <label>Due-List CSV Filename</label>
+        <input type="text" id="due_list_filename" placeholder="e.g. Due-List_BIG_WEEKLY_as350.csv">
+      </div>
+      <div>
+        <label>Component Change CSV Filename</label>
+        <input type="text" id="component_change_filename" placeholder="e.g. ComponentChangeReport_AS350.csv">
+      </div>
+      <div>
+        <label>Fleet Photo Filename</label>
+        <input type="text" id="photo_filename" placeholder="e.g. as350_fleet.jpeg">
+      </div>
+      <div>
+        <label>Due-List Remote URL <span style="color:#475569">(optional)</span></label>
+        <input type="text" id="due_list_url" placeholder="https://...">
+      </div>
+    </div>
+  </div>
+
+  <!-- Windows -->
+  <div class="card">
+    <div class="card-title">Component Tracking Window</div>
+    <div class="grid-2">
+      <div>
+        <label>Component Window (hours)</label>
+        <input type="number" id="component_window_hrs" placeholder="200" min="1">
+      </div>
+      <div>
+        <label>Component Window (days)</label>
+        <input type="number" id="component_window_days" placeholder="60" min="1">
+      </div>
+    </div>
+  </div>
+
+  <!-- Column indices -->
+  <div class="card">
+    <div class="card-title">CSV Column Indices <span style="color:#475569;font-weight:400;text-transform:none;font-size:.75rem">(0-based, from your CAMP/Veryon export)</span></div>
+    <div class="grid-3">
+      <div><label>Registration (reg)</label><input type="number" id="col_reg" min="0"></div>
+      <div><label>Airframe RPT (airframe_rpt)</label><input type="number" id="col_airframe_rpt" min="0"></div>
+      <div><label>Airframe Hrs (airframe_hrs)</label><input type="number" id="col_airframe_hrs" min="0"></div>
+      <div><label>ATA</label><input type="number" id="col_ata" min="0"></div>
+      <div><label>Equip Hrs (equip_hrs)</label><input type="number" id="col_equip_hrs" min="0"></div>
+      <div><label>Item Type (item_type)</label><input type="number" id="col_item_type" min="0"></div>
+      <div><label>Disposition</label><input type="number" id="col_disposition" min="0"></div>
+      <div><label>Description (desc)</label><input type="number" id="col_desc" min="0"></div>
+      <div><label>Interval Hrs (interval_hrs)</label><input type="number" id="col_interval_hrs" min="0"></div>
+      <div><label>Remaining Days (rem_days)</label><input type="number" id="col_rem_days" min="0"></div>
+      <div><label>Remaining Months (rem_months)</label><input type="number" id="col_rem_months" min="0"></div>
+      <div><label>Remaining Hrs (rem_hrs)</label><input type="number" id="col_rem_hrs" min="0"></div>
+      <div><label>Status</label><input type="number" id="col_status" min="0"></div>
+    </div>
+  </div>
+
+  <!-- Retirement keywords -->
+  <div class="card">
+    <div class="card-title">Retirement / Life-Limit Keywords</div>
+    <label>One keyword per line — matched against item description to flag retirement items</label>
+    <textarea class="keywords-input" id="retirement_keywords" rows="4">RETIRE
+OVERHAUL
+DISCARD
+LIFE LIMIT
+TBO
+REPLACEMENT
+REPLACE
+CHANGE OIL
+NOZZLE</textarea>
+  </div>
+
+  <!-- Inspection intervals -->
+  <div class="card">
+    <div class="card-title">Inspection Intervals</div>
+    <div class="interval-list" id="interval-list"></div>
+    <button class="btn-add" onclick="addInterval()">+ Add Interval</button>
+  </div>
+
+  <!-- Actions -->
+  <div class="actions">
+    <button class="btn-download" onclick="downloadJSON()">Download JSON Config</button>
+    <button class="btn-preview" onclick="togglePreview()">Preview JSON</button>
+  </div>
+  <div class="json-preview" id="json-preview"></div>
+
+</div>
+
+<script>
+// ─── Presets ────────────────────────────────────────────────────────────────
+
+const PRESETS = {
+  aw109sp: {
+    aircraft_type: "AW109SP",
+    display_name: "AgustaWestland AW109SP",
+    organization: "IHC Health Services",
+    due_list_url: "",
+    due_list_filename: "Due-List_BIG_WEEKLY_aw109sp.csv",
+    component_change_filename: "ComponentChangeReport_109SP.csv",
+    photo_filename: "IMG_9250.jpeg",
+    output_filename: "index.html",
+    component_window_hrs: 200,
+    component_window_days: 60,
+    retirement_keywords: ["RETIRE","OVERHAUL","DISCARD","LIFE LIMIT","TBO","REPLACEMENT","REPLACE","CHANGE OIL","NOZZLE"],
+    col_indices: { reg:0, airframe_rpt:2, airframe_hrs:3, ata:5, equip_hrs:7, item_type:11, disposition:13, desc:15, interval_hrs:30, rem_days:50, rem_months:52, rem_hrs:54, status:63 },
+    inspection_intervals: [
+      { label:"50 Hr",   hours:50,   days:null, track_by:"hours", ata_patterns:["05 1000"],           calendar_duration_days:1,  color:"#00897b" },
+      { label:"100 Hr",  hours:100,  days:null, track_by:"hours", ata_patterns:["64 01\\[273\\]"],    calendar_duration_days:1,  color:"#1e88e5" },
+      { label:"200 Hr",  hours:200,  days:null, track_by:"hours", ata_patterns:["05 1005"],           calendar_duration_days:3,  color:"#8e24aa" },
+      { label:"400 Hr",  hours:400,  days:null, track_by:"hours", ata_patterns:["05 1010"],           calendar_duration_days:4,  color:"#e53935" },
+      { label:"800 Hr",  hours:800,  days:null, track_by:"hours", ata_patterns:["05 1015"],           calendar_duration_days:4,  color:"#fb8c00" },
+      { label:"2400 Hr", hours:2400, days:null, track_by:"hours", ata_patterns:["62 11\\[373\\]"],   calendar_duration_days:7,  color:"#43a047" },
+      { label:"3200 Hr", hours:3200, days:null, track_by:"hours", ata_patterns:["05 1020"],           calendar_duration_days:21, color:"#6d4c41" }
+    ]
+  },
+  as350: {
+    aircraft_type: "AS350",
+    display_name: "Airbus AS350 B3e",
+    organization: "IHC Health Services",
+    due_list_url: "",
+    due_list_filename: "Due-List_BIG_WEEKLY_as350.csv",
+    component_change_filename: "ComponentChangeReport_AS350.csv",
+    photo_filename: "as350_fleet.jpeg",
+    output_filename: "as350.html",
+    component_window_hrs: 200,
+    component_window_days: 60,
+    retirement_keywords: ["RETIRE","OVERHAUL","DISCARD","LIFE LIMIT","TBO","REPLACEMENT","REPLACE","CHANGE OIL"],
+    col_indices: { reg:0, airframe_rpt:2, airframe_hrs:3, ata:5, equip_hrs:7, item_type:11, disposition:13, desc:15, interval_hrs:30, rem_days:50, rem_months:52, rem_hrs:54, status:63 },
+    inspection_intervals: [
+      { label:"100 Hr",  hours:100,  days:null, track_by:"hours", ata_patterns:["05-10-00"], calendar_duration_days:1, color:"#1e88e5" },
+      { label:"200 Hr",  hours:200,  days:null, track_by:"hours", ata_patterns:["05-20-00"], calendar_duration_days:2, color:"#8e24aa" },
+      { label:"600 Hr",  hours:600,  days:null, track_by:"hours", ata_patterns:["05-60-00"], calendar_duration_days:4, color:"#e53935" },
+      { label:"1200 Hr", hours:1200, days:null, track_by:"hours", ata_patterns:["05-12-00"], calendar_duration_days:7, color:"#fb8c00" }
+    ]
+  },
+  blank: {
+    aircraft_type: "",
+    display_name: "",
+    organization: "IHC Health Services",
+    due_list_url: "",
+    due_list_filename: "",
+    component_change_filename: "",
+    photo_filename: "",
+    output_filename: "",
+    component_window_hrs: 200,
+    component_window_days: 60,
+    retirement_keywords: ["RETIRE","OVERHAUL","DISCARD","LIFE LIMIT","TBO"],
+    col_indices: { reg:0, airframe_rpt:2, airframe_hrs:3, ata:5, equip_hrs:7, item_type:11, disposition:13, desc:15, interval_hrs:30, rem_days:50, rem_months:52, rem_hrs:54, status:63 },
+    inspection_intervals: []
+  }
+};
+
+// ─── Interval row HTML ───────────────────────────────────────────────────────
+
+function intervalHTML(iv, idx) {
+  const hoursVal  = iv.hours  ?? "";
+  const daysVal   = iv.days   ?? "";
+  const durVal    = iv.calendar_duration_days ?? 1;
+  const ataVal    = (iv.ata_patterns || []).join(", ");
+  const colorVal  = iv.color || "#3b82f6";
+
+  return `
+  <div class="interval-row" data-idx="${idx}" draggable="true"
+       ondragstart="dragStart(event)" ondragover="dragOver(event)" ondrop="dropRow(event)">
+    <div class="interval-drag" title="Drag to reorder">⠿</div>
+    <div class="interval-color-wrap">
+      <label>Color</label>
+      <input type="color" value="${colorVal}" oninput="updateInterval(${idx},'color',this.value)">
+    </div>
+    <div>
+      <label>Label</label>
+      <input type="text" value="${escHtml(iv.label||'')}" placeholder="50 Hr"
+             oninput="updateInterval(${idx},'label',this.value)">
+    </div>
+    <div>
+      <label>Hours</label>
+      <input type="number" value="${hoursVal}" placeholder="50" min="1"
+             oninput="updateInterval(${idx},'hours',this.value)">
+    </div>
+    <div>
+      <label>Cal. Duration (days)</label>
+      <input type="number" value="${durVal}" placeholder="1" min="1"
+             oninput="updateInterval(${idx},'calendar_duration_days',this.value)">
+    </div>
+    <div style="grid-column:span 1">
+      <label>ATA Pattern(s)</label>
+      <input type="text" value="${escHtml(ataVal)}" placeholder="05 1000"
+             oninput="updateInterval(${idx},'ata_patterns',this.value)">
+    </div>
+    <button class="btn-remove" title="Remove" onclick="removeInterval(${idx})">✕</button>
+  </div>`;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ─── State ───────────────────────────────────────────────────────────────────
+
+let intervals = [];
+
+function renderIntervals() {
+  const list = document.getElementById('interval-list');
+  list.innerHTML = intervals.map((iv,i) => intervalHTML(iv,i)).join('');
+}
+
+function addInterval() {
+  intervals.push({
+    label: "", hours: null, days: null,
+    track_by: "hours", ata_patterns: [],
+    calendar_duration_days: 1, color: "#3b82f6"
+  });
+  renderIntervals();
+}
+
+function removeInterval(idx) {
+  intervals.splice(idx, 1);
+  renderIntervals();
+}
+
+function updateInterval(idx, field, val) {
+  if (field === 'hours' || field === 'days' || field === 'calendar_duration_days') {
+    intervals[idx][field] = val === '' ? null : Number(val);
+  } else if (field === 'ata_patterns') {
+    intervals[idx][field] = val.split(',').map(s => s.trim()).filter(Boolean);
+  } else {
+    intervals[idx][field] = val;
+  }
+}
+
+// ─── Drag-to-reorder ─────────────────────────────────────────────────────────
+
+let dragSrcIdx = null;
+
+function dragStart(e) {
+  dragSrcIdx = Number(e.currentTarget.dataset.idx);
+  e.dataTransfer.effectAllowed = 'move';
+}
+
+function dragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+}
+
+function dropRow(e) {
+  e.preventDefault();
+  const targetIdx = Number(e.currentTarget.dataset.idx);
+  if (dragSrcIdx === null || dragSrcIdx === targetIdx) return;
+  const moved = intervals.splice(dragSrcIdx, 1)[0];
+  intervals.splice(targetIdx, 0, moved);
+  dragSrcIdx = null;
+  renderIntervals();
+}
+
+// ─── Load preset ─────────────────────────────────────────────────────────────
+
+function loadPreset(name) {
+  const p = PRESETS[name];
+  if (!p) return;
+
+  document.getElementById('aircraft_type').value          = p.aircraft_type;
+  document.getElementById('display_name').value           = p.display_name;
+  document.getElementById('organization').value           = p.organization;
+  document.getElementById('output_filename').value        = p.output_filename;
+  document.getElementById('due_list_url').value           = p.due_list_url || '';
+  document.getElementById('due_list_filename').value      = p.due_list_filename;
+  document.getElementById('component_change_filename').value = p.component_change_filename;
+  document.getElementById('photo_filename').value         = p.photo_filename;
+  document.getElementById('component_window_hrs').value   = p.component_window_hrs;
+  document.getElementById('component_window_days').value  = p.component_window_days;
+  document.getElementById('retirement_keywords').value    = p.retirement_keywords.join('\n');
+
+  const c = p.col_indices;
+  document.getElementById('col_reg').value           = c.reg;
+  document.getElementById('col_airframe_rpt').value  = c.airframe_rpt;
+  document.getElementById('col_airframe_hrs').value  = c.airframe_hrs;
+  document.getElementById('col_ata').value           = c.ata;
+  document.getElementById('col_equip_hrs').value     = c.equip_hrs;
+  document.getElementById('col_item_type').value     = c.item_type;
+  document.getElementById('col_disposition').value   = c.disposition;
+  document.getElementById('col_desc').value          = c.desc;
+  document.getElementById('col_interval_hrs').value  = c.interval_hrs;
+  document.getElementById('col_rem_days').value      = c.rem_days;
+  document.getElementById('col_rem_months').value    = c.rem_months;
+  document.getElementById('col_rem_hrs').value       = c.rem_hrs;
+  document.getElementById('col_status').value        = c.status;
+
+  intervals = p.inspection_intervals.map(iv => Object.assign({}, iv,
+    { ata_patterns: [...(iv.ata_patterns || [])] }
+  ));
+  renderIntervals();
+}
+
+// ─── Build JSON ──────────────────────────────────────────────────────────────
+
+function intVal(id) {
+  const v = document.getElementById(id).value;
+  return v === '' ? 0 : parseInt(v, 10);
+}
+
+function buildConfig() {
+  const keywords = document.getElementById('retirement_keywords').value
+    .split('\n').map(s => s.trim()).filter(Boolean);
+
+  return {
+    _comment: "Aircraft type configuration for the IHC Fleet Dashboard generator.",
+    aircraft_type:            document.getElementById('aircraft_type').value.trim(),
+    display_name:             document.getElementById('display_name').value.trim(),
+    organization:             document.getElementById('organization').value.trim(),
+    due_list_url:             document.getElementById('due_list_url').value.trim(),
+    due_list_filename:        document.getElementById('due_list_filename').value.trim(),
+    due_list_fallbacks:       [],
+    component_change_filename: document.getElementById('component_change_filename').value.trim(),
+    photo_filename:           document.getElementById('photo_filename').value.trim(),
+    output_filename:          document.getElementById('output_filename').value.trim(),
+    component_window_hrs:     intVal('component_window_hrs'),
+    component_window_days:    intVal('component_window_days'),
+    retirement_keywords:      keywords,
+    _col_comment: "0-based column indices in the due-list CSV export from CAMP/Veryon.",
+    col_indices: {
+      reg:           intVal('col_reg'),
+      airframe_rpt:  intVal('col_airframe_rpt'),
+      airframe_hrs:  intVal('col_airframe_hrs'),
+      ata:           intVal('col_ata'),
+      equip_hrs:     intVal('col_equip_hrs'),
+      item_type:     intVal('col_item_type'),
+      disposition:   intVal('col_disposition'),
+      desc:          intVal('col_desc'),
+      interval_hrs:  intVal('col_interval_hrs'),
+      rem_days:      intVal('col_rem_days'),
+      rem_months:    intVal('col_rem_months'),
+      rem_hrs:       intVal('col_rem_hrs'),
+      status:        intVal('col_status')
+    },
+    _interval_comment: "Each inspection interval. 'hours' is the interval size in flight hours (null = date-only). 'days' is the calendar interval in days (null = hours-only). 'track_by' controls display: 'hours', 'days', or 'both'. 'ata_patterns' are Python regexes matched against the ATA column.",
+    inspection_intervals: intervals.map(iv => ({
+      label:                  iv.label,
+      hours:                  iv.hours,
+      days:                   iv.days,
+      track_by:               iv.track_by || "hours",
+      ata_patterns:           iv.ata_patterns,
+      calendar_duration_days: iv.calendar_duration_days,
+      color:                  iv.color
+    }))
+  };
+}
+
+function downloadJSON() {
+  const config = buildConfig();
+  const id     = config.aircraft_type.toLowerCase().replace(/\s+/g,'_') || 'aircraft';
+  const blob   = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+  const a      = document.createElement('a');
+  a.href       = URL.createObjectURL(blob);
+  a.download   = id + '.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function togglePreview() {
+  const el = document.getElementById('json-preview');
+  if (el.style.display === 'block') {
+    el.style.display = 'none';
+  } else {
+    el.textContent = JSON.stringify(buildConfig(), null, 2);
+    el.style.display = 'block';
+  }
+}
+
+// ─── Init ────────────────────────────────────────────────────────────────────
+loadPreset('aw109sp');
+</script>
+</body>
+</html>
