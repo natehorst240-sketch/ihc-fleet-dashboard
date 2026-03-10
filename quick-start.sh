@@ -31,26 +31,11 @@ echo "Installing Python dependencies..."
 pip install -r requirements.txt
 echo ""
 
-# Create test data
-echo "Creating test data..."
-cd scripts
-python3 create_test_data.py
-cd ..
+# Generate dashboard
+echo "Generating dashboard..."
+python3 scripts/fleet_dashboard_generator.py
 echo ""
 
-# Generate test dashboard
-echo "Generating test dashboard..."
-cd scripts
-python3 fleet_dashboard_generator.py
-cd ..
-echo ""
-
-# Copy to public folder
-echo "Copying to public folder..."
-mkdir -p public
-cp data/fleet_dashboard.html public/index.html
-echo "✓ Dashboard copied to public/index.html"
-echo ""
 
 # Summary
 echo "============================================="
@@ -58,7 +43,7 @@ echo "✅ Setup Complete!"
 echo "============================================="
 echo ""
 echo "Next steps:"
-echo "1. Open data/fleet_dashboard.html in your browser to test locally"
+echo "1. Open data/index.html in your browser to test locally"
 echo "2. Commit and push to GitHub:"
 echo "   git add ."
 echo "   git commit -m 'Add test dashboard'"
