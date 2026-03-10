@@ -1,138 +1,154 @@
-# IHC Health Services - Fleet Maintenance Dashboard
+# IHC Health Services — Fleet Maintenance Dashboard
 
-**Real-time aircraft maintenance tracking and base assignment system for IHC Aviation**
+A lightweight, automated web dashboard that turns CAMP CSV exports into a
+live, interactive maintenance-tracking page hosted on GitHub Pages. Push a
+new CSV and the dashboard rebuilds itself — no server required.
 
 ---
 
-## 🎯 Features
-
-- **Maintenance Due List** - Phase inspections tracking (50hr - 3200hr intervals)
-- **Flight Hours Tracking** - Weekly/monthly utilization with trend charts
-- **Base Assignments** - Automatic GPS-based aircraft location tracking
-- **Status Indicators** - Visual alerts for overdue and critical items
-- **Mobile Responsive** - Works on all devices
-
-## 🚀 Quick Start
-
-**See [SETUP_GUIDE.md](SETUP_GUIDE.md) for complete setup instructions.**
-
-### TL;DR:
-1. Create GitHub repo
-2. Upload these files
-3. Enable GitHub Pages
-4. Done! Dashboard auto-updates daily
-
-**Live Dashboard:** `https://YOUR_USERNAME.github.io/ihc-fleet-dashboard/`
-
-## 📂 Project Structure
+## How It Works
 
 ```
-ihc-fleet-dashboard/
-├── .github/workflows/      # Automation
-├── data/                   # CSV files & outputs
-├── scripts/                # Python scripts
-├── public/                 # GitHub Pages
-└── SETUP_GUIDE.md          # Full instructions
+┌─────────────────────────────────────────────────────────────────┐
+│                        DATA SOURCES                             │
+│                                                                 │
+│  CAMP Export                   Component Change Report          │
+│  (Due-List CSV)                (ComponentChangeReport CSV)      │
+└────────────┬───────────────────────────────┬────────────────────┘
+             │  git push to main             │
+             ▼                               ▼
+┌─────────────────────────────────────────────────────────────────┐
+│               GitHub Actions  (build_dashboard.yml)             │
+│                                                                 │
+│  1. Checkout repo                                               │
+│  2. pip install Pillow                                          │
+│  3. python scripts/fleet_dashboard_generator.py                 │
+│     ├─ Parse Due-List CSV  ──────────────────────────────────┐  │
+│     ├─ Parse Component Change CSV                            │  │
+│     ├─ Load / update flight_hours_history.json               │  │
+│     ├─ Load base_assignments.json (GPS positions)            │  │
+│     └─ Embed fleet photo (IMG_9250.jpeg, base64)             │  │
+│  4. Commit generated files back to repo                      │  │
+│     • data/index.html                ◄──────────────────────┘  │
+│     • data/flight_hours_history.json                            │
+│     • data/dashboard_version.json                               │
+└────────────────────────────┬────────────────────────────────────┘
+                             │
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│              GitHub Actions  (deploy-pages.yml)                 │
+│                                                                 │
+│  Deploys data/ folder → GitHub Pages                            │
+└────────────────────────────┬────────────────────────────────────┘
+                             │
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│         https://YOUR_USERNAME.github.io/ihc-fleet-dashboard/    │
+│                                                                 │
+│  Tab 1 │ Maintenance Due List   — phase inspections, urgency    │
+│  Tab 2 │ Components             — per-aircraft component status │
+│  Tab 3 │ Flight Hours           — utilization trends & charts   │
+│  Tab 4 │ Calendar               — FullCalendar maintenance view │
+│  Tab 5 │ Base Location          — GPS assignment & AT BASE/AWAY │
+│  Tab 6 │ Component Changes      — monthly parts-replaced log    │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-## 📊 Dashboard Tabs
+---
 
-### 1. Maintenance Due List
-- All phase inspections
-- Color-coded urgency
-- Filter by status
-- 200hr bar chart
+## Features
 
-### 2. Flight Hours Tracking
-- Weekly/monthly hours
-- Utilization trends
-- Per-aircraft charts
+| Tab | What it shows |
+|-----|--------------|
+| **Maintenance Due List** | All phase inspections (50 hr – 3 200 hr). Color-coded: green / amber / red / overdue. Filterable table + 200 hr bar chart. |
+| **Components** | Per-aircraft component tracking with remaining hours and retirement flags. |
+| **Flight Hours** | Daily, 7-day, and 30-day utilization averages. Per-aircraft trend charts powered by Chart.js. |
+| **Calendar** | FullCalendar view of upcoming and overdue maintenance events, color-coded by inspection interval. |
+| **Base Location** | AT BASE / AIRBORNE / AWAY status based on GPS distance from assigned base. |
+| **Component Changes** | Monthly breakdown of installed/removed parts from the Component Change Report. |
 
-### 3. Bases
-- Auto-assignment by GPS
-- AT BASE vs AWAY status
-- Distance tracking
+---
 
-## 🤖 Automation
+## Quick Start
 
-**Daily at 8 AM UTC:**
-- Fetches SkyRouter data
-- Updates base assignments
-- Generates dashboard
-- Deploys to GitHub Pages
-
-**Manual trigger:** Actions → Run workflow
-
-## 📥 Usage
-
-### Upload New Data:
-1. Go to `data/` folder on GitHub
-2. Upload new CSV files
-3. Dashboard updates automatically!
-
-### Or via command line:
 ```bash
-cp path/to/Due-List_Latest.csv data/
+# 1. Install the only runtime dependency
+pip install Pillow
+
+# 2. Drop your CAMP exports into data/
+cp path/to/Due-List_BIG_WEEKLY_aw109sp.csv data/
+cp path/to/ComponentChangeReport_109SP.csv  data/   # optional
+
+# 3. Generate the dashboard locally
+python scripts/fleet_dashboard_generator.py
+
+# 4. Open in browser
+open data/index.html
+```
+
+For full GitHub Pages setup see [SETUP_GUIDE.md](SETUP_GUIDE.md).
+
+---
+
+## Updating the Dashboard
+
+Upload new CSVs to `data/` on GitHub (drag-and-drop or via the web UI) and
+the Actions pipeline rebuilds and redeploys automatically.
+
+Or via the command line:
+
+```bash
+cp path/to/Due-List_Latest.csv data/Due-List_BIG_WEEKLY_aw109sp.csv
 git add data/
-git commit -m "Update data"
+git commit -m "Update maintenance data"
 git push
 ```
 
-## 🧹 Clean-Slate Reset (Bots / Runners / Playwright)
+---
 
-If local automation artifacts are cluttering the repo, run:
+## Project Structure
 
-```bash
-python scripts/clean_slate.py --dry-run
-python scripts/clean_slate.py --delete
 ```
-
-Optional: disable all GitHub Actions workflows (renames workflow files to `*.disabled`):
-
-```bash
-python scripts/clean_slate.py --delete --remove-actions
+ihc-fleet-dashboard/
+├── .github/workflows/
+│   ├── build_dashboard.yml      # Builds index.html on CSV push
+│   └── deploy-pages.yml         # Deploys data/ to GitHub Pages
+├── data/
+│   ├── Due-List_BIG_WEEKLY_aw109sp.csv   # CAMP due-list export (input)
+│   ├── ComponentChangeReport_109SP.csv   # Component change export (input)
+│   ├── IMG_9250.jpeg                     # Fleet photo (embedded in dashboard)
+│   ├── flight_hours_history.json         # 90-day rolling flight hours log
+│   ├── base_assignments.json             # GPS aircraft positions
+│   ├── dashboard_version.json            # Auto-refresh version token
+│   └── index.html                        # Generated dashboard (output)
+├── scripts/
+│   └── fleet_dashboard_generator.py      # Main generator (2 000 lines)
+├── requirements.txt                      # Pillow only
+├── quick-start.sh                        # Local setup helper
+└── SETUP_GUIDE.md                        # Full GitHub Pages setup guide
 ```
-
-This cleanup script only targets common generated folders and keeps source folders intact (`data/`, `public/`, `scripts/`, `.git/`).
-
-## 🔧 Configuration
-
-**Base coordinates:** Edit `scripts/base_assignment_generator.py`
-
-**SkyRouter credentials:** Repository Settings → Secrets
-
-## 📱 Access
-
-**Desktop:** Full feature set  
-**Mobile:** Responsive, all tabs work  
-**Tablet:** Optimized layout
-
-## 🔒 Security
-
-- Repository: **Private** recommended
-- Credentials: GitHub Secrets only
-- CSV files: Gitignored by default
-
-## 🐛 Troubleshooting
-
-Check [SETUP_GUIDE.md](SETUP_GUIDE.md) → Troubleshooting section
-
-**Common fixes:**
-- Actions tab → Check workflow logs
-- Verify Secrets are set
-- Ensure GitHub Pages enabled
-
-## 📞 Support
-
-- Create an Issue in this repository
-- Check Actions logs for errors
-- Review SETUP_GUIDE.md
-
-## 📄 License
-
-Private - IHC Health Services Internal Use Only
 
 ---
 
-**Last Updated:** Auto-generated by GitHub Actions  
+## Configuration
+
+Key constants at the top of `scripts/fleet_dashboard_generator.py`:
+
+| Constant | Default | Purpose |
+|----------|---------|---------|
+| `INPUT_FILENAME` | `Due-List_BIG_WEEKLY_aw109sp.csv` | Primary CSV source |
+| `TARGET_INTERVALS` | `[50,100,200,400,800,2400,3200]` | Tracked inspection intervals (hours) |
+| `COMPONENT_WINDOW_HRS` | `200` | Hours window for component status |
+| `PHOTO_FILENAME` | `IMG_9250.jpeg` | Fleet photo shown in header |
+
+---
+
+## Security
+
+- Keep the repository **private** — the dashboard embeds aircraft tail numbers and maintenance data.
+- Store any API credentials (SkyRouter, etc.) in **GitHub Secrets**, never in committed files.
+
+---
+
+**License:** Private — IHC Health Services Internal Use Only
 **Maintained by:** IHC Aviation Maintenance Team
