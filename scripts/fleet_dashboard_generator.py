@@ -4,7 +4,7 @@ Fleet Maintenance Dashboard Generator (CSV)
 Reads Due-List_BIG_WEEKLY_aw109sp.csv from the data/ folder
 and writes data/index.html + data/flight_hours_history.json.
 
-Run via GitHub Actions after CSV is pushed to repo.
+Run via GitHub Actions after CSV is pushed to repo. 
 """
 
 import sys
