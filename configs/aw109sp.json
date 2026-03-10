@@ -1,0 +1,105 @@
+{
+  "_comment": "Aircraft type configuration for the IHC Fleet Dashboard generator.",
+  "aircraft_type": "AW109SP",
+  "display_name": "AgustaWestland AW109SP",
+  "organization": "IHC Health Services",
+
+  "due_list_url": "",
+  "due_list_filename": "Due-List_BIG_WEEKLY_aw109sp.csv",
+  "due_list_fallbacks": ["Due-List_BIG_WEEKLY.csv"],
+  "component_change_filename": "ComponentChangeReport_109SP.csv",
+  "photo_filename": "IMG_9250.jpeg",
+  "output_filename": "index.html",
+
+  "component_window_hrs": 200,
+  "component_window_days": 60,
+
+  "retirement_keywords": [
+    "RETIRE", "OVERHAUL", "DISCARD", "LIFE LIMIT", "TBO",
+    "REPLACEMENT", "REPLACE", "CHANGE OIL", "NOZZLE"
+  ],
+
+  "_col_comment": "0-based column indices in the due-list CSV export from CAMP/Veryon.",
+  "col_indices": {
+    "reg": 0,
+    "airframe_rpt": 2,
+    "airframe_hrs": 3,
+    "ata": 5,
+    "equip_hrs": 7,
+    "item_type": 11,
+    "disposition": 13,
+    "desc": 15,
+    "interval_hrs": 30,
+    "rem_days": 50,
+    "rem_months": 52,
+    "rem_hrs": 54,
+    "status": 63
+  },
+
+  "_interval_comment": "Each inspection interval. 'hours' is the interval size in flight hours (null = date-only). 'days' is the calendar interval in days (null = hours-only). 'track_by' controls display: 'hours', 'days', or 'both'. 'ata_patterns' are Python regexes matched against the ATA column.",
+  "inspection_intervals": [
+    {
+      "label": "50 Hr",
+      "hours": 50,
+      "days": null,
+      "track_by": "hours",
+      "ata_patterns": ["05 1000"],
+      "calendar_duration_days": 1,
+      "color": "#00897b"
+    },
+    {
+      "label": "100 Hr",
+      "hours": 100,
+      "days": null,
+      "track_by": "hours",
+      "ata_patterns": ["64 01\\[273\\]"],
+      "calendar_duration_days": 1,
+      "color": "#1e88e5"
+    },
+    {
+      "label": "200 Hr",
+      "hours": 200,
+      "days": null,
+      "track_by": "hours",
+      "ata_patterns": ["05 1005"],
+      "calendar_duration_days": 3,
+      "color": "#8e24aa"
+    },
+    {
+      "label": "400 Hr",
+      "hours": 400,
+      "days": null,
+      "track_by": "hours",
+      "ata_patterns": ["05 1010"],
+      "calendar_duration_days": 4,
+      "color": "#e53935"
+    },
+    {
+      "label": "800 Hr",
+      "hours": 800,
+      "days": null,
+      "track_by": "hours",
+      "ata_patterns": ["05 1015"],
+      "calendar_duration_days": 4,
+      "color": "#fb8c00"
+    },
+    {
+      "label": "2400 Hr",
+      "hours": 2400,
+      "days": null,
+      "track_by": "hours",
+      "ata_patterns": ["62 11\\[373\\]"],
+      "calendar_duration_days": 7,
+      "color": "#43a047"
+    },
+    {
+      "label": "3200 Hr",
+      "hours": 3200,
+      "days": null,
+      "track_by": "hours",
+      "ata_patterns": ["05 1020"],
+      "calendar_duration_days": 21,
+      "color": "#6d4c41"
+    }
+  ]
+}

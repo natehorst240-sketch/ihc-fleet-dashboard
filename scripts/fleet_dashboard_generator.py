@@ -13,6 +13,7 @@ import re
 import json
 import base64
 import io
+import argparse
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta, date
 from pathlib import Path
@@ -47,7 +48,8 @@ PHASE_MATCH = {
     3200: [r"05 1020"],
 }
 
-COMPONENT_WINDOW_HRS = 200
+COMPONENT_WINDOW_HRS  = 200
+COMPONENT_WINDOW_DAYS = 60
 
 RETIREMENT_KEYWORDS = [
     'RETIRE', 'OVERHAUL', 'DISCARD', 'LIFE LIMIT', 'TBO',
@@ -68,6 +70,62 @@ COL_REM_DAYS     = 50
 COL_REM_MONTHS   = 52
 COL_REM_HRS      = 54
 COL_STATUS       = 63
+
+# Org / display name (can be overridden by config)
+ORGANIZATION  = "IHC Health Services"
+DISPLAY_NAME  = "AW109SP Fleet"
+
+
+# -- CONFIG LOADER -------------------------------------------------------------
+
+def _interval_key(iv):
+    """Canonical dict key for an interval: hours int when available, else 'd{days}'."""
+    return iv['hours'] if iv.get('hours') is not None else f"d{iv['days']}"
+
+
+def load_config(path):
+    """Load an aircraft-type JSON config and return updated globals dict."""
+    with open(path, 'r', encoding='utf-8') as f:
+        cfg = json.load(f)
+
+    intervals = cfg.get('inspection_intervals', [])
+
+    target_intervals = [_interval_key(iv) for iv in intervals]
+
+    phase_match = {}
+    for iv in intervals:
+        key = _interval_key(iv)
+        phase_match[key] = iv.get('ata_patterns', [])
+
+    col = cfg.get('col_indices', {})
+
+    return {
+        'INPUT_FILENAME':             cfg.get('due_list_filename', INPUT_FILENAME),
+        'INPUT_FALLBACKS':            cfg.get('due_list_fallbacks', INPUT_FALLBACKS),
+        'OUTPUT_FILENAME':            cfg.get('output_filename', OUTPUT_FILENAME),
+        'COMPONENT_CHANGE_FILENAME':  cfg.get('component_change_filename', COMPONENT_CHANGE_FILENAME),
+        'PHOTO_FILENAME':             cfg.get('photo_filename', PHOTO_FILENAME),
+        'TARGET_INTERVALS':           target_intervals,
+        'PHASE_MATCH':                phase_match,
+        'COMPONENT_WINDOW_HRS':       cfg.get('component_window_hrs', COMPONENT_WINDOW_HRS),
+        'COMPONENT_WINDOW_DAYS':      cfg.get('component_window_days', COMPONENT_WINDOW_DAYS),
+        'RETIREMENT_KEYWORDS':        cfg.get('retirement_keywords', RETIREMENT_KEYWORDS),
+        'ORGANIZATION':               cfg.get('organization', ORGANIZATION),
+        'DISPLAY_NAME':               f"{cfg.get('display_name', cfg.get('aircraft_type',''))} Fleet",
+        'DUE_LIST_URL':               cfg.get('due_list_url', ''),
+        'INTERVAL_CFG':               intervals,
+        # Column overrides
+        'COL_REG':          col.get('reg',          COL_REG),
+        'COL_AIRFRAME_RPT': col.get('airframe_rpt', COL_AIRFRAME_RPT),
+        'COL_AIRFRAME_HRS': col.get('airframe_hrs', COL_AIRFRAME_HRS),
+        'COL_ATA':          col.get('ata',          COL_ATA),
+        'COL_ITEM_TYPE':    col.get('item_type',    COL_ITEM_TYPE),
+        'COL_DISPOSITION':  col.get('disposition',  COL_DISPOSITION),
+        'COL_DESC':         col.get('desc',         COL_DESC),
+        'COL_REM_DAYS':     col.get('rem_days',     COL_REM_DAYS),
+        'COL_REM_HRS':      col.get('rem_hrs',      COL_REM_HRS),
+        'COL_STATUS':       col.get('status',       COL_STATUS),
+    }
 
 
 # -- HELPERS -------------------------------------------------------------------
@@ -357,7 +415,32 @@ def get_location_badge(tail, positions):
 
 # -- CSV PARSING ---------------------------------------------------------------
 
-def parse_due_list_parts(filepath):
+def parse_due_list_parts(filepath, gcfg=None):
+    """Parse the CAMP due-list CSV.
+
+    gcfg: optional dict returned by load_config(); falls back to module globals.
+    """
+    _target   = (gcfg or {}).get('TARGET_INTERVALS', TARGET_INTERVALS)
+    _pm       = (gcfg or {}).get('PHASE_MATCH',      PHASE_MATCH)
+    _win_hrs  = (gcfg or {}).get('COMPONENT_WINDOW_HRS',  COMPONENT_WINDOW_HRS)
+    _win_days = (gcfg or {}).get('COMPONENT_WINDOW_DAYS', COMPONENT_WINDOW_DAYS)
+    _ret_kw   = (gcfg or {}).get('RETIREMENT_KEYWORDS',   RETIREMENT_KEYWORDS)
+
+    _col_reg  = (gcfg or {}).get('COL_REG',          COL_REG)
+    _col_rpt  = (gcfg or {}).get('COL_AIRFRAME_RPT', COL_AIRFRAME_RPT)
+    _col_ah   = (gcfg or {}).get('COL_AIRFRAME_HRS', COL_AIRFRAME_HRS)
+    _col_ata  = (gcfg or {}).get('COL_ATA',          COL_ATA)
+    _col_it   = (gcfg or {}).get('COL_ITEM_TYPE',    COL_ITEM_TYPE)
+    _col_dis  = (gcfg or {}).get('COL_DISPOSITION',  COL_DISPOSITION)
+    _col_desc = (gcfg or {}).get('COL_DESC',         COL_DESC)
+    _col_rd   = (gcfg or {}).get('COL_REM_DAYS',     COL_REM_DAYS)
+    _col_rh   = (gcfg or {}).get('COL_REM_HRS',      COL_REM_HRS)
+    _col_st   = (gcfg or {}).get('COL_STATUS',       COL_STATUS)
+
+    def _has_ret_kw(desc):
+        d = str(desc).upper()
+        return any(kw in d for kw in _ret_kw)
+
     with open(filepath, "r", encoding="utf-8-sig", newline="") as f:
         raw = f.read()
     # Rejoin lines where Veryon splits a row across lines (continuation starts with ,)
@@ -375,35 +458,37 @@ def parse_due_list_parts(filepath):
     components_raw = {}
     report_date_dt = None
 
+    max_col = max(_col_st, _col_rh, _col_rd, _col_desc, _col_ata, _col_it)
+
     compiled_phase = {
         interval: [re.compile(p, re.IGNORECASE) for p in pats]
-        for interval, pats in PHASE_MATCH.items()
+        for interval, pats in _pm.items()
     }
 
     for row in data_rows:
-        if len(row) <= COL_STATUS:
+        if len(row) <= max_col:
             continue
-        reg = row[COL_REG].strip() if row[COL_REG] else ""
+        reg = row[_col_reg].strip() if row[_col_reg] else ""
         if not reg:
             continue
 
-        airframe_hrs = safe_float(row[COL_AIRFRAME_HRS])
-        rpt_date_dt  = parse_report_date(row[COL_AIRFRAME_RPT])
+        airframe_hrs = safe_float(row[_col_ah])
+        rpt_date_dt  = parse_report_date(row[_col_rpt])
 
         if reg not in aircraft_meta:
             aircraft_meta[reg] = {'airframe_hrs': airframe_hrs, 'report_date': rpt_date_dt}
             if report_date_dt is None and rpt_date_dt:
                 report_date_dt = rpt_date_dt
 
-        ata_text  = row[COL_ATA].strip()       if row[COL_ATA]       else ""
-        item_type = row[COL_ITEM_TYPE].strip()  if row[COL_ITEM_TYPE] else ""
-        desc      = row[COL_DESC].strip()       if row[COL_DESC]      else ""
-        rem_hrs   = safe_float(row[COL_REM_HRS])
-        rem_days  = safe_float(row[COL_REM_DAYS])
-        status    = row[COL_STATUS].strip()     if row[COL_STATUS]    else ""
+        ata_text  = row[_col_ata].strip()  if row[_col_ata]  else ""
+        item_type = row[_col_it].strip()   if row[_col_it]   else ""
+        desc      = row[_col_desc].strip() if row[_col_desc] else ""
+        rem_hrs   = safe_float(row[_col_rh])
+        rem_days  = safe_float(row[_col_rd])
+        status    = row[_col_st].strip()   if row[_col_st]   else ""
 
         if item_type.upper() == "INSPECTION":
-            for interval in TARGET_INTERVALS:
+            for interval in _target:
                 patterns = compiled_phase.get(interval, [])
                 if not patterns:
                     continue
@@ -411,7 +496,8 @@ def parse_due_list_parts(filepath):
                     continue
                 if reg not in aircraft_raw:
                     aircraft_raw[reg] = {}
-                key = f"{interval:.2f}"
+                # Use a stable string key derived from the interval identifier
+                key = str(interval)
                 existing = aircraft_raw[reg].get(key)
                 if existing is None or (
                     rem_hrs is not None and (existing["rem_hrs"] is None or rem_hrs < existing["rem_hrs"])
@@ -422,10 +508,10 @@ def parse_due_list_parts(filepath):
                     }
 
         is_part = (item_type.upper() == "PART")
-        is_retirement_insp = (item_type.upper() == "INSPECTION" and has_retirement_keyword(desc))
+        is_retirement_insp = (item_type.upper() == "INSPECTION" and _has_ret_kw(desc))
         if is_part or is_retirement_insp:
-            hrs_in_window  = rem_hrs is not None and rem_hrs <= COMPONENT_WINDOW_HRS
-            days_in_window = rem_hrs is None and rem_days is not None and rem_days <= 60
+            hrs_in_window  = rem_hrs is not None and rem_hrs <= _win_hrs
+            days_in_window = rem_hrs is None and rem_days is not None and rem_days <= _win_days
             past_due       = status.strip().upper() == "PAST DUE"
             if hrs_in_window or days_in_window or past_due:
                 if reg not in components_raw:
@@ -433,7 +519,7 @@ def parse_due_list_parts(filepath):
                 clean_desc = re.sub(r"^\(RII\)\s*", "", desc, flags=re.IGNORECASE)
                 clean_desc = re.sub(r"^RII\s+", "", clean_desc, flags=re.IGNORECASE)
                 clean_desc = re.sub(r"\n.*", "", clean_desc).strip().title()
-                disposition = row[COL_DISPOSITION] if row[COL_DISPOSITION] else ""
+                disposition = row[_col_dis] if row[_col_dis] else ""
                 rii_flag = ("RII" in str(disposition).upper()) or ("RII" in desc.upper())
                 if rem_hrs is not None:
                     sort_key = rem_hrs
@@ -459,8 +545,9 @@ def parse_due_list_parts(filepath):
     return aircraft_meta, aircraft_raw, components_raw, report_date_dt
 
 
-def parse_due_list(input_path):
-    meta_map, raw, components, rpt_dt = parse_due_list_parts(input_path)
+def parse_due_list(input_path, gcfg=None):
+    meta_map, raw, components, rpt_dt = parse_due_list_parts(input_path, gcfg)
+    _target = (gcfg or {}).get('TARGET_INTERVALS', TARGET_INTERVALS)
     all_regs = sorted(meta_map.keys())
     aircraft_list = []
 
@@ -468,8 +555,8 @@ def parse_due_list(input_path):
         meta = meta_map.get(reg) or {"airframe_hrs": None, "report_date": None}
         insp = raw.get(reg, {})
         intervals = {}
-        for i in TARGET_INTERVALS:
-            key = f"{i:.2f}"
+        for i in _target:
+            key = str(i)
             if key in insp:
                 entry = insp[key]
                 intervals[i] = {
@@ -549,31 +636,37 @@ import json
 from datetime import datetime, timedelta, date
 
 
-def _build_calendar_tab(aircraft_list, flight_hours_stats):
+def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
     today_dt  = datetime.today()
     today     = today_dt.date()
     today_str = today_dt.strftime('%Y-%m-%d')
 
-    # Each inspection interval has a fixed color — permanent, not urgency-based
-    INTERVAL_COLOR = {
-        50:   '#00897b',   # teal
-        100:  '#1e88e5',   # blue
-        200:  '#8e24aa',   # purple
-        400:  '#e53935',   # red
-        800:  '#fb8c00',   # orange
-        2400: '#43a047',   # green
-        3200: '#6d4c41',   # brown
-    }
-
-    # Planned maintenance downtime shown on calendar (in days)
-    INTERVAL_DURATION_DAYS = {
-        50: 1,
-        100: 1,
-        200: 3,
-        400: 4,
-        800: 4,
-        3200: 21,
-    }
+    if interval_cfg:
+        INTERVAL_COLOR        = {_interval_key(iv): iv.get('color', '#4a5568') for iv in interval_cfg}
+        INTERVAL_DURATION_DAYS = {_interval_key(iv): iv.get('calendar_duration_days', 1) for iv in interval_cfg}
+        # Labels for calendar legend
+        INTERVAL_LABEL = {_interval_key(iv): iv.get('label', str(_interval_key(iv))) for iv in interval_cfg}
+    else:
+        # Each inspection interval has a fixed color — permanent, not urgency-based
+        INTERVAL_COLOR = {
+            50:   '#00897b',   # teal
+            100:  '#1e88e5',   # blue
+            200:  '#8e24aa',   # purple
+            400:  '#e53935',   # red
+            800:  '#fb8c00',   # orange
+            2400: '#43a047',   # green
+            3200: '#6d4c41',   # brown
+        }
+        # Planned maintenance downtime shown on calendar (in days)
+        INTERVAL_DURATION_DAYS = {
+            50: 1,
+            100: 1,
+            200: 3,
+            400: 4,
+            800: 4,
+            3200: 21,
+        }
+        INTERVAL_LABEL = {k: f"{k}h" for k in INTERVAL_COLOR}
 
     URGENCY_LABEL = {
         'overdue': 'OVERDUE',
@@ -592,7 +685,7 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
         if not avg_daily or avg_daily <= 0:
             continue
 
-        for interval in [50, 100, 200, 400, 800, 2400, 3200]:
+        for interval in list(INTERVAL_COLOR.keys()):
             v = ac['intervals'].get(interval)
             if v is None:
                 continue
@@ -637,9 +730,10 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats):
                 bar_start = due
                 bar_end   = due + timedelta(days=days_long)
 
+            iv_label = INTERVAL_LABEL.get(interval, f'{interval}h')
             maint_events.append({
                 'id':              f'maint_{tail}_{interval}',
-                'title':           f'{tail}  {interval}h',
+                'title':           f'{tail}  {iv_label}',
                 'start':           bar_start.isoformat(),
                 'end':             bar_end.isoformat(),
                 'allDay':          True,
@@ -1371,7 +1465,19 @@ def _build_location_tab(aircraft_list, positions):
 # -- BUILD HTML ----------------------------------------------------------------
 
 def build_html(report_date, aircraft_list, components, component_changes, flight_hours_stats, positions,
-               source_filename, photo_b64=''):
+               source_filename, photo_b64='', gcfg=None):
+
+    _target   = (gcfg or {}).get('TARGET_INTERVALS', TARGET_INTERVALS)
+    _interval_cfg = (gcfg or {}).get('INTERVAL_CFG', None)
+    _win_hrs  = (gcfg or {}).get('COMPONENT_WINDOW_HRS', COMPONENT_WINDOW_HRS)
+    _org      = (gcfg or {}).get('ORGANIZATION', ORGANIZATION)
+    _disp     = (gcfg or {}).get('DISPLAY_NAME', DISPLAY_NAME)
+
+    # Build interval label map: key -> display label
+    if _interval_cfg:
+        _iv_labels = {_interval_key(iv): iv.get('label', str(_interval_key(iv))) for iv in _interval_cfg}
+    else:
+        _iv_labels = {i: f'{i} Hr' for i in _target}
 
     def fmt_hrs(val_dict):
         if val_dict is None:
@@ -1399,7 +1505,7 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
     total_ac = len(aircraft_list)
     crit_count = coming_count = comp_overdue = 0
     for ac in aircraft_list:
-        for i in TARGET_INTERVALS:
+        for i in _target:
             v = ac['intervals'].get(i)
             if v:
                 c = classify(v['rem_hrs']) if v['rem_hrs'] is not None else classify_from_status(v['status'])
@@ -1434,7 +1540,7 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
         ah   = f"{ac['airframe_hrs']:,.1f}" if ac['airframe_hrs'] else 'N/A'
         loc_badge = get_location_badge(tail, positions)
         cells = f'<td><div class="tail-number">{tail}{loc_badge}</div><div class="airframe-hrs">{ah} TT</div></td>'
-        for i in TARGET_INTERVALS:
+        for i in _target:
             cells += f'<td class="hr-cell">{fmt_hrs(ac["intervals"].get(i))}</td>'
         table_rows_html += f'<tr data-tail="{tail}">{cells}</tr>\n'
 
@@ -1517,16 +1623,20 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
   </div>
 </div>'''
 
-    # 200hr bar chart data
+    # Bar chart: use the first hours-based interval that has rem_hrs data (typically ~200hr)
+    _chart_interval = next(
+        (i for i in _target if isinstance(i, int)),
+        _target[0] if _target else 200
+    )
     chart_rows = sorted(
         [(ac['tail'], float(v['rem_hrs'])) for ac in aircraft_list
-         if (v := ac['intervals'].get(200)) and v.get('rem_hrs') is not None],
+         if (v := ac['intervals'].get(_chart_interval)) and v.get('rem_hrs') is not None],
         key=lambda x: x[1]
     )
     labels_js = "[" + ",".join([f"'{t}'" for t, _ in chart_rows]) + "]"
     values_js = "[" + ",".join([f"{v:.2f}" for _, v in chart_rows]) + "]"
 
-    calendar_tab_html  = _build_calendar_tab(aircraft_list, flight_hours_stats)
+    calendar_tab_html  = _build_calendar_tab(aircraft_list, flight_hours_stats, _interval_cfg)
     location_tab_html  = _build_location_tab(aircraft_list, positions)
 
     # Component change report tab (monthly groups)
@@ -1584,7 +1694,19 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
 </div>'''
         component_change_tab_html = f'<div class="section-label">Component Changes by Month</div>{month_sections}'
     else:
-        component_change_tab_html = '<div style="font-family:var(--mono);font-size:12px;color:var(--muted);padding:16px;">No component change report data found. Add data/ComponentChangeReport_109SP.csv to populate this tab.</div>'
+        _cc_filename = (gcfg or {}).get('COMPONENT_CHANGE_FILENAME', COMPONENT_CHANGE_FILENAME)
+        component_change_tab_html = f'<div style="font-family:var(--mono);font-size:12px;color:var(--muted);padding:16px;">No component change report data found. Add data/{_cc_filename} to populate this tab.</div>'
+
+    # Build dynamic table headers from interval config
+    _th_html = ''.join(
+        f'<th class="hr-cell">{_iv_labels.get(i, str(i))}</th>'
+        for i in _target
+    )
+
+    # Split org name for logo styling (capitalize first word bold, rest accent)
+    _org_parts  = _org.split(' ', 1)
+    _org_first  = _org_parts[0]
+    _org_rest   = ' ' + _org_parts[1] if len(_org_parts) > 1 else ''
 
     gen_time = datetime.today().strftime('%d %b %Y %H:%M').upper()
     version  = datetime.today().strftime('%Y%m%d%H%M%S')
@@ -1597,7 +1719,7 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>IHC Health Services - Fleet Due List</title>
+<title>{_org} - Fleet Due List</title>
 <link rel="icon" href="data:,">
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -1712,8 +1834,8 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
 <header>
   <div class="header-left">
     <div>
-      <div class="logo">IHC <span>HEALTH</span> SERVICES</div>
-      <div class="subtitle">AW109SP Fleet &nbsp;-&nbsp; Maintenance Due List</div>
+      <div class="logo">{_org_first}<span>{_org_rest.upper()}</span></div>
+      <div class="subtitle">{_disp} &nbsp;-&nbsp; Maintenance Due List</div>
     </div>
     {photo_tag}
   </div>
@@ -1764,10 +1886,7 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
         <thead>
           <tr>
             <th>Aircraft</th>
-            <th class="hr-cell">50 Hr</th><th class="hr-cell">100 Hr</th>
-            <th class="hr-cell">200 Hr</th><th class="hr-cell">400 Hr</th>
-            <th class="hr-cell">800 Hr</th><th class="hr-cell">2400 Hr</th>
-            <th class="hr-cell">3200 Hr</th>
+            {_th_html}
           </tr>
         </thead>
         <tbody id="insp-tbody">
@@ -1775,7 +1894,7 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
         </tbody>
       </table>
     </div>
-    <div class="section-label" style="margin-top:36px;">Component Retirement / Overhaul - Within {COMPONENT_WINDOW_HRS} Hours</div>
+    <div class="section-label" style="margin-top:36px;">Component Retirement / Overhaul - Within {_win_hrs} Hours</div>
     <div class="components-grid">{comp_panels_html}</div>
   </div>
 
@@ -1926,12 +2045,35 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
 # -- MAIN ----------------------------------------------------------------------
 
 def main():
+    parser = argparse.ArgumentParser(description='Fleet maintenance dashboard generator.')
+    parser.add_argument(
+        '--config', metavar='PATH',
+        help='Path to aircraft-type JSON config (e.g. configs/aw109sp.json). '
+             'Overrides all hardcoded filenames and inspection intervals.'
+    )
+    args = parser.parse_args()
+
+    # Load optional config and resolve filenames from it
+    gcfg = None
+    if args.config:
+        cfg_path = Path(args.config)
+        if not cfg_path.exists():
+            print(f"ERROR: Config file not found: {cfg_path}")
+            sys.exit(1)
+        gcfg = load_config(cfg_path)
+        print(f"Config loaded: {cfg_path}")
+
+    _input_filename    = (gcfg or {}).get('INPUT_FILENAME',            INPUT_FILENAME)
+    _input_fallbacks   = (gcfg or {}).get('INPUT_FALLBACKS',           INPUT_FALLBACKS)
+    _output_filename   = (gcfg or {}).get('OUTPUT_FILENAME',           OUTPUT_FILENAME)
+    _cc_filename       = (gcfg or {}).get('COMPONENT_CHANGE_FILENAME', COMPONENT_CHANGE_FILENAME)
+
     data_dir       = Path(OUTPUT_FOLDER)
-    input_path     = data_dir / INPUT_FILENAME
-    output_path    = data_dir / OUTPUT_FILENAME
+    input_path     = data_dir / _input_filename
+    output_path    = data_dir / _output_filename
     history_path   = data_dir / HISTORY_FILENAME
     positions_path = data_dir / POSITIONS_FILENAME
-    component_change_path = data_dir / COMPONENT_CHANGE_FILENAME
+    component_change_path = data_dir / _cc_filename
     version_path   = data_dir / "dashboard_version.json"
     log_path       = Path(__file__).with_name("dashboard_log.txt")
 
@@ -1948,7 +2090,7 @@ def main():
     log("Dashboard generator started.")
 
     if not input_path.exists():
-        for fallback in INPUT_FALLBACKS:
+        for fallback in _input_fallbacks:
             candidate = data_dir / fallback
             if candidate.exists():
                 input_path = candidate
@@ -1965,7 +2107,7 @@ def main():
 
     try:
         log(f"Parsing {input_path} ...")
-        report_date, aircraft_list, components = parse_due_list(input_path)
+        report_date, aircraft_list, components = parse_due_list(input_path, gcfg)
         log(f"Parsed {len(aircraft_list)} aircraft.")
 
         log("Loading flight hours history...")
@@ -1994,7 +2136,7 @@ def main():
         html = build_html(
             report_date, aircraft_list, components, component_changes,
             flight_hours_stats, positions,
-            input_path.name, photo_b64,
+            input_path.name, photo_b64, gcfg,
         )
 
         with open(output_path, 'w', encoding='utf-8') as f:
