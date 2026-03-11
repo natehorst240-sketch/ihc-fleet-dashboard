@@ -1623,8 +1623,9 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
   </div>
 </div>'''
 
-    # Bar chart: use the first hours-based interval that has rem_hrs data (typically ~200hr)
-    _chart_interval = next(
+    # Bar chart: always target the 200-hour interval when available.
+    # Fallback to the first numeric configured interval if 200 is not configured.
+    _chart_interval = 200 if 200 in _target else next(
         (i for i in _target if isinstance(i, int)),
         _target[0] if _target else 200
     )
