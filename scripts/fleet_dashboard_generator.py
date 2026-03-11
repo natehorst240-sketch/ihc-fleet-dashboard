@@ -1290,19 +1290,17 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
 # -- AIRCRAFT LOCATION TAB -----------------------------------------------------
 
 def _build_location_tab(aircraft_list, positions):
-    """Aircraft location tab with ac-cards. JS refreshes from base_assignments.json."""
+    """Aircraft location tab with base map cards + drag/drop aircraft assignment."""
 
-    ALL_TAILS = [ac['tail'] for ac in aircraft_list]
     ac_hrs = {ac['tail']: ac['airframe_hrs'] for ac in aircraft_list}
 
-    # Static fallback cards (shown until JS loads)
     static_cards = ''
     for ac in aircraft_list:
         tail = ac['tail']
-        pos  = positions.get(tail, {})
+        pos = positions.get(tail, {})
         status = pos.get('status', 'NO DATA').upper()
         hrs = ac['airframe_hrs']
-        ah  = f"{hrs:,.1f}" if hrs else 'N/A'
+        ah = f"{hrs:,.1f}" if hrs else 'N/A'
 
         if status == 'AT_BASE':
             curr = pos.get('current_base') or {}
@@ -1313,7 +1311,7 @@ def _build_location_tab(aircraft_list, positions):
             card_cls = 'ac-card-air'
             alt = pos.get('last_alt_ft', '')
             spd = pos.get('last_gs_kts', '')
-            detail = (f' Â· {int(alt):,} ft' if alt else '') + (f' Â· {int(float(spd))} kts' if spd else '')
+            detail = (f' · {int(alt):,} ft' if alt else '') + (f' · {int(float(spd))} kts' if spd else '')
             loc_html = f'<span class="ac-loc-air">AIRBORNE</span><span class="ac-loc-detail">{detail}</span>'
         elif status == 'AWAY':
             card_cls = 'ac-card-away'
@@ -1333,11 +1331,22 @@ def _build_location_tab(aircraft_list, positions):
 </div>'''
 
     has_positions = 'true' if positions else 'false'
-
-    # ac_hrs_json for JS
     ac_hrs_js = json.dumps({t: (f"{h:,.1f}" if h else 'N/A') for t, h in ac_hrs.items()})
 
     css = '''<style>
+.base-map-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;margin-top:14px;margin-bottom:24px;}
+.base-map-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden;display:flex;flex-direction:column;min-height:350px;}
+.base-map-head{display:flex;justify-content:space-between;align-items:baseline;padding:10px 12px;background:var(--surface2);border-bottom:1px solid var(--border);}
+.base-map-title{font-family:var(--sans);font-size:16px;font-weight:800;letter-spacing:1px;color:var(--heading);}
+.base-map-coords{font-family:var(--mono);font-size:9px;color:var(--muted);}
+.base-map-canvas{height:220px;width:100%;border-bottom:1px solid var(--border);}
+.base-map-foot{padding:10px 12px;}
+.base-map-foot-label{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:7px;}
+.base-dropzone{min-height:42px;display:flex;flex-wrap:wrap;gap:6px;padding:8px;border:1px dashed var(--border);border-radius:4px;background:rgba(255,255,255,0.01);transition:all .15s;}
+.base-dropzone.drag-over{border-color:var(--blue);background:rgba(41,182,246,0.08);}
+.base-dropzone-empty{font-family:var(--mono);font-size:10px;color:var(--muted);opacity:.7;}
+.tail-chip{font-family:var(--mono);font-size:11px;color:#00151f;background:var(--blue);padding:4px 8px;border-radius:14px;cursor:grab;user-select:none;}
+.tail-chip:active{cursor:grabbing;}
 .ac-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:16px;}
 .ac-card{background:var(--surface);border:1px solid var(--border);border-radius:4px;overflow:hidden;transition:border-color .2s;}
 .ac-card-base{border-color:rgba(0,230,118,0.35);}
@@ -1364,15 +1373,19 @@ def _build_location_tab(aircraft_list, positions):
   var AC_HRS = {ac_hrs_js};
 
   var BASES = {{
-    LOGAN:      {{name:'Logan',      lat:41.7912,  lon:-111.8522}},
-    MCKAY:      {{name:'McKay-Dee',  lat:41.2545,  lon:-112.0126}},
-    IMED:       {{name:'IMed',       lat:40.2338,  lon:-111.6585}},
-    PROVO:      {{name:'Provo',      lat:40.2192,  lon:-111.7233}},
-    ROOSEVELT:  {{name:'Roosevelt',  lat:40.2765,  lon:-110.0518}},
-    CEDAR_CITY: {{name:'Cedar City', lat:37.7010,  lon:-113.0989}},
-    ST_GEORGE:  {{name:'St George',  lat:37.0365,  lon:-113.5101}},
-    KSLC:       {{name:'KSLC',       lat:40.7884,  lon:-111.9778}},
+    LOGAN:      {{name:'Logan',      lat:41.7912,  lon:-111.8522, radius_miles:5}},
+    MCKAY:      {{name:'McKay-Dee',  lat:41.2545,  lon:-112.0126, radius_miles:5}},
+    IMED:       {{name:'IMed',       lat:40.2338,  lon:-111.6585, radius_miles:5}},
+    PROVO:      {{name:'Provo',      lat:40.2192,  lon:-111.7233, radius_miles:5}},
+    ROOSEVELT:  {{name:'Roosevelt',  lat:40.2765,  lon:-110.0518, radius_miles:5}},
+    CEDAR_CITY: {{name:'Cedar City', lat:37.7010,  lon:-113.0989, radius_miles:5}},
+    ST_GEORGE:  {{name:'St George',  lat:37.0365,  lon:-113.5101, radius_miles:5}},
+    KSLC:       {{name:'KSLC',       lat:40.7884,  lon:-111.9778, radius_miles:10}},
   }};
+
+  var MAPS = {{}};
+  var ASSIGNMENT_STORAGE_KEY = 'fleet.baseAssignments.v1';
+  var DEFAULT_SQUARE_MILES = 5;
 
   function bearing(lat1,lon1,lat2,lon2) {{
     var dLon=(lon2-lon1)*Math.PI/180;
@@ -1390,6 +1403,169 @@ def _build_location_tab(aircraft_list, positions):
     if (isNaN(m)||m<0) return '';
     return m<60 ? m+'m ago' : (m/60).toFixed(1)+'h ago';
   }}
+  function miToLatDelta(mi) {{ return mi / 69.0; }}
+  function miToLonDelta(mi, lat) {{
+    var cosLat = Math.cos((lat||0) * Math.PI/180);
+    var safe = Math.max(0.2, Math.abs(cosLat));
+    return mi / (69.0 * safe);
+  }}
+  function loadOverrides() {{
+    try {{
+      var raw = localStorage.getItem(ASSIGNMENT_STORAGE_KEY);
+      return raw ? JSON.parse(raw) : {{}};
+    }} catch(_e) {{
+      return {{}};
+    }}
+  }}
+  function saveOverrides(state) {{
+    var out = {{}};
+    Object.keys(state.bases).forEach(function(baseId) {{
+      (state.bases[baseId].aircraft || []).forEach(function(tail) {{ out[tail] = baseId; }});
+    }});
+    (state.unassigned || []).forEach(function(tail) {{ out[tail] = 'unassigned'; }});
+    try {{ localStorage.setItem(ASSIGNMENT_STORAGE_KEY, JSON.stringify(out)); }} catch(_e) {{}}
+  }}
+  function payloadToState(payload) {{
+    var basesMeta = Object.assign({{}}, BASES, payload.bases || {{}});
+    var bases = {{}};
+    Object.keys(basesMeta).forEach(function(baseId) {{
+      var meta = basesMeta[baseId] || {{}};
+      bases[baseId] = {{
+        id: baseId,
+        name: meta.name || baseId,
+        lat: Number(meta.lat || 0),
+        lon: Number(meta.lon || 0),
+        radius_miles: Number(meta.radius_miles || 5),
+        aircraft: []
+      }};
+    }});
+    var seen = {{}};
+    var assignments = payload.assignments || {{}};
+    Object.keys(assignments).forEach(function(baseId) {{
+      var node = assignments[baseId];
+      if (baseId === 'unassigned') return;
+      if (!bases[baseId]) return;
+      var list = Array.isArray(node && node.aircraft) ? node.aircraft : [];
+      list.forEach(function(ac) {{
+        var tail = (ac && (ac.tail || ac.registration || ac.callsign || '') || '').toUpperCase();
+        if (!tail || seen[tail]) return;
+        bases[baseId].aircraft.push(tail);
+        seen[tail] = true;
+      }});
+    }});
+    var unassigned = [];
+    var listUn = Array.isArray(assignments.unassigned) ? assignments.unassigned : [];
+    listUn.forEach(function(ac) {{
+      var tail = (ac && (ac.tail || ac.registration || '') || '').toUpperCase();
+      if (!tail || seen[tail]) return;
+      unassigned.push(tail);
+      seen[tail] = true;
+    }});
+    Object.keys(AC_HRS).forEach(function(tail) {{ if (!seen[tail]) unassigned.push(tail); }});
+
+    var overrides = loadOverrides();
+    Object.keys(overrides).forEach(function(tail) {{
+      var nextBase = overrides[tail];
+      Object.keys(bases).forEach(function(baseId) {{
+        bases[baseId].aircraft = bases[baseId].aircraft.filter(function(t) {{ return t !== tail; }});
+      }});
+      unassigned = unassigned.filter(function(t) {{ return t !== tail; }});
+      if (bases[nextBase]) bases[nextBase].aircraft.push(tail);
+      else unassigned.push(tail);
+    }});
+
+    return {{bases:bases, unassigned:unassigned}};
+  }}
+  function moveTail(state, tail, toBase) {{
+    Object.keys(state.bases).forEach(function(baseId) {{
+      state.bases[baseId].aircraft = state.bases[baseId].aircraft.filter(function(t) {{ return t !== tail; }});
+    }});
+    state.unassigned = (state.unassigned || []).filter(function(t) {{ return t !== tail; }});
+    if (toBase === 'unassigned' || !state.bases[toBase]) state.unassigned.push(tail);
+    else state.bases[toBase].aircraft.push(tail);
+    saveOverrides(state);
+  }}
+  function initOrUpdateMap(baseId, meta) {{
+    if (!(window.L && document.getElementById('map-'+baseId))) return;
+    var sideMi = DEFAULT_SQUARE_MILES;
+    var half = sideMi / 2;
+    var latD = miToLatDelta(half);
+    var lonD = miToLonDelta(half, meta.lat);
+    var southWest = [meta.lat - latD, meta.lon - lonD];
+    var northEast = [meta.lat + latD, meta.lon + lonD];
+
+    var ctx = MAPS[baseId];
+    if (!ctx) {{
+      var map = L.map('map-'+baseId, {{zoomControl:true, attributionControl:true}});
+      L.tileLayer('https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png', {{
+        maxZoom: 18,
+        attribution: '&copy; OpenStreetMap contributors'
+      }}).addTo(map);
+      var rect = L.rectangle([southWest, northEast], {{color:'#29b6f6', weight:2, fillOpacity:0.08}}).addTo(map);
+      var marker = L.marker([meta.lat, meta.lon]).addTo(map);
+      marker.bindTooltip(meta.name + ' base', {{direction:'top'}});
+      MAPS[baseId] = {{map:map, rect:rect, marker:marker}};
+      ctx = MAPS[baseId];
+    }} else {{
+      ctx.marker.setLatLng([meta.lat, meta.lon]);
+      ctx.rect.setBounds([southWest, northEast]);
+    }}
+    ctx.map.fitBounds([southWest, northEast], {{padding:[14,14]}});
+    setTimeout(function(){{ ctx.map.invalidateSize(); }}, 0);
+  }}
+  function dropzoneHTML(tails) {{
+    if (!tails.length) return '<div class="base-dropzone-empty">Drop registration here</div>';
+    return tails.map(function(tail) {{
+      return '<div class="tail-chip" draggable="true" data-tail="'+esc(tail)+'">'+esc(tail)+'</div>';
+    }}).join('');
+  }}
+  function bindDnD(state) {{
+    var draggedTail = null;
+    document.querySelectorAll('.tail-chip').forEach(function(chip) {{
+      chip.addEventListener('dragstart', function(ev) {{
+        draggedTail = ev.target.getAttribute('data-tail');
+        ev.dataTransfer.setData('text/plain', draggedTail || '');
+      }});
+    }});
+    document.querySelectorAll('.base-dropzone').forEach(function(zone) {{
+      zone.addEventListener('dragover', function(ev) {{ ev.preventDefault(); zone.classList.add('drag-over'); }});
+      zone.addEventListener('dragleave', function() {{ zone.classList.remove('drag-over'); }});
+      zone.addEventListener('drop', function(ev) {{
+        ev.preventDefault();
+        zone.classList.remove('drag-over');
+        var tail = draggedTail || ev.dataTransfer.getData('text/plain');
+        var toBase = zone.getAttribute('data-base');
+        if (!tail) return;
+        moveTail(state, tail, toBase);
+        renderBaseMaps(state);
+      }});
+    }});
+  }}
+  function renderBaseMaps(state) {{
+    var host = document.getElementById('base-map-grid');
+    if (!host) return;
+    var baseIds = Object.keys(state.bases).sort();
+    var cards = baseIds.map(function(baseId) {{
+      var b = state.bases[baseId];
+      var coords = Number(b.lat).toFixed(4)+', '+Number(b.lon).toFixed(4);
+      return '<div class="base-map-card">'
+        +'<div class="base-map-head"><div class="base-map-title">'+esc((b.name||baseId).toUpperCase())+'</div>'
+        +'<div class="base-map-coords">'+esc(coords)+' · 5-mi square</div></div>'
+        +'<div id="map-'+esc(baseId)+'" class="base-map-canvas"></div>'
+        +'<div class="base-map-foot"><div class="base-map-foot-label">Assigned registrations</div>'
+        +'<div class="base-dropzone" data-base="'+esc(baseId)+'">'+dropzoneHTML(b.aircraft||[])+'</div></div></div>';
+    }});
+    cards.push(
+      '<div class="base-map-card"><div class="base-map-head"><div class="base-map-title">UNASSIGNED</div>'
+      +'<div class="base-map-coords">Drag from / to any base</div></div>'
+      +'<div class="base-map-canvas" style="display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;color:var(--muted);">No map</div>'
+      +'<div class="base-map-foot"><div class="base-map-foot-label">Unassigned registrations</div>'
+      +'<div class="base-dropzone" data-base="unassigned">'+dropzoneHTML(state.unassigned||[])+'</div></div></div>'
+    );
+    host.innerHTML = cards.join('');
+    baseIds.forEach(function(baseId) {{ initOrUpdateMap(baseId, state.bases[baseId]); }});
+    bindDnD(state);
+  }}
 
   function locLine(d, bases) {{
     if (!d) return '<span class="ac-loc-unknown">NO DATA</span>';
@@ -1405,12 +1581,12 @@ def _build_location_tab(aircraft_list, positions):
       var alt=d.alt_ft ? parseInt(d.alt_ft).toLocaleString()+' ft' : '';
       var spd=d.speed_kts ? Math.round(d.speed_kts)+' kts' : '';
       var pos=distMi&&baseName ? (Math.round(distMi)+' mi '+(dir?dir+' of ':' from ')+baseName) : '';
-      var parts=[pos,alt,spd].filter(Boolean).join(' Â· ');
+      var parts=[pos,alt,spd].filter(Boolean).join(' · ');
       return '<span class="ac-loc-air">AIRBORNE</span>'+(parts?'<span class="ac-loc-detail"> '+esc(parts)+'</span>':'');
     }}
     if (status==='AWAY') {{
       var pos=distMi&&baseName ? (Math.round(distMi)+' mi '+(dir?dir+' of ':' from ')+baseName) : (baseName||'unknown');
-      return '<span class="ac-loc-away">AWAY</span><span class="ac-loc-detail"> Â· '+esc(pos)+'</span>';
+      return '<span class="ac-loc-away">AWAY</span><span class="ac-loc-detail"> · '+esc(pos)+'</span>';
     }}
     return '<span class="ac-loc-unknown">'+esc(status||'UNKNOWN')+'</span>';
   }}
@@ -1437,14 +1613,18 @@ def _build_location_tab(aircraft_list, positions):
         +'</div></div>';
     }});
     grid.innerHTML=cards.join('');
+
+    var state = payloadToState(payload || {{}});
+    renderBaseMaps(state);
   }}
 
   function refresh() {{
-    // base_assignments.json is at root because Pages serves from data/
     fetch('base_assignments.json?ts='+Date.now(),{{cache:'no-store'}})
       .then(function(r){{ if(!r.ok) throw new Error('failed'); return r.json(); }})
       .then(render)
-      .catch(function(){{}});
+      .catch(function(){{
+        render({{bases:BASES, assignments:{{}}, aircraft_detail:{{}}}});
+      }});
   }}
 
   refresh();
@@ -1456,6 +1636,10 @@ def _build_location_tab(aircraft_list, positions):
 <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:4px;">
   Live positions via SkyRouter GPS &middot; refreshes every 60 seconds
 </div>
+<div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:10px;">
+  Base assignment board (street map, 5-mile square view per base) &middot; drag registration chips to reassign locally
+</div>
+<div class="base-map-grid" id="base-map-grid"></div>
 <div class="ac-grid" id="ac-location-grid">
 {static_cards}
 </div>
@@ -1723,6 +1907,7 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
 <title>{_org} - Fleet Due List</title>
 <link rel="icon" href="data:,">
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
 <style>
   :root {{
     --bg:#0a0c0f; --surface:#111418; --surface2:#181c22; --border:#1e2530;
@@ -1930,6 +2115,7 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
 </footer>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <script>
   const DASHBOARD_VERSION = "{version}";
 
