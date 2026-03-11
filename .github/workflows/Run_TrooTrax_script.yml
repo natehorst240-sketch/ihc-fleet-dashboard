@@ -1,4 +1,0 @@
-  env:
-    TROOTRAX_USER: ${{ secrets.TROOTRAX_USER }}
-    TROOTRAX_PASS: ${{ secrets.TROOTRAX_PASS }}
-  run: python trootrax.py
