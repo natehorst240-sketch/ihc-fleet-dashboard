@@ -41,37 +41,19 @@ if not sessionid:
 
 print(f"Logged in. sessionid: {sessionid[:8]}... | _tsvce: {str(tsvce)[:12]}...")
 
-# Step 3: Build cookie jar - send ALL session-related cookies to the REST API
-jar = requests.cookies.RequestsCookieJar()
-
-# sessionid with both casings, forced to root path
-jar.set("sessionid", sessionid, domain="apps4.trootrax.com", path="/")
-jar.set("Sessionid", sessionid, domain="apps4.trootrax.com", path="/")
-
-# _tcum and _tsvce are already at root - copy them over
-if tcum:
-    jar.set("_tcum", tcum, domain=".trootrax.com", path="/")
-    jar.set("_tcum", tcum, domain="apps4.trootrax.com", path="/")
-if tsvce:
-    jar.set("_tsvce", tsvce, domain=".trootrax.com", path="/")
-    jar.set("_tsvce", tsvce, domain="apps4.trootrax.com", path="/")
+# Step 3: Fix sessionid path so it reaches /rest/...
+session.cookies.set("sessionid", sessionid, domain="apps4.trootrax.com", path="/")
 
 # Step 4: Fetch all aircraft locations
 url = "https://apps4.trootrax.com/rest/v2.0/assets/locations"
 params = {
-    "customer_id": CUSTOMER_ID,
+    "customer_id": "312",
     "session_id": sessionid,
     "app": "weathermap",
     "tail": "true",
     "trip_plan": "true",
 }
-
-response = requests.get(url, params=params, cookies=jar)
-print(f"API status: {response.status_code}")
-data = response.json()
-
-if "assets" not in data:
-    raise RuntimeError(f"Unexpected API response: {data}")
+response = session.get(url, params=params)  # <-- session.get, not requests.get
 
 # Step 5: Build output JSON
 locations = []
