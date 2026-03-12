@@ -73,8 +73,18 @@ new CSV and the dashboard rebuilds itself — no server required.
 
 ## Trootrax Live Tablet Map Feed
 
-The **Aircraft Location** tab now includes a **Tablet Maps** panel that reads
-`data/aircraft_locations.json` and plots each aircraft on a live Leaflet map.
+The **Aircraft Location** tab now includes a **Google Maps** panel that reads
+`data/aircraft_locations.json` and plots each aircraft as helicopter markers with
+registration labels.
+
+To enable map rendering, define your API key before opening the dashboard:
+
+```html
+<script>window.GOOGLE_MAPS_API_KEY = "YOUR_API_KEY";</script>
+```
+
+(You can place this in a small local wrapper page or inject it with your hosting
+platform's template system.)
 
 Generate that feed with:
 
