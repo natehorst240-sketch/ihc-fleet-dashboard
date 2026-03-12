@@ -33,6 +33,8 @@ INPUT_FALLBACKS = ["Due-List_BIG_WEEKLY.csv"]
 OUTPUT_FILENAME = "index.html"
 HISTORY_FILENAME   = "flight_hours_history.json"
 POSITIONS_FILENAME = "base_assignments.json"
+AIRCRAFT_LOCATIONS_FILENAME = "aircraft_locations.json"
+AIRCRAFT_LOCATIONS_FALLBACKS = ["aircraft_location.json"]
 PHOTO_FILENAME     = "IMG_9250.jpeg"
 COMPONENT_CHANGE_FILENAME = "ComponentChangeReport_109SP.csv"
 
@@ -390,6 +392,116 @@ def load_positions(positions_path):
     return result
 
 
+def _haversine_miles(lat1, lon1, lat2, lon2):
+    from math import radians, sin, cos, sqrt, atan2
+    r_miles = 3958.7613
+    dlat = radians(lat2 - lat1)
+    dlon = radians(lon2 - lon1)
+    a = sin(dlat / 2) ** 2 + cos(radians(lat1)) * cos(radians(lat2)) * sin(dlon / 2) ** 2
+    return r_miles * 2 * atan2(sqrt(a), sqrt(1 - a))
+
+
+def merge_locations_from_tracker(positions, positions_path, locations_path):
+    """Merge aircraft_locations data into current position badges.
+
+    Priority order:
+      1) Existing positions data (if already present in base_assignments payload)
+      2) Derived status from tracker feed + known base coordinates
+    """
+    if not locations_path.exists():
+        return positions
+
+    bases_meta = {}
+    try:
+        if positions_path.exists():
+            with open(positions_path, 'r', encoding='utf-8') as f:
+                positions_raw = json.load(f)
+                bases_meta = positions_raw.get('bases', {}) or {}
+    except Exception:
+        bases_meta = {}
+
+    try:
+        with open(locations_path, 'r', encoding='utf-8') as f:
+            tracker_rows = json.load(f)
+        if not isinstance(tracker_rows, list):
+            return positions
+    except Exception:
+        return positions
+
+    merged = dict(positions)
+
+    for row in tracker_rows:
+        tail = str(row.get('vin') or row.get('tail') or row.get('registration') or '').strip().upper()
+        if not tail:
+            continue
+
+        # Preserve richer pre-existing entries from base assignments data.
+        if tail in merged and merged[tail].get('status') in {'AT_BASE', 'AIRBORNE', 'AWAY'}:
+            continue
+
+        lat = safe_float(row.get('latitude'))
+        lon = safe_float(row.get('longitude'))
+        speed = safe_float(row.get('speed'))
+        altitude = safe_float(row.get('altitude'))
+        state = str(row.get('state') or '').strip().upper()
+
+        nearest = None
+        if lat is not None and lon is not None and bases_meta:
+            for base_id, base_data in bases_meta.items():
+                b_lat = safe_float(base_data.get('lat'))
+                b_lon = safe_float(base_data.get('lon'))
+                if b_lat is None or b_lon is None:
+                    continue
+                dist_miles = _haversine_miles(lat, lon, b_lat, b_lon)
+                if nearest is None or dist_miles < nearest['dist_miles']:
+                    nearest = {
+                        'id': base_id,
+                        'name': base_data.get('name', base_id),
+                        'dist_miles': dist_miles,
+                        'radius_miles': safe_float(base_data.get('radius_miles')) or 5.0,
+                    }
+
+        in_flight = (
+            state in {'IN FLIGHT', 'AIRBORNE'}
+            or (speed is not None and speed >= 40)
+            or (altitude is not None and altitude >= 1000 and speed is not None and speed >= 20)
+        )
+
+        if in_flight:
+            status = 'AIRBORNE'
+            curr_base = None
+            near_base = None
+        elif nearest and nearest['dist_miles'] <= nearest['radius_miles']:
+            status = 'AT_BASE'
+            curr_base = {
+                'id': nearest['id'],
+                'name': nearest['name'],
+                'dist_nm': round(nearest['dist_miles'] * 0.868976, 1),
+            }
+            near_base = None
+        else:
+            status = 'AWAY'
+            curr_base = None
+            near_base = None
+            if nearest:
+                near_base = {
+                    'id': nearest['id'],
+                    'name': nearest['name'],
+                    'dist_nm': round(nearest['dist_miles'] * 0.868976, 1),
+                }
+
+        merged[tail] = {
+            'status': status,
+            'current_base': curr_base,
+            'nearest_base': near_base,
+            'last_alt_ft': int(altitude) if altitude is not None else '',
+            'last_gs_kts': round(speed, 1) if speed is not None else '',
+            'last_updated': row.get('last_ping', ''),
+        }
+
+    return merged
+
+
 def get_location_badge(tail, positions):
     ac = positions.get(tail, {})
     if not ac:
@@ -399,7 +511,7 @@ def get_location_badge(tail, positions):
     if status == 'AIRBORNE':
         alt = ac.get('last_alt_ft', '')
         alt_str = f" {alt}ft" if alt else ''
-        return f'<span class="location-badge location-active">AIRBORNE{alt_str}</span>'
+        return f'<span class="location-badge location-active">IN FLIGHT{alt_str}</span>'
     if status == 'AT_BASE':
         name = curr.get('name', '') if curr else ''
         label = f'AT {name.upper()}' if name else 'AT BASE'
@@ -2089,6 +2201,13 @@ def main():
     output_path    = data_dir / _output_filename
     history_path   = data_dir / HISTORY_FILENAME
     positions_path = data_dir / POSITIONS_FILENAME
+    locations_path = data_dir / AIRCRAFT_LOCATIONS_FILENAME
+    if not locations_path.exists():
+        for fallback in AIRCRAFT_LOCATIONS_FALLBACKS:
+            candidate = data_dir / fallback
+            if candidate.exists():
+                locations_path = candidate
+                break
     component_change_path = data_dir / _cc_filename
     version_path   = data_dir / "dashboard_version.json"
     log_path       = Path(__file__).with_name("dashboard_log.txt")
@@ -2136,6 +2255,7 @@ def main():
 
         log("Loading positions...")
         positions = load_positions(positions_path)
+        positions = merge_locations_from_tracker(positions, positions_path, locations_path)
         if positions:
             log(f"Loaded positions for {len(positions)} aircraft.")
         else:
