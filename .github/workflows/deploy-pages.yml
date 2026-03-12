@@ -4,6 +4,9 @@ on:
   push:
     branches: ["main"]
     paths:
+      - "data/**"
+      - ".github/workflows/deploy-pages.yml"
+      - "scripts/fleet_dashboard_generator.py"
   workflow_dispatch:
 
 permissions:
