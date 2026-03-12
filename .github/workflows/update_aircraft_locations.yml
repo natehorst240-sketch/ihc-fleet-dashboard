@@ -27,7 +27,6 @@ jobs:
         run: pip install requests
 
       - name: Pull latest Trootrax feed
-        if: ${{ env.TROOTRAX_USER != '' && env.TROOTRAX_PASS != '' }}
         run: python scripts/trootrax.py
 
       - name: Commit updated location feed
