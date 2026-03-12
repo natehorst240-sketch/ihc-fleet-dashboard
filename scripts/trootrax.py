@@ -29,8 +29,8 @@ sessionid = next(
     (v for k, v in session.cookies.items() if k.lower() == "sessionid"),
     None,
 )
-tcum = session.cookies.get("_tcum")
-tsvce = session.cookies.get("_tsvce")
+tcum = session.cookies.("_tcum")
+tsvce = session.cookies.("_tsvce")
 
 if not sessionid:
     cookie_keys = list(session.cookies.keys())
@@ -54,6 +54,10 @@ params = {
     "trip_plan": "true",
 }
 response = session.get(url, params=params)  # <-- session.get, not requests.get
+response = session.get(url, params=params)
+print(f"API status: {response.status_code}")
+print(f"Response text: {response.text[:500]}")  # see what came back
+data = response.json()
 
 # Step 5: Build output JSON
 locations = []
