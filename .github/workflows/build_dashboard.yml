@@ -31,6 +31,8 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/index.html data/flight_hours_history.json data/dashboard_version.json data/base_assignments.json data/aircraft_locations.json
+          git add data/index.html data/flight_hours_history.json data/dashboard_version.json
+          [ -f data/base_assignments.json ] && git add data/base_assignments.json
+          [ -f data/aircraft_locations.json ] && git add data/aircraft_locations.json
           git diff --staged --quiet || git commit -m "ci: rebuild dashboard"
           git push
