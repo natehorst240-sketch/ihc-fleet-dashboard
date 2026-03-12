@@ -1408,6 +1408,26 @@ def _build_location_tab(aircraft_list, positions):
   function normalizeDetail(d, bases) { if (!d) return null; var statusRaw = String(d.status || '').toUpperCase(); var lat = toNum(d.lat), lon = toNum(d.lon); var nearest = (lat !== null && lon !== null) ? nearestBase(lat, lon, bases) : null; var currentBaseId = d.current_base || d.closest_base || (nearest && nearest.baseId) || ''; var currentBase = bases[currentBaseId] || BASES[currentBaseId] || (nearest && nearest.base) || {}; var distMi = nearest ? nearest.dist_miles : toNum(d.dist_miles); var withinBase = !!(nearest && distMi <= Number((nearest.base && nearest.base.radius_miles) || 5)); var status = withinBase ? 'AT_BASE' : (statusRaw === 'AIRBORNE' ? 'AIRBORNE' : (lat !== null && lon !== null ? 'AWAY' : (statusRaw || 'UNKNOWN'))); return {status: status, baseName: currentBase.name || currentBaseId, distMi: distMi, alt: d.alt_ft, speed: d.speed_kts, utc: d.utc}; }
   function locLine(d, bases) { var n = normalizeDetail(d, bases); if (!n) return '<span class="ac-loc-unknown">NO DATA</span>'; if (n.status==='AT_BASE') return '<span class="ac-loc-base">AT '+esc(String(n.baseName || '').toUpperCase())+'</span>'; if (n.status==='AIRBORNE') { var alt=n.alt ? parseInt(n.alt).toLocaleString()+' ft' : ''; var spd=n.speed ? Math.round(n.speed)+' kts' : ''; var parts=[alt,spd].filter(Boolean).join(' · '); return '<span class="ac-loc-air">AIRBORNE</span>'+(parts?'<span class="ac-loc-detail"> · '+esc(parts)+'</span>':''); } if (n.status==='AWAY') { var pos = n.distMi ? (Math.round(n.distMi)+' mi from '+(n.baseName || 'base')) : 'away from base'; return '<span class="ac-loc-away">AWAY FROM BASE</span><span class="ac-loc-detail"> · '+esc(pos)+'</span>'; } return '<span class="ac-loc-unknown">'+esc(n.status||'UNKNOWN')+'</span>'; }
 
+  function deriveStatusFromRaw(rawState, speedKts) { var state = String(rawState || '').toUpperCase(); if (state.indexOf('AIRBORNE') >= 0 || state.indexOf('IN_FLIGHT') >= 0 || speedKts > 40) return 'AIRBORNE'; return 'AWAY'; }
+  function buildAircraftDetail(rows) {
+    var detail = {};
+    (Array.isArray(rows) ? rows : []).forEach(function(row) {
+      var tail = String((row && (row.vin || row.tail || row.registration)) || '').toUpperCase();
+      if (!tail) return;
+      var speed = toNum(row.speed_kts);
+      if (speed === null) speed = toNum(row.speed);
+      detail[tail] = {
+        lat: row.latitude,
+        lon: row.longitude,
+        alt_ft: row.altitude,
+        speed_kts: speed,
+        utc: row.last_ping || row.utc || '',
+        status: deriveStatusFromRaw(row.state || row.status, speed || 0)
+      };
+    });
+    return detail;
+  }
+
   function render(payload) {
     var grid=document.getElementById('ac-location-grid'); if (!grid||!payload) return;
     var detail=payload.aircraft_detail||{}, bases=Object.assign({}, BASES, payload.bases || {});
@@ -1416,7 +1436,27 @@ def _build_location_tab(aircraft_list, positions):
     var state = payloadToState(payload || {}); renderBaseAssignments(state, payload);
   }
 
-  function refresh() { fetch('base_assignments.json?ts='+Date.now(),{cache:'no-store'}).then(function(r){ if(!r.ok) throw new Error('failed'); return r.json(); }).then(render).catch(function(){ render({bases:BASES, assignments:{}, aircraft_detail:{}}); }); }
+  function refresh() {
+    var ts = Date.now();
+    var assignmentsReq = fetch('base_assignments.json?ts='+ts, {cache:'no-store'})
+      .then(function(r) { if (!r.ok) throw new Error('failed base assignments'); return r.json(); })
+      .catch(function() { return {bases: BASES, assignments: {}}; });
+
+    var locationsReq = fetch('aircraft_locations.json?ts='+ts, {cache:'no-store'})
+      .then(function(r) { if (!r.ok) throw new Error('failed aircraft locations'); return r.json(); });
+
+    Promise.all([assignmentsReq, locationsReq])
+      .then(function(parts) {
+        var assignmentsPayload = parts[0] || {};
+        var locationRows = parts[1] || [];
+        render({
+          bases: Object.assign({}, BASES, assignmentsPayload.bases || {}),
+          assignments: assignmentsPayload.assignments || {},
+          aircraft_detail: buildAircraftDetail(locationRows)
+        });
+      })
+      .catch(function() { render({bases:BASES, assignments:{}, aircraft_detail:{}}); });
+  }
   refresh(); setInterval(refresh, 60000);
 })();
 """
