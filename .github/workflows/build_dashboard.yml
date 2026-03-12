@@ -1,5 +1,7 @@
 name: Build Dashboard
 on:
+  schedule:
+    - cron: "0 */6 * * *"
   push:
     branches: ["main"]
     paths:
@@ -10,6 +12,10 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      TROOTRAX_USER: ${{ secrets.TROOTRAX_USER }}
+      TROOTRAX_PASS: ${{ secrets.TROOTRAX_PASS }}
+      TROOTRAX_CUSTOMER_ID: ${{ secrets.TROOTRAX_CUSTOMER_ID }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
@@ -19,10 +25,6 @@ jobs:
       - name: Install dependencies
         run: pip install Pillow requests
       - name: Refresh aircraft locations (Trootrax)
-        env:
-          TROOTRAX_USER: ${{ secrets.TROOTRAX_USER }}
-          TROOTRAX_PASS: ${{ secrets.TROOTRAX_PASS }}
-          TROOTRAX_CUSTOMER_ID: ${{ secrets.TROOTRAX_CUSTOMER_ID }}
         if: ${{ env.TROOTRAX_USER != '' && env.TROOTRAX_PASS != '' }}
         run: python scripts/trootrax.py
       - name: Build dashboard
