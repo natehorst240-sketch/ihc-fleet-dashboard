@@ -1,36 +1,39 @@
-name: Build Dashboard
+name: Update Aircraft Locations
+
 on:
-  push:
-    branches: ["main"]
-    paths:
-      - "data/Due-List_BIG_WEEKLY_aw109sp.csv"
+  schedule:
+    - cron: "*/15 * * * *"
   workflow_dispatch:
+
 permissions:
   contents: write
+
 jobs:
-  build:
+  refresh-locations:
     runs-on: ubuntu-latest
+    if: ${{ secrets.TROOTRAX_USER != '' && secrets.TROOTRAX_PASS != '' }}
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
       - name: Install dependencies
-        run: pip install Pillow requests
-      - name: Refresh aircraft locations (Trootrax)
-        if: ${{ secrets.TROOTRAX_USER != '' && secrets.TROOTRAX_PASS != '' }}
+        run: pip install requests
+
+      - name: Pull latest Trootrax feed
         env:
           TROOTRAX_USER: ${{ secrets.TROOTRAX_USER }}
           TROOTRAX_PASS: ${{ secrets.TROOTRAX_PASS }}
           TROOTRAX_CUSTOMER_ID: ${{ secrets.TROOTRAX_CUSTOMER_ID }}
         run: python scripts/trootrax.py
-      - name: Build dashboard
-        run: python scripts/fleet_dashboard_generator.py
-      - name: Commit output
+
+      - name: Commit updated location feed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/index.html data/flight_hours_history.json data/dashboard_version.json data/base_assignments.json data/aircraft_locations.json
-          git diff --staged --quiet || git commit -m "ci: rebuild dashboard [skip ci]"
+          git add data/aircraft_locations.json
+          git diff --staged --quiet || git commit -m "ci: refresh aircraft locations [skip ci]"
           git push
