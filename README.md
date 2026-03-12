@@ -16,7 +16,7 @@ new CSV and the dashboard rebuilds itself — no server required.
 │  Veryon Export                   Component Change Report        │
 │  (Due-List CSV)                (ComponentChangeReport CSV)      │
 └────────────┬───────────────────────────────┬────────────────────┘
-             │  git push to main             │
+             │  bot CSV commit or schedule       │
              ▼                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │               GitHub Actions  (build_dashboard.yml)             │
@@ -111,6 +111,10 @@ For full GitHub Pages setup see [SETUP_GUIDE.md](SETUP_GUIDE.md).
 
 Upload new CSVs to `data/` on GitHub (drag-and-drop or via the web UI) and
 the Actions pipeline rebuilds and redeploys automatically.
+
+`build_dashboard.yml` runs every 6 hours and rebuilds from the latest committed
+`Due-List_BIG_WEEKLY_aw109sp.csv` in the repo. If your export bot commits that file to
+`main`, the push trigger will also rebuild immediately.
 
 Or via the command line:
 
