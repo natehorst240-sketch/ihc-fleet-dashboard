@@ -64679,21 +64679,37 @@ RII</td>
   function normalizeDetail(d, bases) { if (!d) return null; var statusRaw = String(d.status || '').toUpperCase(); var lat = toNum(d.lat), lon = toNum(d.lon); var nearest = (lat !== null && lon !== null) ? nearestBase(lat, lon, bases) : null; var currentBaseId = d.current_base || d.closest_base || (nearest && nearest.baseId) || ''; var currentBase = bases[currentBaseId] || BASES[currentBaseId] || (nearest && nearest.base) || {}; var distMi = nearest ? nearest.dist_miles : toNum(d.dist_miles); var withinBase = !!(nearest && distMi <= Number((nearest.base && nearest.base.radius_miles) || 5)); var status = withinBase ? 'AT_BASE' : (statusRaw === 'AIRBORNE' ? 'AIRBORNE' : (lat !== null && lon !== null ? 'AWAY' : (statusRaw || 'UNKNOWN'))); return {status: status, baseName: currentBase.name || currentBaseId, distMi: distMi, alt: d.alt_ft, speed: d.speed_kts, utc: d.utc}; }
   function locLine(d, bases) { var n = normalizeDetail(d, bases); if (!n) return '<span class="ac-loc-unknown">NO DATA</span>'; if (n.status==='AT_BASE') return '<span class="ac-loc-base">AT '+esc(String(n.baseName || '').toUpperCase())+'</span>'; if (n.status==='AIRBORNE') { var alt=n.alt ? parseInt(n.alt).toLocaleString()+' ft' : ''; var spd=n.speed ? Math.round(n.speed)+' kts' : ''; var parts=[alt,spd].filter(Boolean).join(' · '); return '<span class="ac-loc-air">AIRBORNE</span>'+(parts?'<span class="ac-loc-detail"> · '+esc(parts)+'</span>':''); } if (n.status==='AWAY') { var pos = n.distMi ? (Math.round(n.distMi)+' mi from '+(n.baseName || 'base')) : 'away from base'; return '<span class="ac-loc-away">AWAY FROM BASE</span><span class="ac-loc-detail"> · '+esc(pos)+'</span>'; } return '<span class="ac-loc-unknown">'+esc(n.status||'UNKNOWN')+'</span>'; }
 
-  function deriveStatusFromRaw(rawState, speedKts) { var state = String(rawState || '').toUpperCase(); if (state.indexOf('AIRBORNE') >= 0 || state.indexOf('IN_FLIGHT') >= 0 || speedKts > 40) return 'AIRBORNE'; return 'AWAY'; }
+  function deriveStatusFromRaw(rawState, speedKts) {
+    var state = String(rawState || '').toUpperCase();
+    if (state.indexOf('AIRBORNE') >= 0 || state.indexOf('IN_FLIGHT') >= 0 || state.indexOf('INFLIGHT') >= 0 || speedKts > 40) return 'AIRBORNE';
+    return 'AWAY';
+  }
+  function normalizeLocationRows(payload) {
+    if (Array.isArray(payload)) return payload;
+    if (!payload || typeof payload !== 'object') return [];
+    var candidates = [payload.rows, payload.data, payload.results, payload.locations, payload.aircraft, payload.items];
+    for (var i = 0; i < candidates.length; i += 1) { if (Array.isArray(candidates[i])) return candidates[i]; }
+    return [];
+  }
   function buildAircraftDetail(rows) {
     var detail = {};
-    (Array.isArray(rows) ? rows : []).forEach(function(row) {
+    normalizeLocationRows(rows).forEach(function(row) {
       var tail = String((row && (row.vin || row.tail || row.registration)) || '').toUpperCase();
       if (!tail) return;
       var speed = toNum(row.speed_kts);
       if (speed === null) speed = toNum(row.speed);
+      var lat = row.latitude; if (lat === undefined) lat = row.lat;
+      var lon = row.longitude; if (lon === undefined) lon = row.lon;
+      var alt = row.altitude; if (alt === undefined) alt = row.alt_ft;
+      var utc = row.last_ping || row.last_seen || row.last_seen_utc || row.utc || '';
+      var rawState = row.state || row.status || row.flight_state;
       detail[tail] = {
-        lat: row.latitude,
-        lon: row.longitude,
-        alt_ft: row.altitude,
+        lat: lat,
+        lon: lon,
+        alt_ft: alt,
         speed_kts: speed,
-        utc: row.last_ping || row.utc || '',
-        status: deriveStatusFromRaw(row.state || row.status, speed || 0)
+        utc: utc,
+        status: deriveStatusFromRaw(rawState, speed || 0)
       };
     });
     return detail;
