@@ -70,6 +70,22 @@ new CSV and the dashboard rebuilds itself — no server required.
 
 ---
 
+
+## Trootrax Live Tablet Map Feed
+
+The **Aircraft Location** tab now includes a **Tablet Maps** panel that reads
+`data/aircraft_locations.json` and plots each aircraft on a live Leaflet map.
+
+Generate that feed with:
+
+```bash
+export TROOTRAX_USER='your_user'
+export TROOTRAX_PASS='your_pass'
+python scripts/trootrax.py
+```
+
+Optional: set `TROOTRAX_CUSTOMER_ID` if you need a customer ID other than `312`.
+
 ## Quick Start
 
 ```bash
