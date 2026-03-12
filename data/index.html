@@ -9,6 +9,7 @@
 <title>IHC Health Services - Fleet Due List</title>
 <link rel="icon" href="data:,">
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
 <style>
   :root {
     --bg:#0a0c0f; --surface:#111418; --surface2:#181c22; --border:#1e2530;
@@ -128,7 +129,7 @@
   </div>
   <div class="header-meta">
     <div class="date">REPORT DATE: 10 MAR 2026</div>
-    <div>FLEET: 9 AIRCRAFT &nbsp;|&nbsp; 0 AIRBORNE &nbsp;|&nbsp; 0 AT BASE &nbsp;|&nbsp; GENERATED: 12 MAR 2026 06:11</div>
+    <div>FLEET: 9 AIRCRAFT &nbsp;|&nbsp; 0 AIRBORNE &nbsp;|&nbsp; 0 AT BASE &nbsp;|&nbsp; GENERATED: 12 MAR 2026 09:53</div>
   </div>
 </header>
 <div class="legend">
@@ -64548,7 +64549,13 @@ RII</td>
 .fleet-map-head{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--surface2);border-bottom:1px solid var(--border);gap:12px;}
 .fleet-map-title{font-family:var(--sans);font-size:14px;font-weight:800;letter-spacing:1px;color:var(--heading);}
 .fleet-map-meta{font-family:var(--mono);font-size:10px;color:var(--muted);}
-.fleet-map-canvas{padding:14px 12px;font-family:var(--mono);font-size:11px;color:var(--muted);line-height:1.5;}
+.fleet-map-canvas{height:430px;width:100%;}
+.aircraft-marker{display:flex;align-items:center;gap:5px;white-space:nowrap;transform:translate(-10px,-10px);}
+.aircraft-symbol{font-size:13px;line-height:1;filter:drop-shadow(0 0 4px rgba(0,0,0,.6));}
+.aircraft-label{font-family:var(--mono);font-size:10px;padding:2px 6px;border-radius:10px;color:#d8ecff;background:rgba(11,16,22,.82);border:1px solid rgba(41,182,246,.35);}
+.aircraft-marker.at-base .aircraft-label{border-color:rgba(0,230,118,.45);}
+.aircraft-marker.away .aircraft-label{border-color:rgba(255,171,0,.45);}
+.aircraft-marker.airborne .aircraft-label{border-color:rgba(41,182,246,.65);}
 .ac-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:16px;}
 .ac-card{background:var(--surface);border:1px solid var(--border);border-radius:4px;overflow:hidden;transition:border-color .2s;}
 .ac-card-base{border-color:rgba(0,230,118,0.35);}
@@ -64574,12 +64581,10 @@ RII</td>
 </div>
 <div class="fleet-map-wrap">
   <div class="fleet-map-head">
-    <div class="fleet-map-title">Base Proximity Auto-Assignment</div>
+    <div class="fleet-map-title">Fleet Position Map</div>
     <div class="fleet-map-meta" id="fleet-map-meta">Source: loading...</div>
   </div>
-  <div class="fleet-map-canvas" id="fleet-map-canvas">
-    Aircraft are automatically linked to the nearest base when position is within 5 miles.
-  </div>
+  <div class="fleet-map-canvas" id="fleet-map-canvas"></div>
 </div>
 <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:10px;">
   Drag registration pills into base cards to assign aircraft to bases
@@ -64662,21 +64667,32 @@ RII</td>
 </div>
 <script>
 (function() {
+  var HAS_POSITIONS = false;
   var AC_HRS = {"N251HC": "6,066.9", "N261HC": "6,082.0", "N271HC": "6,974.8", "N281HC": "6,511.7", "N291HC": "5,895.3", "N431HC": "2,006.2", "N531HC": "3,326.1", "N631HC": "1,847.5", "N731HC": "20.6"};
 
   var BASES = {
-    LOGAN:      {name:'Logan',      lat:41.75524176888249, lon:-111.82057723592395, radius_miles:5},
-    MCKAY:      {name:'McKay-Dee',  lat:41.1829407,         lon:-111.9549936,        radius_miles:5},
-    IMED:       {name:'IMED',       lat:40.6602665,         lon:-111.8896100,        radius_miles:5},
-    KSLC:       {name:'KSLC',       lat:40.7746654,         lon:-111.9565804,        radius_miles:5},
-    PROVO:      {name:'Provo',      lat:40.2463203,         lon:-111.6656218,        radius_miles:5},
-    ROOSEVELT:  {name:'Roosevelt',  lat:40.3050418,         lon:-109.9962571,        radius_miles:5},
-    CEDAR_CITY: {name:'Cedar City', lat:37.7002988,         lon:-113.0674793,        radius_miles:5},
-    ST_GEORGE:  {name:'St George',  lat:37.0989134,         lon:-113.5526420,        radius_miles:5}
+    LOGAN:      {name:'Logan',      lat:41.7912,  lon:-111.8522, radius_miles:5},
+    MCKAY:      {name:'McKay-Dee',  lat:41.2545,  lon:-112.0126, radius_miles:5},
+    IMED:       {name:'IMed',       lat:40.2338,  lon:-111.6585, radius_miles:5},
+    PROVO:      {name:'Provo',      lat:40.2192,  lon:-111.7233, radius_miles:5},
+    ROOSEVELT:  {name:'Roosevelt',  lat:40.2765,  lon:-110.0518, radius_miles:5},
+    CEDAR_CITY: {name:'Cedar City', lat:37.7010,  lon:-113.0989, radius_miles:5},
+    ST_GEORGE:  {name:'St George',  lat:37.0365,  lon:-113.5101, radius_miles:5},
+    KSLC:       {name:'KSLC',       lat:40.7884,  lon:-111.9778, radius_miles:10},
   };
 
+  var FLEET_MAP = null;
+  var FLEET_MARKERS = null;
   var ASSIGNMENT_STORAGE_KEY = 'fleet.baseAssignments.v1';
 
+  function bearing(lat1,lon1,lat2,lon2) {
+    var dLon=(lon2-lon1)*Math.PI/180;
+    lat1=lat1*Math.PI/180; lat2=lat2*Math.PI/180;
+    var y=Math.sin(dLon)*Math.cos(lat2);
+    var x=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLon);
+    return ((Math.atan2(y,x)*180/Math.PI)+360)%360;
+  }
+  function cardinal(d) { return ['N','NE','E','SE','S','SW','W','NW'][Math.round(d/45)%8]; }
   function esc(t) { return String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
   function ageFmt(utcStr) {
     if (!utcStr) return '';
@@ -64685,17 +64701,6 @@ RII</td>
     if (isNaN(m)||m<0) return '';
     return m<60 ? m+'m ago' : (m/60).toFixed(1)+'h ago';
   }
-  function toRad(v){ return Number(v||0) * Math.PI / 180; }
-  function milesBetween(lat1, lon1, lat2, lon2) {
-    if (![lat1,lon1,lat2,lon2].every(isFinite)) return Infinity;
-    var dLat = toRad(lat2-lat1);
-    var dLon = toRad(lon2-lon1);
-    var a = Math.sin(dLat/2) * Math.sin(dLat/2)
-      + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2) * Math.sin(dLon/2);
-    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return 3958.8 * c;
-  }
-
   function loadOverrides() {
     try {
       var raw = localStorage.getItem(ASSIGNMENT_STORAGE_KEY);
@@ -64712,77 +64717,8 @@ RII</td>
     (state.unassigned || []).forEach(function(tail) { out[tail] = 'unassigned'; });
     try { localStorage.setItem(ASSIGNMENT_STORAGE_KEY, JSON.stringify(out)); } catch(_e) {}
   }
-
-  function mergeBases(payload) {
-    var merged = {};
-    Object.keys(BASES).forEach(function(baseId) {
-      merged[baseId] = Object.assign({}, BASES[baseId]);
-    });
-    Object.keys(payload.bases || {}).forEach(function(baseId) {
-      merged[baseId] = Object.assign({}, merged[baseId] || {}, payload.bases[baseId] || {});
-    });
-    return merged;
-  }
-
-  function nearestBase(lat, lon, bases) {
-    var nearest = null;
-    Object.keys(bases).forEach(function(baseId) {
-      var b = bases[baseId] || {};
-      var dist = milesBetween(Number(lat), Number(lon), Number(b.lat), Number(b.lon));
-      if (!isFinite(dist)) return;
-      if (!nearest || dist < nearest.dist_miles) {
-        nearest = {baseId: baseId, dist_miles: dist, radius_miles: Number(b.radius_miles || 5)};
-      }
-    });
-    return nearest;
-  }
-
-  function normalizeAircraftDetail(payload, bases) {
-    var detail = Object.assign({}, payload.aircraft_detail || {});
-    Object.keys(detail).forEach(function(tail) {
-      var d = Object.assign({}, detail[tail] || {});
-      var lat = Number(d.lat);
-      var lon = Number(d.lon);
-      var status = String(d.status || '').toUpperCase();
-      if (isFinite(lat) && isFinite(lon)) {
-        var near = nearestBase(lat, lon, bases);
-        if (near) {
-          d.closest_base = near.baseId;
-          d.dist_miles = near.dist_miles;
-          if (status !== 'AIRBORNE' && near.dist_miles <= Number(near.radius_miles || 5)) {
-            d.status = 'AT_BASE';
-            d.auto_base = near.baseId;
-          } else if (!status) {
-            d.status = 'AWAY';
-          }
-        }
-      }
-      detail[tail] = d;
-    });
-    return detail;
-  }
-
-  function normalizeAircraftLocations(payload) {
-    var detail = {};
-    (Array.isArray(payload) ? payload : []).forEach(function(item) {
-      var tail = String(item && (item.vin || item.tail || item.registration || '') || '').toUpperCase();
-      if (!tail) return;
-      var rawState = String(item && item.state || '').toUpperCase();
-      var status = rawState === 'INFLIGHT' ? 'AIRBORNE' : (rawState === 'STATIONARY' ? 'AWAY' : 'UNKNOWN');
-      detail[tail] = {
-        lat: Number(item.latitude),
-        lon: Number(item.longitude),
-        status: status,
-        speed_kts: Number(item.speed || 0),
-        alt_ft: Number(item.altitude || 0),
-        utc: item.last_ping || null,
-        source: 'skyrouter'
-      };
-    });
-    return detail;
-  }
-
-  function payloadToState(payload, detail, basesMeta) {
+  function payloadToState(payload) {
+    var basesMeta = Object.assign({}, BASES, payload.bases || {});
     var bases = {};
     Object.keys(basesMeta).forEach(function(baseId) {
       var meta = basesMeta[baseId] || {};
@@ -64798,8 +64734,10 @@ RII</td>
     var seen = {};
     var assignments = payload.assignments || {};
     Object.keys(assignments).forEach(function(baseId) {
-      if (baseId === 'unassigned' || !bases[baseId]) return;
-      var list = Array.isArray(assignments[baseId] && assignments[baseId].aircraft) ? assignments[baseId].aircraft : [];
+      var node = assignments[baseId];
+      if (baseId === 'unassigned') return;
+      if (!bases[baseId]) return;
+      var list = Array.isArray(node && node.aircraft) ? node.aircraft : [];
       list.forEach(function(ac) {
         var tail = (ac && (ac.tail || ac.registration || ac.callsign || '') || '').toUpperCase();
         if (!tail || seen[tail]) return;
@@ -64807,7 +64745,6 @@ RII</td>
         seen[tail] = true;
       });
     });
-
     var unassigned = [];
     var listUn = Array.isArray(assignments.unassigned) ? assignments.unassigned : [];
     listUn.forEach(function(ac) {
@@ -64829,21 +64766,8 @@ RII</td>
       else unassigned.push(tail);
     });
 
-    Object.keys(detail).forEach(function(tail) {
-      var d = detail[tail] || {};
-      if (String(d.status || '').toUpperCase() !== 'AT_BASE') return;
-      var nearBase = d.auto_base || d.closest_base;
-      if (!bases[nearBase]) return;
-      Object.keys(bases).forEach(function(baseId) {
-        bases[baseId].aircraft = bases[baseId].aircraft.filter(function(t) { return t !== tail; });
-      });
-      unassigned = unassigned.filter(function(t) { return t !== tail; });
-      bases[nearBase].aircraft.push(tail);
-    });
-
     return {bases:bases, unassigned:unassigned};
   }
-
   function moveTail(state, tail, toBase) {
     Object.keys(state.bases).forEach(function(baseId) {
       state.bases[baseId].aircraft = state.bases[baseId].aircraft.filter(function(t) { return t !== tail; });
@@ -64874,44 +64798,100 @@ RII</td>
         ev.preventDefault();
         zone.classList.remove('drag-over');
         var tail = draggedTail || ev.dataTransfer.getData('text/plain');
+        var toBase = zone.getAttribute('data-base');
         if (!tail) return;
-        moveTail(state, tail, zone.getAttribute('data-base'));
+        moveTail(state, tail, toBase);
         renderBaseAssignments(state, payload);
       });
     });
   }
 
-  function locationBadge(detail) {
-    if (!detail) return {cls:'location-away', text:'away from base'};
-    var status = String(detail.status || '').toUpperCase();
-    var baseName = '';
-    if (detail.closest_base && BASES[detail.closest_base]) baseName = BASES[detail.closest_base].name;
-    if (status === 'AT_BASE' && baseName) return {cls:'location-at-base', text:'at ' + baseName};
-    return {cls:'location-away', text:'away from base'};
+  function statusTone(status) {
+    if (status === 'AT_BASE') return '#00e676';
+    if (status === 'AIRBORNE') return '#29b6f6';
+    return '#ffab00';
   }
 
-  function updateMaintenanceLocationBadges(detail) {
-    document.querySelectorAll('#insp-tbody tr[data-tail]').forEach(function(row) {
-      var tail = String(row.getAttribute('data-tail') || '').toUpperCase();
-      var tailNode = row.querySelector('.tail-number');
-      if (!tailNode) return;
-      var existing = tailNode.querySelector('.location-badge');
-      if (existing) existing.remove();
-      var badge = locationBadge(detail[tail]);
-      var span = document.createElement('span');
-      span.className = 'location-badge ' + badge.cls;
-      span.textContent = badge.text;
-      tailNode.appendChild(span);
+  function assignmentIndex(state) {
+    var index = {};
+    Object.keys(state.bases).forEach(function(baseId) {
+      (state.bases[baseId].aircraft || []).forEach(function(tail) { index[tail] = baseId; });
     });
+    (state.unassigned || []).forEach(function(tail) { index[tail] = 'unassigned'; });
+    return index;
   }
 
-  function renderStatusMeta(payload, detail) {
+  function initFleetMap() {
+    var node = document.getElementById('fleet-map-canvas');
+    if (!node || !(window.L && L.map)) return;
+    if (FLEET_MAP) return;
+    FLEET_MAP = L.map('fleet-map-canvas', {zoomControl:true, attributionControl:true});
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 18,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(FLEET_MAP);
+    FLEET_MARKERS = L.layerGroup().addTo(FLEET_MAP);
+  }
+
+  function markerHtml(tail, status) {
+    var cls = status === 'AT_BASE' ? 'at-base' : (status === 'AIRBORNE' ? 'airborne' : 'away');
+    var symbol = status === 'AIRBORNE' ? '&#9992;' : '&#9673;';
+    return '<div class="aircraft-marker '+cls+'"><span class="aircraft-symbol" style="color:'+statusTone(status)+'">'+symbol+'</span><span class="aircraft-label">'+esc(tail)+'</span></div>';
+  }
+
+  function renderFleetMap(payload, state) {
+    initFleetMap();
+    if (!FLEET_MAP || !FLEET_MARKERS) return;
+
+    FLEET_MARKERS.clearLayers();
+    var detail = (payload && payload.aircraft_detail) || {};
+    var assigned = assignmentIndex(state);
+    var points = [];
+
+    Object.keys(detail).forEach(function(tail) {
+      var d = detail[tail] || {};
+      if (typeof d.lat !== 'number' || typeof d.lon !== 'number') return;
+      var status = String(d.status || 'UNKNOWN').toUpperCase();
+      var baseId = assigned[tail] || d.base_id || 'unassigned';
+      var baseMeta = (payload.bases && payload.bases[baseId]) || BASES[baseId] || {};
+      var baseName = baseMeta.name || baseId;
+
+      var icon = L.divIcon({
+        html: markerHtml(tail, status),
+        className: '',
+        iconSize: [0, 0]
+      });
+      var marker = L.marker([d.lat, d.lon], {icon:icon});
+      var dist = d.dist_miles ? Math.round(d.dist_miles) + ' mi' : 'n/a';
+      var updated = d.utc || payload.last_updated || 'unknown';
+      marker.bindPopup('<strong>'+esc(tail)+'</strong><br>Status: '+esc(status)+'<br>Assigned base: '+esc(String(baseName).toUpperCase())+'<br>Distance: '+esc(dist)+'<br>Updated: '+esc(updated));
+      marker.addTo(FLEET_MARKERS);
+      points.push({lat:d.lat, lon:d.lon});
+    });
+
+    Object.keys(state.bases).forEach(function(baseId) {
+      var b = state.bases[baseId];
+      if (!isFinite(b.lat) || !isFinite(b.lon)) return;
+      L.circle([b.lat, b.lon], {
+        radius: Number(b.radius_miles || 5) * 1609.34,
+        color: '#29b6f6',
+        weight: 1,
+        fillOpacity: 0.03
+      }).addTo(FLEET_MARKERS).bindTooltip(esc((b.name || baseId).toUpperCase())+' base');
+      points.push({lat:b.lat, lon:b.lon});
+    });
+
     var metaNode = document.getElementById('fleet-map-meta');
     if (metaNode) {
       var src = payload && payload.source ? String(payload.source) : 'unknown';
       var stamp = payload && payload.last_updated ? String(payload.last_updated) : 'unknown';
-      metaNode.textContent = 'Source: '+src+' · Last update: '+stamp+' · Aircraft tracked: '+Object.keys(detail).length;
+      metaNode.textContent = 'Source: '+src+' · Last update: '+stamp+' · Aircraft plotted: '+Object.keys(detail).length;
     }
+
+    var bounds = tabletMapBounds(points);
+    if (bounds) FLEET_MAP.fitBounds(bounds, {padding:[24,24], maxZoom: 9});
+    else FLEET_MAP.setView([39.4, -111.9], 6);
+    setTimeout(function(){ FLEET_MAP.invalidateSize(); }, 0);
   }
 
   function renderBaseAssignments(state, payload) {
@@ -64936,6 +64916,7 @@ RII</td>
 
     host.innerHTML = cards.join('');
     bindDnD(state, payload);
+    renderFleetMap(payload, state);
   }
 
   function locLine(d, bases) {
@@ -64944,18 +64925,29 @@ RII</td>
     var baseId=d.closest_base||'';
     var baseMeta=bases[baseId]||BASES[baseId]||{};
     var baseName=baseMeta.name||baseId;
-    if (status==='AT_BASE' && baseName) return '<span class="ac-loc-base">AT '+esc(baseName.toUpperCase())+'</span>';
-    if (status==='AIRBORNE') return '<span class="ac-loc-air">AIRBORNE</span>';
-    return '<span class="ac-loc-away">AWAY FROM BASE</span>';
+    var distMi=d.dist_miles||0;
+    var dir='';
+    if (d.lat && d.lon && baseMeta.lat) dir=cardinal(bearing(baseMeta.lat,baseMeta.lon,d.lat,d.lon));
+    if (status==='AT_BASE') return '<span class="ac-loc-base">AT '+esc(baseName.toUpperCase())+'</span>';
+    if (status==='AIRBORNE') {
+      var alt=d.alt_ft ? parseInt(d.alt_ft).toLocaleString()+' ft' : '';
+      var spd=d.speed_kts ? Math.round(d.speed_kts)+' kts' : '';
+      var pos=distMi&&baseName ? (Math.round(distMi)+' mi '+(dir?dir+' of ':' from ')+baseName) : '';
+      var parts=[pos,alt,spd].filter(Boolean).join(' · ');
+      return '<span class="ac-loc-air">AIRBORNE</span>'+(parts?'<span class="ac-loc-detail"> '+esc(parts)+'</span>':'');
+    }
+    if (status==='AWAY') {
+      var pos=distMi&&baseName ? (Math.round(distMi)+' mi '+(dir?dir+' of ':' from ')+baseName) : (baseName||'unknown');
+      return '<span class="ac-loc-away">AWAY</span><span class="ac-loc-detail"> · '+esc(pos)+'</span>';
+    }
+    return '<span class="ac-loc-unknown">'+esc(status||'UNKNOWN')+'</span>';
   }
 
   function render(payload) {
     var grid=document.getElementById('ac-location-grid');
     if (!grid||!payload) return;
-
-    var mergedBases = mergeBases(payload || {});
-    var detail = normalizeAircraftDetail(payload || {}, mergedBases);
-
+    var detail=payload.aircraft_detail||{};
+    var bases=payload.bases||{};
     var cards=Object.keys(AC_HRS).map(function(tail) {
       var d=detail[tail];
       var status=d?(d.status||'UNKNOWN').toUpperCase():'NO DATA';
@@ -64968,38 +64960,26 @@ RII</td>
           +'<div class="ac-hours">'+esc(hrs)+' TT</div>'
         +'</div>'
         +'<div class="ac-card-body">'
-          +'<div class="ac-loc">'+locLine(d,mergedBases)+'</div>'
+          +'<div class="ac-loc">'+locLine(d,bases)+'</div>'
           +(age?'<div class="ac-age">'+esc(age)+'</div>':'')
         +'</div></div>';
     });
     grid.innerHTML=cards.join('');
 
-    var state = payloadToState(payload || {}, detail, mergedBases);
+    var state = payloadToState(payload || {});
     renderBaseAssignments(state, payload);
-    updateMaintenanceLocationBadges(detail);
-    renderStatusMeta(payload, detail);
+  }
+
+  function tabletMapBounds(points) {
+    if (!points.length || !(window.L && L.latLngBounds)) return null;
+    var b = L.latLngBounds(points.map(function(p) { return [p.lat, p.lon]; }));
+    return b.isValid() ? b : null;
   }
 
   function refresh() {
-    var ts = Date.now();
-    Promise.all([
-      fetch('base_assignments.json?ts='+ts,{cache:'no-store'})
-        .then(function(r){ return r.ok ? r.text() : '{}'; })
-        .then(function(raw){ try { return JSON.parse(raw); } catch(_e) { return {}; } })
-        .catch(function(){ return {}; }),
-      fetch('aircraft_locations.json?ts='+ts,{cache:'no-store'})
-        .then(function(r){ return r.ok ? r.json() : []; })
-        .catch(function(){ return []; })
-    ])
-      .then(function(results){
-        var assignments = results[0] || {};
-        var gpsPayload = results[1] || [];
-        var liveDetail = normalizeAircraftLocations(gpsPayload);
-        assignments.aircraft_detail = Object.assign({}, assignments.aircraft_detail || {}, liveDetail);
-        if (!assignments.source) assignments.source = 'base_assignments + skyrouter';
-        if (!assignments.last_updated && gpsPayload[0] && gpsPayload[0].last_ping) assignments.last_updated = gpsPayload[0].last_ping;
-        render(assignments);
-      })
+    fetch('base_assignments.json?ts='+Date.now(),{cache:'no-store'})
+      .then(function(r){ if(!r.ok) throw new Error('failed'); return r.json(); })
+      .then(render)
       .catch(function(){
         render({bases:BASES, assignments:{}, aircraft_detail:{}});
       });
@@ -65016,8 +64996,9 @@ RII</td>
 </footer>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <script>
-  const DASHBOARD_VERSION = "20260312061121";
+  const DASHBOARD_VERSION = "20260312095307";
 
   // Auto-reload when a newer build is deployed
   (function() {
