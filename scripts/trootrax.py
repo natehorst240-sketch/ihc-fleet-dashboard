@@ -45,37 +45,34 @@ print(f"Logged in. sessionid: {sessionid[:8]}... | _tsvce: {str(tsvce)[:12]}..."
 session.cookies.set("sessionid", sessionid, domain="apps4.trootrax.com", path="/")
 
 # Step 4: Fetch all aircraft locations
+# The REST API reads the session from the SessionId request header
 url = "https://apps4.trootrax.com/rest/v2.0/assets/locations"
 params = {
-    "customer_id": "312",
-    "session_id": sessionid,
+    "customer_id": CUSTOMER_ID,
     "app": "weathermap",
     "tail": "true",
     "trip_plan": "true",
 }
-response = session.get(url, params=params)  # <-- session.get, not requests.get
-response = session.get(url, params=params)
-print(f"API status: {response.status_code}")
-print(f"Response text: {response.text[:500]}")  # see what came back
+headers = {"SessionId": sessionid}
+response = requests.get(url, params=params, headers=headers)
 data = response.json()
 
 # Step 5: Build output JSON
+# Location fields (lat, lon, alt, heading, timestamp) are on the aircraft object directly
 locations = []
 for aircraft in data["assets"]:
-    tail = aircraft.get("_tail") or []
-    latest = tail[0] if tail else {}
     locations.append(
         {
             "vin": aircraft.get("vin"),
             "asset_id": aircraft.get("id"),
-            "state": aircraft.get("_state"),
+            "state": aircraft.get("state"),
             "speed": aircraft.get("speed"),
-            "latitude": latest.get("latitude"),
-            "longitude": latest.get("longitude"),
-            "heading": latest.get("heading"),
-            "altitude": latest.get("altitude"),
-            "odometer": latest.get("odometer"),
-            "last_ping": latest.get("timestamp"),
+            "latitude": aircraft.get("latitude"),
+            "longitude": aircraft.get("longitude"),
+            "heading": aircraft.get("heading"),
+            "altitude": aircraft.get("altitude"),
+            "odometer": aircraft.get("odometer"),
+            "last_ping": aircraft.get("timestamp"),
         }
     )
 
