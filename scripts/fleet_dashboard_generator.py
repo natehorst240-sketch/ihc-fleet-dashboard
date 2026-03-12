@@ -33,7 +33,6 @@ INPUT_FALLBACKS = ["Due-List_BIG_WEEKLY.csv"]
 OUTPUT_FILENAME = "index.html"
 HISTORY_FILENAME   = "flight_hours_history.json"
 POSITIONS_FILENAME = "base_assignments.json"
-TABLET_MAPS_FEED_FILENAME = "aircraft_locations.json"
 PHOTO_FILENAME     = "IMG_9250.jpeg"
 COMPONENT_CHANGE_FILENAME = "ComponentChangeReport_109SP.csv"
 
@@ -1335,19 +1334,28 @@ def _build_location_tab(aircraft_list, positions):
     ac_hrs_js = json.dumps({t: (f"{h:,.1f}" if h else 'N/A') for t, h in ac_hrs.items()})
 
     css = '''<style>
-.base-map-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;margin-top:14px;margin-bottom:24px;}
-.base-map-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden;display:flex;flex-direction:column;min-height:350px;}
-.base-map-head{display:flex;justify-content:space-between;align-items:baseline;padding:10px 12px;background:var(--surface2);border-bottom:1px solid var(--border);}
-.base-map-title{font-family:var(--sans);font-size:16px;font-weight:800;letter-spacing:1px;color:var(--heading);}
-.base-map-coords{font-family:var(--mono);font-size:9px;color:var(--muted);}
-.base-map-canvas{height:220px;width:100%;border-bottom:1px solid var(--border);}
-.base-map-foot{padding:10px 12px;}
-.base-map-foot-label{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:7px;}
+.base-assignment-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-top:14px;margin-bottom:24px;}
+.base-assignment-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px 12px;}
+.base-assignment-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:8px;}
+.base-assignment-title{font-family:var(--sans);font-size:15px;font-weight:800;letter-spacing:1px;color:var(--heading);}
+.base-assignment-count{font-family:var(--mono);font-size:10px;color:var(--muted);}
+.base-assignment-label{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:7px;}
 .base-dropzone{min-height:42px;display:flex;flex-wrap:wrap;gap:6px;padding:8px;border:1px dashed var(--border);border-radius:4px;background:rgba(255,255,255,0.01);transition:all .15s;}
 .base-dropzone.drag-over{border-color:var(--blue);background:rgba(41,182,246,0.08);}
 .base-dropzone-empty{font-family:var(--mono);font-size:10px;color:var(--muted);opacity:.7;}
 .tail-chip{font-family:var(--mono);font-size:11px;color:#00151f;background:var(--blue);padding:4px 8px;border-radius:14px;cursor:grab;user-select:none;}
 .tail-chip:active{cursor:grabbing;}
+.fleet-map-wrap{margin-top:14px;margin-bottom:20px;background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden;}
+.fleet-map-head{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--surface2);border-bottom:1px solid var(--border);gap:12px;}
+.fleet-map-title{font-family:var(--sans);font-size:14px;font-weight:800;letter-spacing:1px;color:var(--heading);}
+.fleet-map-meta{font-family:var(--mono);font-size:10px;color:var(--muted);}
+.fleet-map-canvas{height:430px;width:100%;}
+.aircraft-marker{display:flex;align-items:center;gap:5px;white-space:nowrap;transform:translate(-10px,-10px);}
+.aircraft-symbol{font-size:13px;line-height:1;filter:drop-shadow(0 0 4px rgba(0,0,0,.6));}
+.aircraft-label{font-family:var(--mono);font-size:10px;padding:2px 6px;border-radius:10px;color:#d8ecff;background:rgba(11,16,22,.82);border:1px solid rgba(41,182,246,.35);}
+.aircraft-marker.at-base .aircraft-label{border-color:rgba(0,230,118,.45);}
+.aircraft-marker.away .aircraft-label{border-color:rgba(255,171,0,.45);}
+.aircraft-marker.airborne .aircraft-label{border-color:rgba(41,182,246,.65);}
 .ac-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:16px;}
 .ac-card{background:var(--surface);border:1px solid var(--border);border-radius:4px;overflow:hidden;transition:border-color .2s;}
 .ac-card-base{border-color:rgba(0,230,118,0.35);}
@@ -1366,11 +1374,6 @@ def _build_location_tab(aircraft_list, positions):
 .ac-loc-unknown{color:var(--muted);}
 .ac-loc-detail{color:var(--muted);font-size:10px;}
 .ac-age{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:4px;opacity:.6;}
-.tablet-map-wrap{margin-top:14px;margin-bottom:20px;background:var(--surface);border:1px solid var(--border);border-radius:6px;overflow:hidden;}
-.tablet-map-head{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--surface2);border-bottom:1px solid var(--border);gap:12px;}
-.tablet-map-title{font-family:var(--sans);font-size:14px;font-weight:800;letter-spacing:1px;color:var(--heading);}
-.tablet-map-meta{font-family:var(--mono);font-size:10px;color:var(--muted);}
-.tablet-map-canvas{height:360px;width:100%;}
 </style>'''
 
     refresh_js = f'''
@@ -1389,11 +1392,9 @@ def _build_location_tab(aircraft_list, positions):
     KSLC:       {{name:'KSLC',       lat:40.7884,  lon:-111.9778, radius_miles:10}},
   }};
 
-  var MAPS = {{}};
-  var TABLET_MAP = null;
-  var TABLET_MARKERS = null;
+  var FLEET_MAP = null;
+  var FLEET_MARKERS = null;
   var ASSIGNMENT_STORAGE_KEY = 'fleet.baseAssignments.v1';
-  var DEFAULT_SQUARE_MILES = 5;
 
   function bearing(lat1,lon1,lat2,lon2) {{
     var dLon=(lon2-lon1)*Math.PI/180;
@@ -1410,12 +1411,6 @@ def _build_location_tab(aircraft_list, positions):
     var m=Math.round((now-dt)/60000);
     if (isNaN(m)||m<0) return '';
     return m<60 ? m+'m ago' : (m/60).toFixed(1)+'h ago';
-  }}
-  function miToLatDelta(mi) {{ return mi / 69.0; }}
-  function miToLonDelta(mi, lat) {{
-    var cosLat = Math.cos((lat||0) * Math.PI/180);
-    var safe = Math.max(0.2, Math.abs(cosLat));
-    return mi / (69.0 * safe);
   }}
   function loadOverrides() {{
     try {{
@@ -1493,41 +1488,13 @@ def _build_location_tab(aircraft_list, positions):
     else state.bases[toBase].aircraft.push(tail);
     saveOverrides(state);
   }}
-  function initOrUpdateMap(baseId, meta) {{
-    if (!(window.L && document.getElementById('map-'+baseId))) return;
-    var sideMi = DEFAULT_SQUARE_MILES;
-    var half = sideMi / 2;
-    var latD = miToLatDelta(half);
-    var lonD = miToLonDelta(half, meta.lat);
-    var southWest = [meta.lat - latD, meta.lon - lonD];
-    var northEast = [meta.lat + latD, meta.lon + lonD];
-
-    var ctx = MAPS[baseId];
-    if (!ctx) {{
-      var map = L.map('map-'+baseId, {{zoomControl:true, attributionControl:true}});
-      L.tileLayer('https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png', {{
-        maxZoom: 18,
-        attribution: '&copy; OpenStreetMap contributors'
-      }}).addTo(map);
-      var rect = L.rectangle([southWest, northEast], {{color:'#29b6f6', weight:2, fillOpacity:0.08}}).addTo(map);
-      var marker = L.marker([meta.lat, meta.lon]).addTo(map);
-      marker.bindTooltip(meta.name + ' base', {{direction:'top'}});
-      MAPS[baseId] = {{map:map, rect:rect, marker:marker}};
-      ctx = MAPS[baseId];
-    }} else {{
-      ctx.marker.setLatLng([meta.lat, meta.lon]);
-      ctx.rect.setBounds([southWest, northEast]);
-    }}
-    ctx.map.fitBounds([southWest, northEast], {{padding:[14,14]}});
-    setTimeout(function(){{ ctx.map.invalidateSize(); }}, 0);
-  }}
   function dropzoneHTML(tails) {{
     if (!tails.length) return '<div class="base-dropzone-empty">Drop registration here</div>';
     return tails.map(function(tail) {{
       return '<div class="tail-chip" draggable="true" data-tail="'+esc(tail)+'">'+esc(tail)+'</div>';
     }}).join('');
   }}
-  function bindDnD(state) {{
+  function bindDnD(state, payload) {{
     var draggedTail = null;
     document.querySelectorAll('.tail-chip').forEach(function(chip) {{
       chip.addEventListener('dragstart', function(ev) {{
@@ -1545,34 +1512,122 @@ def _build_location_tab(aircraft_list, positions):
         var toBase = zone.getAttribute('data-base');
         if (!tail) return;
         moveTail(state, tail, toBase);
-        renderBaseMaps(state);
+        renderBaseAssignments(state, payload);
       }});
     }});
   }}
-  function renderBaseMaps(state) {{
-    var host = document.getElementById('base-map-grid');
+
+  function statusTone(status) {{
+    if (status === 'AT_BASE') return '#00e676';
+    if (status === 'AIRBORNE') return '#29b6f6';
+    return '#ffab00';
+  }}
+
+  function assignmentIndex(state) {{
+    var index = {{}};
+    Object.keys(state.bases).forEach(function(baseId) {{
+      (state.bases[baseId].aircraft || []).forEach(function(tail) {{ index[tail] = baseId; }});
+    }});
+    (state.unassigned || []).forEach(function(tail) {{ index[tail] = 'unassigned'; }});
+    return index;
+  }}
+
+  function initFleetMap() {{
+    var node = document.getElementById('fleet-map-canvas');
+    if (!node || !(window.L && L.map)) return;
+    if (FLEET_MAP) return;
+    FLEET_MAP = L.map('fleet-map-canvas', {{zoomControl:true, attributionControl:true}});
+    L.tileLayer('https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png', {{
+      maxZoom: 18,
+      attribution: '&copy; OpenStreetMap contributors'
+    }}).addTo(FLEET_MAP);
+    FLEET_MARKERS = L.layerGroup().addTo(FLEET_MAP);
+  }}
+
+  function markerHtml(tail, status) {{
+    var cls = status === 'AT_BASE' ? 'at-base' : (status === 'AIRBORNE' ? 'airborne' : 'away');
+    var symbol = status === 'AIRBORNE' ? '&#9992;' : '&#9673;';
+    return '<div class="aircraft-marker '+cls+'"><span class="aircraft-symbol" style="color:'+statusTone(status)+'">'+symbol+'</span><span class="aircraft-label">'+esc(tail)+'</span></div>';
+  }}
+
+  function renderFleetMap(payload, state) {{
+    initFleetMap();
+    if (!FLEET_MAP || !FLEET_MARKERS) return;
+
+    FLEET_MARKERS.clearLayers();
+    var detail = (payload && payload.aircraft_detail) || {{}};
+    var assigned = assignmentIndex(state);
+    var points = [];
+
+    Object.keys(detail).forEach(function(tail) {{
+      var d = detail[tail] || {{}};
+      if (typeof d.lat !== 'number' || typeof d.lon !== 'number') return;
+      var status = String(d.status || 'UNKNOWN').toUpperCase();
+      var baseId = assigned[tail] || d.base_id || 'unassigned';
+      var baseMeta = (payload.bases && payload.bases[baseId]) || BASES[baseId] || {{}};
+      var baseName = baseMeta.name || baseId;
+
+      var icon = L.divIcon({{
+        html: markerHtml(tail, status),
+        className: '',
+        iconSize: [0, 0]
+      }});
+      var marker = L.marker([d.lat, d.lon], {{icon:icon}});
+      var dist = d.dist_miles ? Math.round(d.dist_miles) + ' mi' : 'n/a';
+      var updated = d.utc || payload.last_updated || 'unknown';
+      marker.bindPopup('<strong>'+esc(tail)+'</strong><br>Status: '+esc(status)+'<br>Assigned base: '+esc(String(baseName).toUpperCase())+'<br>Distance: '+esc(dist)+'<br>Updated: '+esc(updated));
+      marker.addTo(FLEET_MARKERS);
+      points.push({{lat:d.lat, lon:d.lon}});
+    }});
+
+    Object.keys(state.bases).forEach(function(baseId) {{
+      var b = state.bases[baseId];
+      if (!isFinite(b.lat) || !isFinite(b.lon)) return;
+      L.circle([b.lat, b.lon], {{
+        radius: Number(b.radius_miles || 5) * 1609.34,
+        color: '#29b6f6',
+        weight: 1,
+        fillOpacity: 0.03
+      }}).addTo(FLEET_MARKERS).bindTooltip(esc((b.name || baseId).toUpperCase())+' base');
+      points.push({{lat:b.lat, lon:b.lon}});
+    }});
+
+    var metaNode = document.getElementById('fleet-map-meta');
+    if (metaNode) {{
+      var src = payload && payload.source ? String(payload.source) : 'unknown';
+      var stamp = payload && payload.last_updated ? String(payload.last_updated) : 'unknown';
+      metaNode.textContent = 'Source: '+src+' · Last update: '+stamp+' · Aircraft plotted: '+Object.keys(detail).length;
+    }}
+
+    var bounds = tabletMapBounds(points);
+    if (bounds) FLEET_MAP.fitBounds(bounds, {{padding:[24,24], maxZoom: 9}});
+    else FLEET_MAP.setView([39.4, -111.9], 6);
+    setTimeout(function(){{ FLEET_MAP.invalidateSize(); }}, 0);
+  }}
+
+  function renderBaseAssignments(state, payload) {{
+    var host = document.getElementById('base-assignment-grid');
     if (!host) return;
     var baseIds = Object.keys(state.bases).sort();
     var cards = baseIds.map(function(baseId) {{
       var b = state.bases[baseId];
-      var coords = Number(b.lat).toFixed(4)+', '+Number(b.lon).toFixed(4);
-      return '<div class="base-map-card">'
-        +'<div class="base-map-head"><div class="base-map-title">'+esc((b.name||baseId).toUpperCase())+'</div>'
-        +'<div class="base-map-coords">'+esc(coords)+' · 5-mi square</div></div>'
-        +'<div id="map-'+esc(baseId)+'" class="base-map-canvas"></div>'
-        +'<div class="base-map-foot"><div class="base-map-foot-label">Assigned registrations</div>'
-        +'<div class="base-dropzone" data-base="'+esc(baseId)+'">'+dropzoneHTML(b.aircraft||[])+'</div></div></div>';
+      var count = (b.aircraft || []).length;
+      return '<div class="base-assignment-card">'
+        +'<div class="base-assignment-head"><div class="base-assignment-title">'+esc((b.name||baseId).toUpperCase())+'</div>'
+        +'<div class="base-assignment-count">'+count+' assigned</div></div>'
+        +'<div class="base-assignment-label">Assigned registrations</div>'
+        +'<div class="base-dropzone" data-base="'+esc(baseId)+'">'+dropzoneHTML(b.aircraft||[])+'</div></div>';
     }});
     cards.push(
-      '<div class="base-map-card"><div class="base-map-head"><div class="base-map-title">UNASSIGNED</div>'
-      +'<div class="base-map-coords">Drag from / to any base</div></div>'
-      +'<div class="base-map-canvas" style="display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;color:var(--muted);">No map</div>'
-      +'<div class="base-map-foot"><div class="base-map-foot-label">Unassigned registrations</div>'
-      +'<div class="base-dropzone" data-base="unassigned">'+dropzoneHTML(state.unassigned||[])+'</div></div></div>'
+      '<div class="base-assignment-card"><div class="base-assignment-head"><div class="base-assignment-title">UNASSIGNED</div>'
+      +'<div class="base-assignment-count">'+((state.unassigned||[]).length)+' pending</div></div>'
+      +'<div class="base-assignment-label">Unassigned registrations</div>'
+      +'<div class="base-dropzone" data-base="unassigned">'+dropzoneHTML(state.unassigned||[])+'</div></div>'
     );
+
     host.innerHTML = cards.join('');
-    baseIds.forEach(function(baseId) {{ initOrUpdateMap(baseId, state.bases[baseId]); }});
-    bindDnD(state);
+    bindDnD(state, payload);
+    renderFleetMap(payload, state);
   }}
 
   function locLine(d, bases) {{
@@ -1623,72 +1678,13 @@ def _build_location_tab(aircraft_list, positions):
     grid.innerHTML=cards.join('');
 
     var state = payloadToState(payload || {{}});
-    renderBaseMaps(state);
+    renderBaseAssignments(state, payload);
   }}
 
   function tabletMapBounds(points) {{
     if (!points.length || !(window.L && L.latLngBounds)) return null;
     var b = L.latLngBounds(points.map(function(p) {{ return [p.lat, p.lon]; }}));
     return b.isValid() ? b : null;
-  }}
-
-  function initTabletMap() {{
-    var node = document.getElementById('tablet-map-canvas');
-    if (!node || !(window.L && L.map)) return;
-    if (TABLET_MAP) return;
-    TABLET_MAP = L.map('tablet-map-canvas', {{zoomControl:true, attributionControl:true}});
-    L.tileLayer('https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png', {{
-      maxZoom: 18,
-      attribution: '&copy; OpenStreetMap contributors'
-    }}).addTo(TABLET_MAP);
-    TABLET_MARKERS = L.layerGroup().addTo(TABLET_MAP);
-  }}
-
-  function renderTabletMap(payload) {{
-    initTabletMap();
-    if (!TABLET_MAP || !TABLET_MARKERS) return;
-
-    TABLET_MARKERS.clearLayers();
-    var ac = (payload && payload.aircraft) || [];
-    var points = ac.filter(function(a) {{
-      return typeof a.lat === 'number' && typeof a.lon === 'number';
-    }});
-
-    points.forEach(function(a) {{
-      var status = String(a.status || 'UNKNOWN').toUpperCase();
-      var tone = status === 'AT_BASE' ? '#00e676' : (status === 'AIRBORNE' ? '#29b6f6' : '#ffab00');
-      var marker = L.circleMarker([a.lat, a.lon], {{
-        radius: 7,
-        weight: 2,
-        color: tone,
-        fillColor: tone,
-        fillOpacity: 0.85
-      }});
-      var stamp = a.timestamp_utc || a.timestamp_local || 'unknown';
-      marker.bindPopup('<strong>'+esc(a.tail || 'UNKNOWN')+'</strong><br>'
-        +'Status: '+esc(status)+'<br>'
-        +'Updated: '+esc(stamp));
-      marker.addTo(TABLET_MARKERS);
-    }});
-
-    var metaNode = document.getElementById('tablet-map-meta');
-    if (metaNode) {{
-      var src = payload && payload.source ? String(payload.source) : 'unknown';
-      var stamp = payload && payload.last_updated ? String(payload.last_updated) : 'unknown';
-      metaNode.textContent = 'Source: '+src+' · Last update: '+stamp+' · Aircraft plotted: '+points.length;
-    }}
-
-    var bounds = tabletMapBounds(points);
-    if (bounds) TABLET_MAP.fitBounds(bounds, {{padding:[24,24], maxZoom: 9}});
-    else TABLET_MAP.setView([39.4, -111.9], 6);
-    setTimeout(function(){{ TABLET_MAP.invalidateSize(); }}, 0);
-  }}
-
-  function refreshTabletMap() {{
-    fetch('{TABLET_MAPS_FEED_FILENAME}?ts='+Date.now(), {{cache:'no-store'}})
-      .then(function(r) {{ if(!r.ok) throw new Error('failed'); return r.json(); }})
-      .then(renderTabletMap)
-      .catch(function() {{ renderTabletMap({{source:'unavailable', aircraft:[]}}); }});
   }}
 
   function refresh() {{
@@ -1701,9 +1697,7 @@ def _build_location_tab(aircraft_list, positions):
   }}
 
   refresh();
-  refreshTabletMap();
   setInterval(refresh, 60000);
-  setInterval(refreshTabletMap, 60000);
 }})();'''
 
     return f'''{css}
@@ -1711,17 +1705,17 @@ def _build_location_tab(aircraft_list, positions):
 <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:4px;">
   Live positions via SkyRouter GPS &middot; refreshes every 60 seconds
 </div>
-<div class="tablet-map-wrap">
-  <div class="tablet-map-head">
-    <div class="tablet-map-title">Tablet Maps</div>
-    <div class="tablet-map-meta" id="tablet-map-meta">Source: loading...</div>
+<div class="fleet-map-wrap">
+  <div class="fleet-map-head">
+    <div class="fleet-map-title">Fleet Position Map</div>
+    <div class="fleet-map-meta" id="fleet-map-meta">Source: loading...</div>
   </div>
-  <div class="tablet-map-canvas" id="tablet-map-canvas"></div>
+  <div class="fleet-map-canvas" id="fleet-map-canvas"></div>
 </div>
 <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:10px;">
-  Base assignment board (street map, 5-mile square view per base) &middot; drag registration chips to reassign locally
+  Drag registration pills into base cards to assign aircraft to bases
 </div>
-<div class="base-map-grid" id="base-map-grid"></div>
+<div class="base-assignment-grid" id="base-assignment-grid"></div>
 <div class="ac-grid" id="ac-location-grid">
 {static_cards}
 </div>
