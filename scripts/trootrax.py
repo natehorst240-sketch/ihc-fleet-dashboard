@@ -60,6 +60,7 @@ if tsvce:
 url = "https://apps4.trootrax.com/rest/v2.0/assets/locations"
 params = {
     "customer_id": CUSTOMER_ID,
+    "session_id": sessionid,
     "app": "weathermap",
     "tail": "true",
     "trip_plan": "true",
