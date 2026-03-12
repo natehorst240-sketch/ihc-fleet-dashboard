@@ -102,6 +102,8 @@ Open it locally with:
 open data/aog.html
 ```
 
+For an implementation blueprint to automate email-to-AOG flags on the main dashboard, see [AOG_AUTOMATION_PLAN.md](AOG_AUTOMATION_PLAN.md).
+
 ## Quick Start
 
 ```bash
