@@ -25,12 +25,19 @@ session.post(login_url, data=login_data)
 # Step 2: Grab the cookies we need
 # _tsvce and _tcum are scoped to .trootrax.com / so they reach the REST API
 # sessionid is scoped to /emstracker/login only — we re-add it at root path
-sessionid = session.cookies.get("sessionid") or session.cookies.get("Sessionid")
+sessionid = next(
+    (v for k, v in session.cookies.items() if k.lower() == "sessionid"),
+    None,
+)
 tcum = session.cookies.get("_tcum")
 tsvce = session.cookies.get("_tsvce")
 
 if not sessionid:
-    raise RuntimeError("Login failed - could not retrieve session ID.")
+    cookie_keys = list(session.cookies.keys())
+    raise RuntimeError(
+        f"Login failed - could not retrieve session ID. "
+        f"Cookies returned: {cookie_keys}"
+    )
 
 print(f"Logged in. sessionid: {sessionid[:8]}... | _tsvce: {str(tsvce)[:12]}...")
 
