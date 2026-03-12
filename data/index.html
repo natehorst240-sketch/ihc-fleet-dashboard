@@ -64762,6 +64762,26 @@ RII</td>
     return detail;
   }
 
+  function normalizeAircraftLocations(payload) {
+    var detail = {};
+    (Array.isArray(payload) ? payload : []).forEach(function(item) {
+      var tail = String(item && (item.vin || item.tail || item.registration || '') || '').toUpperCase();
+      if (!tail) return;
+      var rawState = String(item && item.state || '').toUpperCase();
+      var status = rawState === 'INFLIGHT' ? 'AIRBORNE' : (rawState === 'STATIONARY' ? 'AWAY' : 'UNKNOWN');
+      detail[tail] = {
+        lat: Number(item.latitude),
+        lon: Number(item.longitude),
+        status: status,
+        speed_kts: Number(item.speed || 0),
+        alt_ft: Number(item.altitude || 0),
+        utc: item.last_ping || null,
+        source: 'skyrouter'
+      };
+    });
+    return detail;
+  }
+
   function payloadToState(payload, detail, basesMeta) {
     var bases = {};
     Object.keys(basesMeta).forEach(function(baseId) {
@@ -64961,9 +64981,25 @@ RII</td>
   }
 
   function refresh() {
-    fetch('base_assignments.json?ts='+Date.now(),{cache:'no-store'})
-      .then(function(r){ if(!r.ok) throw new Error('failed'); return r.json(); })
-      .then(render)
+    var ts = Date.now();
+    Promise.all([
+      fetch('base_assignments.json?ts='+ts,{cache:'no-store'})
+        .then(function(r){ return r.ok ? r.text() : '{}'; })
+        .then(function(raw){ try { return JSON.parse(raw); } catch(_e) { return {}; } })
+        .catch(function(){ return {}; }),
+      fetch('aircraft_locations.json?ts='+ts,{cache:'no-store'})
+        .then(function(r){ return r.ok ? r.json() : []; })
+        .catch(function(){ return []; })
+    ])
+      .then(function(results){
+        var assignments = results[0] || {};
+        var gpsPayload = results[1] || [];
+        var liveDetail = normalizeAircraftLocations(gpsPayload);
+        assignments.aircraft_detail = Object.assign({}, assignments.aircraft_detail || {}, liveDetail);
+        if (!assignments.source) assignments.source = 'base_assignments + skyrouter';
+        if (!assignments.last_updated && gpsPayload[0] && gpsPayload[0].last_ping) assignments.last_updated = gpsPayload[0].last_ping;
+        render(assignments);
+      })
       .catch(function(){
         render({bases:BASES, assignments:{}, aircraft_detail:{}});
       });
