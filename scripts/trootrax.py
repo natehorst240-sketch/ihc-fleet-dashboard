@@ -8,7 +8,9 @@ import requests
 LOGIN_URL = "https://apps4.trootrax.com/emstracker/login/main.php"
 ASSETS_URL = "https://apps4.trootrax.com/rest/v2.0/assets/locations"
 DEFAULT_CUSTOMER_ID = "312"
-OUTPUT_PATH = Path("data/aircraft_locations.json")
+REPO_ROOT = Path(__file__).resolve().parents[1]
+OUTPUT_PATH = REPO_ROOT / "data" / "aircraft_locations.json"
+BASE_ASSIGNMENTS_OUTPUT_PATH = REPO_ROOT / "data" / "base_assignments.json"
 
 BASES = {
     "LOGAN": {"name": "Logan", "lat": 41.7912, "lon": -111.8522, "radius_miles": 5},
@@ -99,7 +101,7 @@ def build_feed(assets):
         lon = _to_float(latest.get("longitude"))
         alt = _to_float(asset.get("altitude") or latest.get("altitude"))
         speed = _to_float(asset.get("speed") or latest.get("speed"))
-        tail = str(asset.get("vin") or asset.get("registration") or "").strip().upper()
+        tail = str(asset.get("registration") or asset.get("vin") or "").strip().upper()
         if not tail:
             continue
 
@@ -130,6 +132,50 @@ def build_feed(assets):
     }
 
 
+def build_base_assignments(feed):
+    assignments = {base_id: {"aircraft": []} for base_id in BASES}
+    assignments["unassigned"] = []
+    aircraft_detail = {}
+
+    for ac in feed.get("aircraft", []):
+        tail = ac.get("tail")
+        if not tail:
+            continue
+
+        status = str(ac.get("status", "")).upper() or "UNKNOWN"
+        base_id = ac.get("closest_base") if ac.get("closest_base") in BASES else None
+
+        aircraft_detail[tail] = {
+            "status": status,
+            "base_id": base_id,
+            "dist_miles": ac.get("dist_miles"),
+            "lat": ac.get("lat"),
+            "lon": ac.get("lon"),
+            "utc": ac.get("timestamp_utc") or ac.get("timestamp_local") or feed.get("last_updated", ""),
+        }
+
+        node = {
+            "tail": tail,
+            "status": status,
+            "distance_miles": ac.get("dist_miles") or 0,
+            "altitude": ac.get("alt_ft"),
+            "ground_speed": ac.get("speed_kts"),
+        }
+
+        if status == "AT_BASE" and base_id:
+            assignments[base_id]["aircraft"].append(node)
+        else:
+            assignments["unassigned"].append(node)
+
+    return {
+        "source": feed.get("source", "trootrax"),
+        "last_updated": feed.get("last_updated", ""),
+        "bases": BASES,
+        "assignments": assignments,
+        "aircraft_detail": aircraft_detail,
+    }
+
+
 def main():
     username = os.environ["TROOTRAX_USER"]
     password = os.environ["TROOTRAX_PASS"]
@@ -138,11 +184,14 @@ def main():
     session = requests.Session()
     assets = login_and_fetch(session, username, password, customer_id)
     feed = build_feed(assets)
+    base_assignments_payload = build_base_assignments(feed)
 
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT_PATH.write_text(json.dumps(feed, indent=2), encoding="utf-8")
+    BASE_ASSIGNMENTS_OUTPUT_PATH.write_text(json.dumps(base_assignments_payload, indent=2), encoding="utf-8")
 
     print(f"Wrote {len(feed['aircraft'])} aircraft to {OUTPUT_PATH}")
+    print(f"Wrote base assignment payload to {BASE_ASSIGNMENTS_OUTPUT_PATH}")
 
 
 if __name__ == "__main__":
