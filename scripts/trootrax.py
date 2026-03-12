@@ -29,8 +29,8 @@ sessionid = next(
     (v for k, v in session.cookies.items() if k.lower() == "sessionid"),
     None,
 )
-tcum = session.cookies.("_tcum")
-tsvce = session.cookies.("_tsvce")
+tcum = session.cookies.get("_tcum")
+tsvce = session.cookies.get("_tsvce")
 
 if not sessionid:
     cookie_keys = list(session.cookies.keys())
