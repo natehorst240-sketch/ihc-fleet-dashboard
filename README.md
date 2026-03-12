@@ -86,6 +86,22 @@ python scripts/trootrax.py
 
 Optional: set `TROOTRAX_CUSTOMER_ID` if you need a customer ID other than `312`.
 
+
+## AOG Tracker (Manual clear + weekly OOS report)
+
+A standalone AOG tracker is available at `data/aog.html`.
+
+- Add a grounded aircraft manually.
+- Clear AOG events manually when the aircraft returns to service.
+- View 7-day out-of-service totals by tail in the **Weekly Report** tab.
+- Data persists in browser storage (`localStorage` fallback).
+
+Open it locally with:
+
+```bash
+open data/aog.html
+```
+
 ## Quick Start
 
 ```bash
