@@ -11,7 +11,10 @@ permissions:
 jobs:
   refresh-locations:
     runs-on: ubuntu-latest
-    if: ${{ secrets.TROOTRAX_USER != '' && secrets.TROOTRAX_PASS != '' }}
+    env:
+      TROOTRAX_USER: ${{ secrets.TROOTRAX_USER }}
+      TROOTRAX_PASS: ${{ secrets.TROOTRAX_PASS }}
+      TROOTRAX_CUSTOMER_ID: ${{ secrets.TROOTRAX_CUSTOMER_ID }}
     steps:
       - uses: actions/checkout@v4
 
@@ -24,10 +27,7 @@ jobs:
         run: pip install requests
 
       - name: Pull latest Trootrax feed
-        env:
-          TROOTRAX_USER: ${{ secrets.TROOTRAX_USER }}
-          TROOTRAX_PASS: ${{ secrets.TROOTRAX_PASS }}
-          TROOTRAX_CUSTOMER_ID: ${{ secrets.TROOTRAX_CUSTOMER_ID }}
+        if: ${{ env.TROOTRAX_USER != '' && env.TROOTRAX_PASS != '' }}
         run: python scripts/trootrax.py
 
       - name: Commit updated location feed
