@@ -1,0 +1,12 @@
+{
+  "bases": [
+    {"id": "LOGAN", "name": "Logan", "lat": 41.75524176888249, "lon": -111.82057723592395},
+    {"id": "MCKAY", "name": "Mckay", "lat": 41.1829407, "lon": -111.9549936},
+    {"id": "IMED", "name": "IMED", "lat": 40.6602665, "lon": -111.88961},
+    {"id": "KSLC", "name": "KSLC", "lat": 40.7746654, "lon": -111.9565804},
+    {"id": "PROVO", "name": "Provo", "lat": 40.2463203, "lon": -111.6656218},
+    {"id": "ROOSEVELT", "name": "Roosevelt", "lat": 40.3050418, "lon": -109.9962571},
+    {"id": "CEDAR_CITY", "name": "Cedar City", "lat": 37.7002988, "lon": -113.0674793},
+    {"id": "ST_GEORGE", "name": "St. George", "lat": 37.0989134, "lon": -113.552642}
+  ]
+}
