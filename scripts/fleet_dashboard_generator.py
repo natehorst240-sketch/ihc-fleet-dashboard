@@ -1631,7 +1631,6 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
     _win_hrs  = (gcfg or {}).get('COMPONENT_WINDOW_HRS', COMPONENT_WINDOW_HRS)
     _org      = (gcfg or {}).get('ORGANIZATION', ORGANIZATION)
     _disp     = (gcfg or {}).get('DISPLAY_NAME', DISPLAY_NAME)
-    _map_key  = os.environ.get('GOOGLE_MAPS_API_KEY', '').strip()
 
     # Build interval label map: key -> display label
     if _interval_cfg:
@@ -2012,7 +2011,7 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
   <div class="legend-item"><div class="dot dot-overdue"></div> Past Due / Overdue</div>
   <div style="margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:1px;">- = Not due this cycle</div>
 </div>
-<script>window.GOOGLE_MAPS_API_KEY = "{_map_key}" || window.GOOGLE_MAPS_API_KEY || localStorage.getItem('fleet.googleMapsApiKey') || '';
+<script>window.GOOGLE_MAPS_API_KEY = window.GOOGLE_MAPS_API_KEY || localStorage.getItem('fleet.googleMapsApiKey') || '';
 if (window.GOOGLE_MAPS_API_KEY) try {{ localStorage.setItem('fleet.googleMapsApiKey', window.GOOGLE_MAPS_API_KEY); }} catch(_e) {{}}
 </script>
 <main>
