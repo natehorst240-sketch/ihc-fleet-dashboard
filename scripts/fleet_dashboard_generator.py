@@ -15,6 +15,7 @@ import base64
 import io
 import argparse
 import os
+import math
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta, date
 from pathlib import Path
@@ -34,6 +35,13 @@ INPUT_FALLBACKS = ["Due-List_BIG_WEEKLY.csv"]
 OUTPUT_FILENAME = "index.html"
 HISTORY_FILENAME   = "flight_hours_history.json"
 POSITIONS_FILENAME = "base_assignments.json"
+BASE_LOCATIONS_FILENAME = "base_locations.json"
+
+TRACKED_AIRCRAFT_TAILS = {
+    'N251HC', 'N261HC', 'N271HC', 'N281HC', 'N291HC',
+    'N431HC', 'N531HC', 'N631HC', 'N731HC',
+}
+TRACKED_AIRCRAFT_TAILS_JS = json.dumps(sorted(TRACKED_AIRCRAFT_TAILS))
 PHOTO_FILENAME     = "IMG_9250.jpeg"
 COMPONENT_CHANGE_FILENAME = "ComponentChangeReport_109SP.csv"
 
@@ -346,6 +354,56 @@ def load_positions(positions_path):
     last_updated = data.get('last_updated', '')
     result = {}
 
+    def _distance_miles(lat1, lon1, lat2, lon2):
+        """Great-circle distance in statute miles."""
+        if None in (lat1, lon1, lat2, lon2):
+            return None
+        r = 3958.7613
+        lat1r, lon1r = math.radians(lat1), math.radians(lon1)
+        lat2r, lon2r = math.radians(lat2), math.radians(lon2)
+        dlat = lat2r - lat1r
+        dlon = lon2r - lon1r
+        a = math.sin(dlat / 2) ** 2 + math.cos(lat1r) * math.cos(lat2r) * math.sin(dlon / 2) ** 2
+        return r * (2 * math.atan2(math.sqrt(a), math.sqrt(1 - a)))
+
+    def _load_base_locations():
+        """Prefer base_locations.json, fallback to base_assignments metadata."""
+        base_rows = []
+        loc_path = positions_path.parent / BASE_LOCATIONS_FILENAME
+        raw_bases = None
+        if loc_path.exists():
+            try:
+                with open(loc_path, 'r', encoding='utf-8') as f:
+                    loc_data = json.load(f)
+                raw_bases = loc_data.get('bases', loc_data) if isinstance(loc_data, dict) else loc_data
+            except Exception:
+                raw_bases = None
+        if raw_bases is None:
+            raw_bases = bases_meta
+
+        if isinstance(raw_bases, dict):
+            rows = raw_bases.values()
+        elif isinstance(raw_bases, list):
+            rows = raw_bases
+        else:
+            rows = []
+
+        for b in rows:
+            if not isinstance(b, dict):
+                continue
+            lat = safe_float(b.get('lat'))
+            lon = safe_float(b.get('lon'))
+            if lat is None or lon is None:
+                continue
+            base_rows.append({
+                'name': b.get('name') or b.get('id') or 'Base',
+                'lat': lat,
+                'lon': lon,
+            })
+        return base_rows
+
+    base_locations = _load_base_locations()
+
     def _fallback_from_locations():
         """Fallback to aircraft_locations feed when base_assignments is empty."""
         loc_path = positions_path.parent / 'aircraft_locations.json'
@@ -364,14 +422,46 @@ def load_positions(positions_path):
                 continue
             state = str(row.get('state') or '').upper()
             speed = safe_float(row.get('speed'))
+            if tail not in TRACKED_AIRCRAFT_TAILS:
+                continue
+
+            lat = safe_float(row.get('latitude'))
+            lon = safe_float(row.get('longitude'))
+
             if 'INFLIGHT' in state or 'IN_FLIGHT' in state or 'AIRBORNE' in state or (speed is not None and speed > 40):
                 status = 'AIRBORNE'
+                curr_base = None
+                nearest = None
             else:
-                status = 'AWAY'
+                nearest = None
+                if lat is not None and lon is not None and base_locations:
+                    nearest = min(
+                        (
+                            {
+                                'name': b['name'],
+                                'dist_mi': _distance_miles(lat, lon, b['lat'], b['lon']),
+                            }
+                            for b in base_locations
+                        ),
+                        key=lambda x: x['dist_mi'] if x['dist_mi'] is not None else float('inf'),
+                        default=None,
+                    )
+                if nearest and nearest.get('dist_mi') is not None and nearest['dist_mi'] <= 10:
+                    status = 'AT_BASE'
+                    curr_base = {
+                        'name': nearest['name'],
+                        'dist_nm': round(nearest['dist_mi'] * 0.868976, 1),
+                    }
+                else:
+                    status = 'AWAY'
+                    curr_base = None
             fallback[tail] = {
                 'status': status,
-                'current_base': None,
-                'nearest_base': None,
+                'current_base': curr_base,
+                'nearest_base': ({
+                    'name': nearest['name'],
+                    'dist_nm': round(nearest['dist_mi'] * 0.868976, 1),
+                } if nearest and nearest.get('dist_mi') is not None else None),
                 'last_alt_ft': row.get('altitude', ''),
                 'last_gs_kts': row.get('speed', ''),
                 'last_updated': row.get('last_ping') or last_updated,
@@ -386,7 +476,7 @@ def load_positions(positions_path):
             ac_list = base_data if isinstance(base_data, list) else []
             for ac in ac_list:
                 tail = ac.get('tail') or ac.get('registration', '')
-                if not tail:
+                if not tail or tail not in TRACKED_AIRCRAFT_TAILS:
                     continue
                 result[tail] = {
                     'status': 'AWAY',
@@ -401,7 +491,7 @@ def load_positions(positions_path):
             base_name = bases_meta.get(base_id, {}).get('name', base_id)
             for ac in ac_list:
                 tail = ac.get('tail') or ac.get('registration', '')
-                if not tail:
+                if not tail or tail not in TRACKED_AIRCRAFT_TAILS:
                     continue
                 status_raw = str(ac.get('status', '')).upper()
                 if 'AIRBORNE' in status_raw or 'IN_FLIGHT' in status_raw:
@@ -427,6 +517,8 @@ def load_positions(positions_path):
 
 
 def get_location_badge(tail, positions):
+    if tail not in TRACKED_AIRCRAFT_TAILS:
+        return ''
     ac = positions.get(tail, {})
     if not ac:
         return ''
@@ -435,17 +527,17 @@ def get_location_badge(tail, positions):
     if status == 'AIRBORNE':
         alt = ac.get('last_alt_ft', '')
         alt_str = f" {alt}ft" if alt else ''
-        return f'<span class="location-badge location-active">AIRBORNE{alt_str}</span>'
+        return f'<span class="location-badge location-active">airborne{alt_str}</span>'
     if status == 'AT_BASE':
         name = curr.get('name', '') if curr else ''
-        label = f'AT {name.upper()}' if name else 'AT BASE'
+        label = f'At {name} base' if name else 'At base'
         return f'<span class="location-badge location-at-base">{label}</span>'
     if status == 'AWAY':
         near = ac.get('nearest_base')
         near_str = ''
         if near:
             near_str = f" Â· {near.get('dist_nm', '?')}nm from {near.get('name', '?')}"
-        return f'<span class="location-badge location-away">AWAY FROM BASE{near_str}</span>'
+        return f'<span class="location-badge location-away">away from base{near_str}</span>'
     return ''
 
 
@@ -1345,6 +1437,7 @@ def _build_location_tab(aircraft_list, positions):
     refresh_js = """
 (function() {
   var AC_HRS = __AC_HRS_JSON__;
+  var TRACKED_TAILS = new Set(__TRACKED_TAILS_JSON__);
   function esc(t) { return String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
   function ageFmt(utcStr) { if (!utcStr) return ''; var dt=new Date(utcStr),now=new Date(); var m=Math.round((now-dt)/60000); if (isNaN(m)||m<0) return ''; return m<60 ? m+'m ago' : (m/60).toFixed(1)+'h ago'; }
   function toNum(v) { var n = Number(v); return isFinite(n) ? n : null; }
@@ -1379,7 +1472,7 @@ def _build_location_tab(aircraft_list, positions):
     var detail = {};
     (Array.isArray(rows) ? rows : []).forEach(function(row) {
       var tail = String((row && (row.vin || row.tail || row.registration)) || '').toUpperCase();
-      if (!tail) return;
+      if (!tail || !TRACKED_TAILS.has(tail)) return;
       var speed = toNum(row.speed_kts);
       if (speed === null) speed = toNum(row.speed);
       detail[tail] = {
@@ -1434,6 +1527,7 @@ def _build_location_tab(aircraft_list, positions):
 })();
 """
     refresh_js = refresh_js.replace('__AC_HRS_JSON__', ac_hrs_js)
+    refresh_js = refresh_js.replace('__TRACKED_TAILS_JSON__', TRACKED_AIRCRAFT_TAILS_JS)
 
     return f'''{css}
 <div class="section-label">Aircraft Location</div>
