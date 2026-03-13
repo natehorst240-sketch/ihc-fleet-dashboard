@@ -14,6 +14,7 @@ import json
 import base64
 import io
 import argparse
+import os
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta, date
 from pathlib import Path
@@ -344,6 +345,41 @@ def load_positions(positions_path):
     bases_meta   = data.get('bases', {})
     last_updated = data.get('last_updated', '')
     result = {}
+
+    def _fallback_from_locations():
+        """Fallback to aircraft_locations feed when base_assignments is empty."""
+        loc_path = positions_path.parent / 'aircraft_locations.json'
+        if not loc_path.exists():
+            return {}
+        try:
+            with open(loc_path, 'r', encoding='utf-8') as f:
+                rows = json.load(f)
+        except Exception:
+            return {}
+
+        fallback = {}
+        for row in rows if isinstance(rows, list) else []:
+            tail = str(row.get('vin') or '').strip().upper()
+            if not tail:
+                continue
+            state = str(row.get('state') or '').upper()
+            speed = safe_float(row.get('speed'))
+            if 'INFLIGHT' in state or 'IN_FLIGHT' in state or 'AIRBORNE' in state or (speed is not None and speed > 40):
+                status = 'AIRBORNE'
+            else:
+                status = 'AWAY'
+            fallback[tail] = {
+                'status': status,
+                'current_base': None,
+                'nearest_base': None,
+                'last_alt_ft': row.get('altitude', ''),
+                'last_gs_kts': row.get('speed', ''),
+                'last_updated': row.get('last_ping') or last_updated,
+            }
+        return fallback
+
+    if not assignments:
+        return _fallback_from_locations()
 
     for base_id, base_data in assignments.items():
         if base_id == 'unassigned':
@@ -1325,7 +1361,7 @@ def _build_location_tab(aircraft_list, positions):
   var map = null;
   var markers = [];
   var mapsReady = null;
-  var apiKey = window.GOOGLE_MAPS_API_KEY || '';
+  var apiKey = window.GOOGLE_MAPS_API_KEY || localStorage.getItem('fleet.googleMapsApiKey') || '';
 
   var BASES = {
     LOGAN:      {name:'Logan',      lat:41.75524176888249, lon:-111.82057723592395, radius_miles:5},
@@ -1374,7 +1410,7 @@ def _build_location_tab(aircraft_list, positions):
 
   function loadGoogleMaps() {
     if (window.google && window.google.maps) return Promise.resolve(window.google.maps);
-    if (!apiKey) return Promise.reject(new Error('Missing GOOGLE_MAPS_API_KEY on window'));
+    if (!apiKey) return Promise.reject(new Error('Missing GOOGLE_MAPS_API_KEY (set repo secret or window.GOOGLE_MAPS_API_KEY)'));
     if (mapsReady) return mapsReady;
     mapsReady = new Promise(function(resolve, reject) {
       var script = document.createElement('script');
@@ -1595,6 +1631,7 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
     _win_hrs  = (gcfg or {}).get('COMPONENT_WINDOW_HRS', COMPONENT_WINDOW_HRS)
     _org      = (gcfg or {}).get('ORGANIZATION', ORGANIZATION)
     _disp     = (gcfg or {}).get('DISPLAY_NAME', DISPLAY_NAME)
+    _map_key  = os.environ.get('GOOGLE_MAPS_API_KEY', '').strip()
 
     # Build interval label map: key -> display label
     if _interval_cfg:
@@ -1975,6 +2012,9 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
   <div class="legend-item"><div class="dot dot-overdue"></div> Past Due / Overdue</div>
   <div style="margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:1px;">- = Not due this cycle</div>
 </div>
+<script>window.GOOGLE_MAPS_API_KEY = "{_map_key}" || window.GOOGLE_MAPS_API_KEY || localStorage.getItem('fleet.googleMapsApiKey') || '';
+if (window.GOOGLE_MAPS_API_KEY) try {{ localStorage.setItem('fleet.googleMapsApiKey', window.GOOGLE_MAPS_API_KEY); }} catch(_e) {{}}
+</script>
 <main>
   <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('maintenance',this)">Maintenance Due List</button>
