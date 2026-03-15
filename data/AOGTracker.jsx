@@ -5,6 +5,16 @@ const { useState, useEffect, useCallback } = React;
 // On GitHub Pages this resolves relative to your repo root.
 const AOG_JSON_URL = "./aog_status.json";
 
+const storage = window.storage || {
+  async get(key) {
+    const value = localStorage.getItem(key);
+    return value == null ? null : { value };
+  },
+  async set(key, value) {
+    localStorage.setItem(key, value);
+  }
+};
+
 const FLEET = [
   "N251HC","N261HC","N271HC","N281HC","N291HC",
   "N431HC","N531HC","N631HC","N731HC"
@@ -87,6 +97,7 @@ function AOGTracker() {
   const [syncing, setSyncing]   = useState(false);
   const [selectedWeek, setSelectedWeek] = useState("current");
   const [savedWeeklyReports, setSavedWeeklyReports] = useState([]);
+  const [locallyClearedIds, setLocallyClearedIds] = useState({});
 
   // Live duration ticker
   useEffect(() => {
@@ -101,7 +112,12 @@ function AOGTracker() {
       await fetchJSON();
       // Then overlay any local history stored in persistent storage
       try {
-        const lh = await window.storage.get("aog:local_history");
+        const [lh, sw, lc] = await Promise.all([
+          storage.get("aog:local_history"),
+          storage.get("aog:saved_weekly_reports"),
+          storage.get("aog:locally_cleared_ids"),
+        ]);
+
         if (lh) {
           const localHistory = JSON.parse(lh.value);
           setHistory(prev => {
@@ -112,8 +128,8 @@ function AOGTracker() {
             return merged.sort((a, b) => new Date(b.end) - new Date(a.end));
           });
         }
-        const sw = await window.storage.get("aog:saved_weekly_reports");
         if (sw) setSavedWeeklyReports(JSON.parse(sw.value));
+        if (lc) setLocallyClearedIds(JSON.parse(lc.value));
       } catch (e) {}
       setLoaded(true);
     }
@@ -127,15 +143,38 @@ function AOGTracker() {
       const res = await fetch(AOG_JSON_URL + "?t=" + Date.now()); // cache-bust
       if (!res.ok) throw new Error("HTTP " + res.status);
       const data = await res.json();
+      const remoteHistory = data.history || [];
+      const localHistoryRaw = await storage.get("aog:local_history");
+      const localClearedRaw = await storage.get("aog:locally_cleared_ids");
+
+      let localHistory = [];
+      let localCleared = locallyClearedIds;
+      if (localHistoryRaw?.value) localHistory = JSON.parse(localHistoryRaw.value);
+      if (localClearedRaw?.value) localCleared = JSON.parse(localClearedRaw.value);
 
       // Merge remote active with any we already know about locally
       setActive(prev => {
-        const merged = [...(data.active || [])];
+        const merged = [...(data.active || [])].filter(a => !localCleared[a.id]);
         prev.forEach(p => {
-          if (!merged.find(m => m.id === p.id)) merged.push(p);
+          if (!merged.find(m => m.id === p.id) && !localCleared[p.id]) merged.push(p);
         });
         return merged;
       });
+
+      setHistory(prev => {
+        const merged = [...remoteHistory];
+        prev.forEach(item => {
+          if (!merged.find(m => m.id === item.id)) merged.push(item);
+        });
+        localHistory.forEach(item => {
+          if (!merged.find(m => m.id === item.id)) merged.push(item);
+        });
+        return merged
+          .filter(event => event.end)
+          .sort((a, b) => new Date(b.end) - new Date(a.end));
+      });
+
+      setLocallyClearedIds(localCleared);
 
       if (data.lastUpdated) setLastSync(data.lastUpdated);
     } catch (e) {
@@ -147,7 +186,13 @@ function AOGTracker() {
   // ── SAVE local history to persistent storage ──────────────────────────────
   const saveLocalHistory = useCallback(async (h) => {
     try {
-      await window.storage.set("aog:local_history", JSON.stringify(h));
+      await storage.set("aog:local_history", JSON.stringify(h));
+    } catch (e) {}
+  }, []);
+
+  const saveLocalClearedIds = useCallback(async (ids) => {
+    try {
+      await storage.set("aog:locally_cleared_ids", JSON.stringify(ids));
     } catch (e) {}
   }, []);
 
@@ -180,6 +225,11 @@ function AOGTracker() {
     setHistory(prev => {
       const updated = [resolved, ...prev];
       saveLocalHistory(updated);
+      return updated;
+    });
+    setLocallyClearedIds(prev => {
+      const updated = { ...prev, [id]: resolved.end };
+      saveLocalClearedIds(updated);
       return updated;
     });
     setClearing(null);
@@ -226,7 +276,7 @@ function AOGTracker() {
     const next = [snapshot, ...savedWeeklyReports.filter(r => r.weekKey !== keyToSave)];
     setSavedWeeklyReports(next);
     try {
-      await window.storage.set("aog:saved_weekly_reports", JSON.stringify(next));
+      await storage.set("aog:saved_weekly_reports", JSON.stringify(next));
     } catch (e) {}
   }
 
