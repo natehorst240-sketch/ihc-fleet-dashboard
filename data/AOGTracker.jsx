@@ -99,6 +99,13 @@ function AOGTracker() {
   const [savedWeeklyReports, setSavedWeeklyReports] = useState([]);
   const [locallyClearedIds, setLocallyClearedIds] = useState({});
 
+  const saveLocalActive = useCallback(async (events) => {
+    try {
+      const manualOnly = (events || []).filter(e => e.source === "manual");
+      await storage.set("aog:local_active", JSON.stringify(manualOnly));
+    } catch (e) {}
+  }, []);
+
   // Live duration ticker
   useEffect(() => {
     const i = setInterval(() => setNow(Date.now()), 15000);
@@ -108,18 +115,25 @@ function AOGTracker() {
   // Load persisted local overrides (cleared events not yet in JSON)
   useEffect(() => {
     async function boot() {
-      // First load the remote JSON from the repo
-      await fetchJSON();
-      // Then overlay any local history stored in persistent storage
       try {
-        const [lh, sw, lc] = await Promise.all([
+        const [lh, sw, lc, la] = await Promise.all([
           storage.get("aog:local_history"),
           storage.get("aog:saved_weekly_reports"),
           storage.get("aog:locally_cleared_ids"),
+          storage.get("aog:local_active"),
         ]);
 
-        if (lh) {
-          const localHistory = JSON.parse(lh.value);
+        const localHistory = lh?.value ? JSON.parse(lh.value) : [];
+        const localCleared = lc?.value ? JSON.parse(lc.value) : {};
+        const localActive = la?.value ? JSON.parse(la.value) : [];
+
+        if (sw?.value) setSavedWeeklyReports(JSON.parse(sw.value));
+        setLocallyClearedIds(localCleared);
+
+        // Load remote JSON and merge local overrides deterministically.
+        await fetchJSON({ localHistory, localCleared, localActive });
+
+        if (localHistory.length) {
           setHistory(prev => {
             const merged = [...localHistory];
             prev.forEach(h => {
@@ -128,8 +142,6 @@ function AOGTracker() {
             return merged.sort((a, b) => new Date(b.end) - new Date(a.end));
           });
         }
-        if (sw) setSavedWeeklyReports(JSON.parse(sw.value));
-        if (lc) setLocallyClearedIds(JSON.parse(lc.value));
       } catch (e) {}
       setLoaded(true);
     }
@@ -137,26 +149,32 @@ function AOGTracker() {
   }, []);
 
   // ── FETCH remote JSON written by Apps Script ──────────────────────────────
-  async function fetchJSON() {
+  async function fetchJSON(localOverrides = {}) {
     setSyncing(true);
     try {
       const res = await fetch(AOG_JSON_URL + "?t=" + Date.now()); // cache-bust
       if (!res.ok) throw new Error("HTTP " + res.status);
       const data = await res.json();
       const remoteHistory = data.history || [];
-      const localHistoryRaw = await storage.get("aog:local_history");
-      const localClearedRaw = await storage.get("aog:locally_cleared_ids");
+      const localHistoryRaw = localOverrides.localHistory ? null : await storage.get("aog:local_history");
+      const localClearedRaw = localOverrides.localCleared ? null : await storage.get("aog:locally_cleared_ids");
+      const localActiveRaw = localOverrides.localActive ? null : await storage.get("aog:local_active");
 
-      let localHistory = [];
-      let localCleared = locallyClearedIds;
-      if (localHistoryRaw?.value) localHistory = JSON.parse(localHistoryRaw.value);
-      if (localClearedRaw?.value) localCleared = JSON.parse(localClearedRaw.value);
+      let localHistory = localOverrides.localHistory || [];
+      let localCleared = localOverrides.localCleared || locallyClearedIds;
+      let localActive = localOverrides.localActive || [];
+      if (!localOverrides.localHistory && localHistoryRaw?.value) localHistory = JSON.parse(localHistoryRaw.value);
+      if (!localOverrides.localCleared && localClearedRaw?.value) localCleared = JSON.parse(localClearedRaw.value);
+      if (!localOverrides.localActive && localActiveRaw?.value) localActive = JSON.parse(localActiveRaw.value);
 
       // Merge remote active with any we already know about locally
       setActive(prev => {
         const merged = [...(data.active || [])].filter(a => !localCleared[a.id]);
         prev.forEach(p => {
           if (!merged.find(m => m.id === p.id) && !localCleared[p.id]) merged.push(p);
+        });
+        localActive.forEach(item => {
+          if (!merged.find(m => m.id === item.id) && !localCleared[item.id]) merged.push(item);
         });
         return merged;
       });
@@ -207,7 +225,11 @@ function AOGTracker() {
       start: new Date().toISOString(),
       source: "manual",
     };
-    setActive(prev => [...prev, entry]);
+    setActive(prev => {
+      const updated = [...prev, entry];
+      saveLocalActive(updated);
+      return updated;
+    });
     setAdding(false);
     setForm({ tail: FLEET[0], desc: "", discId: "" });
   }
@@ -221,7 +243,11 @@ function AOGTracker() {
       end: new Date().toISOString(),
       duration: Date.now() - new Date(item.start).getTime(),
     };
-    setActive(prev => prev.filter(a => a.id !== id));
+    setActive(prev => {
+      const updated = prev.filter(a => a.id !== id);
+      saveLocalActive(updated);
+      return updated;
+    });
     setHistory(prev => {
       const updated = [resolved, ...prev];
       saveLocalHistory(updated);
