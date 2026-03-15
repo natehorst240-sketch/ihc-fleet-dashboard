@@ -358,3 +358,4 @@ function AOGTracker() {
 }
 
 window.AOGTracker = AOGTracker;
+ReactDOM.createRoot(document.getElementById('aog-root')).render(<AOGTracker />);
