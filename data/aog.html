@@ -54,6 +54,12 @@
       return text;
     }
 
+    function overlapMs(startMs, endMs, rangeStartMs, rangeEndMs) {
+      const clippedStart = Math.max(startMs, rangeStartMs);
+      const clippedEnd = Math.min(endMs, rangeEndMs);
+      return Math.max(0, clippedEnd - clippedStart);
+    }
+
     function App() {
       const [active, setActive] = useState([]);
       const [history, setHistory] = useState([]);
@@ -212,12 +218,22 @@ Do not include any explanation or markdown.`,
         setClearing(null);
       }
 
-      const weekAgo = Date.now() - 7 * 86400000;
-      const weekEvents = history.filter(h => new Date(h.end).getTime() > weekAgo);
+      const weekEnd = Date.now();
+      const weekAgo = weekEnd - 7 * 86400000;
+      const weekEvents = history
+        .map(h => {
+          const eventStartMs = new Date(h.start).getTime();
+          const eventEndMs = new Date(h.end).getTime();
+          return {
+            ...h,
+            weekDurationMs: overlapMs(eventStartMs, eventEndMs, weekAgo, weekEnd)
+          };
+        })
+        .filter(h => h.weekDurationMs > 0);
       const totalWeekMs = 7 * 24 * 3600000;
       const byTail = FLEET.map(t => {
         const events = weekEvents.filter(e => e.tail === t);
-        const totalMs = events.reduce((s, e) => s + (e.duration || 0), 0);
+        const totalMs = events.reduce((s, e) => s + (e.weekDurationMs || 0), 0);
         const availability = Math.max(0, ((totalWeekMs - totalMs) / totalWeekMs) * 100);
         return {
           tail: t,
@@ -227,7 +243,7 @@ Do not include any explanation or markdown.`,
           totalHours: totalMs / 3600000,
           availability,
           topReason: events[0]?.desc || "",
-          over24Count: events.filter(e => (e.duration || 0) >= 24 * 3600000).length
+          over24Count: events.filter(e => (e.weekDurationMs || 0) >= 24 * 3600000).length
         };
       });
 
@@ -237,7 +253,7 @@ Do not include any explanation or markdown.`,
         : 100;
 
       function downloadWeeklyCsv() {
-        const rangeLabel = `${new Date(weekAgo).toLocaleDateString('en-US')} - ${new Date().toLocaleDateString('en-US')}`;
+        const rangeLabel = `${new Date(weekAgo).toLocaleDateString('en-US')} - ${new Date(weekEnd).toLocaleDateString('en-US')}`;
         const rows = [
           ["IHC FLEET WEEKLY OOS REPORT", rangeLabel],
           [],
@@ -409,8 +425,8 @@ Do not include any explanation or markdown.`,
             {tab === 'weekly' && (
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                  <div style={{ fontSize: 9, letterSpacing: 4, color: "#333355" }}>
-                    7-DAY OUT OF SERVICE REPORT · {new Date(weekAgo).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  <div style={{ fontSize: 12, letterSpacing: 2, color: "#8a9ad4" }}>
+                    7-DAY OUT OF SERVICE REPORT · {new Date(weekAgo).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – {new Date(weekEnd).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                   </div>
                   <button onClick={downloadWeeklyCsv} style={{ ...btn("#88aaff", "#050514"), marginLeft: "auto" }}>
                     ⭳ EXPORT CSV
@@ -422,48 +438,48 @@ Do not include any explanation or markdown.`,
                     <thead>
                       <tr style={{ background: "#0b0b16" }}>
                         {["Tail", "AOG Events", "OOS Hours", "Events >24h", "Top OOS Reason", "Operational Availability"].map(h => (
-                          <th key={h} style={{ border: "1px solid #1c1c2d", color: "#7f84ab", fontSize: 10, letterSpacing: 1, textAlign: "left", padding: "8px 10px" }}>{h}</th>
+                          <th key={h} style={{ border: "1px solid #1c1c2d", color: "#bcc7ff", fontSize: 12, letterSpacing: 1, textAlign: "left", padding: "9px 10px" }}>{h}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
                       {byTail.map((x, idx) => (
                         <tr key={x.tail} style={{ background: idx % 2 ? "#090912" : "#07070f" }}>
-                          <td style={{ border: "1px solid #1a1a2a", color: "#b8c0ff", fontSize: 11, fontWeight: "bold", letterSpacing: 1, padding: "8px 10px" }}>{x.tail}</td>
-                          <td style={{ border: "1px solid #1a1a2a", color: "#5d658f", fontSize: 11, padding: "8px 10px" }}>{x.count}</td>
-                          <td style={{ border: "1px solid #1a1a2a", color: "#ffaa44", fontSize: 11, padding: "8px 10px" }}>{durHours(x.totalMs)}</td>
-                          <td style={{ border: "1px solid #1a1a2a", color: "#c18baa", fontSize: 11, padding: "8px 10px" }}>{x.over24Count}</td>
-                          <td style={{ border: "1px solid #1a1a2a", color: "#6f6f8d", fontSize: 11, padding: "8px 10px" }}>{x.topReason || "—"}</td>
-                          <td style={{ border: "1px solid #1a1a2a", color: x.availability >= 95 ? "#66cc88" : "#d49a52", fontSize: 11, fontWeight: "bold", padding: "8px 10px" }}>{x.availability.toFixed(1)}%</td>
+                          <td style={{ border: "1px solid #1a1a2a", color: "#d0d6ff", fontSize: 12, fontWeight: "bold", letterSpacing: 1, padding: "9px 10px" }}>{x.tail}</td>
+                          <td style={{ border: "1px solid #1a1a2a", color: "#99a6db", fontSize: 12, padding: "9px 10px" }}>{x.count}</td>
+                          <td style={{ border: "1px solid #1a1a2a", color: "#ffbf66", fontSize: 12, padding: "9px 10px" }}>{durHours(x.totalMs)}</td>
+                          <td style={{ border: "1px solid #1a1a2a", color: "#ddaad5", fontSize: 12, padding: "9px 10px" }}>{x.over24Count}</td>
+                          <td style={{ border: "1px solid #1a1a2a", color: "#a7aed1", fontSize: 12, padding: "9px 10px" }}>{x.topReason || "—"}</td>
+                          <td style={{ border: "1px solid #1a1a2a", color: x.availability >= 95 ? "#8cffb0" : "#ffc36e", fontSize: 12, fontWeight: "bold", padding: "9px 10px" }}>{x.availability.toFixed(1)}%</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
 
-                <div style={{ fontSize: 10, color: "#556088", marginBottom: 8 }}>
+                <div style={{ fontSize: 12, color: "#90a1d8", marginBottom: 8 }}>
                   Fleet avg operational availability: <span style={{ color: "#8eb5ff", fontWeight: "bold" }}>{avgAvailability.toFixed(1)}%</span>
                 </div>
 
-                {!byTailWithEvents.length && <div style={{ textAlign: "center", padding: "20px 0 60px", color: "#1a1a2a", fontSize: 11, letterSpacing: 4 }}>NO AOG EVENTS THIS WEEK</div>}
+                {!byTailWithEvents.length && <div style={{ textAlign: "center", padding: "20px 0 60px", color: "#4d5786", fontSize: 13, letterSpacing: 3 }}>NO AOG EVENTS THIS WEEK</div>}
                 {byTailWithEvents.map(x => (
                   <div key={x.tail} style={{ background: "#090912", border: "1px solid #111122", borderRadius: 2, padding: "12px 14px", marginBottom: 8 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                      <span style={{ fontSize: 17, fontWeight: "bold", color: "#6666aa", letterSpacing: 2 }}>{x.tail}</span>
-                      <span style={{ fontSize: 9, color: "#333355", letterSpacing: 2 }}>{x.count} EVENT{x.count !== 1 ? "S" : ""}</span>
-                      <span style={{ marginLeft: "auto", fontSize: 13, color: "#ffaa44", fontWeight: "bold" }}>
+                      <span style={{ fontSize: 20, fontWeight: "bold", color: "#909cf2", letterSpacing: 2 }}>{x.tail}</span>
+                      <span style={{ fontSize: 11, color: "#7c88d0", letterSpacing: 2 }}>{x.count} EVENT{x.count !== 1 ? "S" : ""}</span>
+                      <span style={{ marginLeft: "auto", fontSize: 16, color: "#ffc571", fontWeight: "bold" }}>
                         {dur(x.totalMs)} DOWN
                       </span>
                     </div>
                     {x.events.map(e => (
-                      <div key={e.id} style={{ fontSize: 10, color: "#2a2a44", borderTop: "1px solid #0e0e1e", padding: "6px 0" }}>
+                      <div key={e.id} style={{ fontSize: 12, color: "#8a95cf", borderTop: "1px solid #0e0e1e", padding: "8px 0" }}>
                         <div style={{ display: "flex", gap: 6 }}>
                           <span>{ts(e.start)}</span>
-                          <span style={{ color: "#1a1a2a" }}>→</span>
+                          <span style={{ color: "#5f6699" }}>→</span>
                           <span>{ts(e.end)}</span>
-                          <span style={{ marginLeft: "auto", color: "#44aa55", fontWeight: "bold" }}>{dur(e.duration)}</span>
+                          <span style={{ marginLeft: "auto", color: "#66e389", fontWeight: "bold" }}>{dur(e.weekDurationMs)} this week</span>
                         </div>
-                        {e.desc && <div style={{ fontSize: 9, color: "#22223a", marginTop: 3, fontStyle: "italic" }}>{e.desc}</div>}
+                        {e.desc && <div style={{ fontSize: 11, color: "#7985bf", marginTop: 4, fontStyle: "italic" }}>{e.desc}</div>}
                       </div>
                     ))}
                   </div>
