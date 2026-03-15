@@ -1918,6 +1918,9 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
   footer{{margin-top:48px;padding:16px 32px;border-top:1px solid var(--border);font-family:var(--mono);font-size:10px;color:var(--muted);display:flex;justify-content:space-between;letter-spacing:1px;}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body>
 <header>
@@ -1943,6 +1946,8 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
 <main>
   <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('maintenance',this)">Maintenance Due List</button>
+    <button class="tab-btn" onclick="switchTab('location',this)">Aircraft Location</button>
+    <button class="tab-btn" onclick="switchTab('aog',this)">AOG Tracker</button>
     <button class="tab-btn" onclick="switchTab('flight-hours',this)">Flight Hours Tracking</button>
     <button class="tab-btn" onclick="switchTab('component-changes',this)">Component Changes</button>
     <button class="tab-btn" onclick="switchTab('calendar',this)">Calendar</button>
@@ -2011,6 +2016,9 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
   <!-- AIRCRAFT LOCATION TAB -->
   <div id="tab-location" class="tab-content">
 {location_tab_html}
+  </div>
+  <div id="tab-aog" class="tab-content">
+    <div id="aog-root"></div>
   </div>
 </main>
 <footer>
@@ -2127,6 +2135,13 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
       plugins: [ChartDataLabels]
     }});
   }})();
+</script>
+<script type="text/babel">
+// --- paste entire contents of AOGTracker.jsx here ---
+// Then at the very bottom of the pasted code, replace "export default function AOGTracker()" 
+// with just "function AOGTracker()" and add this after the closing brace:
+
+ReactDOM.createRoot(document.getElementById('aog-root')).render(<AOGTracker />);
 </script>
 </body>
 </html>"""
