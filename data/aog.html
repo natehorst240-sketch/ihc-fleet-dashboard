@@ -28,6 +28,15 @@
       }
     };
 
+    function readLocalJson(key) {
+      try {
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : null;
+      } catch (_) {
+        return null;
+      }
+    }
+
     function dur(ms) {
       if (!ms || ms < 0) return "—";
       const h = Math.floor(ms / 3600000);
@@ -36,11 +45,22 @@
       return h > 0 ? `${h}h ${m}m` : `${m}m`;
     }
 
+    function durHours(ms) {
+      if (!ms || ms < 0) return "0.0";
+      return (ms / 3600000).toFixed(1);
+    }
+
     function ts(iso) {
       if (!iso) return "—";
       const d = new Date(iso);
       return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) +
         " " + d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+    }
+
+    function escCsv(value) {
+      const text = String(value ?? "");
+      if (/[",\n]/.test(text)) return `"${text.replace(/"/g, '""')}"`;
+      return text;
     }
 
     function App() {
@@ -65,10 +85,20 @@
           try {
             const a = await storage.get("aog:active");
             const h = await storage.get("aog:history");
-            if (a?.value) setActive(JSON.parse(a.value));
-            if (h?.value) setHistory(JSON.parse(h.value));
+            const loadedActive = a?.value ? JSON.parse(a.value) : null;
+            const loadedHistory = h?.value ? JSON.parse(h.value) : null;
+
+            const localActive = readLocalJson("aog:active:local");
+            const localHistory = readLocalJson("aog:history:local");
+
+            setActive(Array.isArray(loadedActive) ? loadedActive : (Array.isArray(localActive) ? localActive : []));
+            setHistory(Array.isArray(loadedHistory) ? loadedHistory : (Array.isArray(localHistory) ? localHistory : []));
           } catch (e) {
             console.warn("AOG load failed", e);
+            const localActive = readLocalJson("aog:active:local");
+            const localHistory = readLocalJson("aog:history:local");
+            if (Array.isArray(localActive)) setActive(localActive);
+            if (Array.isArray(localHistory)) setHistory(localHistory);
           }
           setLoaded(true);
         }
@@ -77,12 +107,20 @@
 
       const save = useCallback(async (a, h) => {
         try {
+          localStorage.setItem("aog:active:local", JSON.stringify(a));
+          localStorage.setItem("aog:history:local", JSON.stringify(h));
           await storage.set("aog:active", JSON.stringify(a));
           await storage.set("aog:history", JSON.stringify(h));
         } catch (e) {
           console.warn("AOG save failed", e);
         }
       }, []);
+
+      function eventKey(item) {
+        if (!item) return "";
+        if (item.discId) return `disc:${item.discId}`;
+        return `sig:${item.tail || ""}|${item.start || ""}|${(item.desc || "").trim().toLowerCase()}`;
+      }
 
       async function syncEmails() {
         const apiKey = window.ANTHROPIC_API_KEY;
@@ -140,22 +178,25 @@ Do not include any explanation or markdown.`,
 
           let currentActive = [...active];
           const currentHistory = [...history];
+          const seen = new Set([...currentActive, ...currentHistory].map(eventKey));
           let added = 0;
 
           for (const email of parsed) {
             if (!email.tail || !email.grounded) continue;
-            const alreadyActive = currentActive.find(a => a.discId === email.discId);
-            const alreadyHistory = currentHistory.find(h => h.discId === email.discId);
-            if (alreadyActive || alreadyHistory) continue;
-
-            currentActive = [...currentActive, {
+            const candidate = {
               id: `email-${email.discId || Date.now()}`,
               tail: email.tail,
               desc: email.desc,
               discId: email.discId,
               start: email.start,
               source: "email"
-            }];
+            };
+
+            const key = eventKey(candidate);
+            if (seen.has(key)) continue;
+
+            currentActive = [...currentActive, candidate];
+            seen.add(key);
             added++;
           }
 
@@ -168,7 +209,7 @@ Do not include any explanation or markdown.`,
         setSyncing(false);
       }
 
-      function addAOG() {
+      async function addAOG() {
         if (!form.desc.trim()) return;
         const entry = {
           id: Date.now().toString(),
@@ -180,12 +221,12 @@ Do not include any explanation or markdown.`,
         };
         const na = [...active, entry];
         setActive(na);
-        save(na, history);
+        await save(na, history);
         setAdding(false);
         setForm({ tail: FLEET[0], desc: "", discId: "" });
       }
 
-      function clearAOG(id) {
+      async function clearAOG(id) {
         const item = active.find(a => a.id === id);
         if (!item) return;
         const resolved = {
@@ -197,17 +238,79 @@ Do not include any explanation or markdown.`,
         const nh = [resolved, ...history];
         setActive(na);
         setHistory(nh);
-        save(na, nh);
+        await save(na, nh);
         setClearing(null);
       }
 
       const weekAgo = Date.now() - 7 * 86400000;
-      const weekEvents = history.filter(h => new Date(h.end).getTime() > weekAgo);
+      const weekStart = weekAgo;
+      const weekEnd = Date.now();
+      const weekEvents = history
+        .map(h => {
+          const startMs = new Date(h.start).getTime();
+          const endMs = new Date(h.end).getTime();
+          if (!Number.isFinite(startMs) || !Number.isFinite(endMs)) return null;
+          const clippedStart = Math.max(startMs, weekStart);
+          const clippedEnd = Math.min(endMs, weekEnd);
+          const clippedDuration = Math.max(0, clippedEnd - clippedStart);
+          if (clippedDuration <= 0) return null;
+          return { ...h, clippedDuration };
+        })
+        .filter(Boolean);
+      const totalWeekMs = 7 * 24 * 3600000;
       const byTail = FLEET.map(t => {
         const events = weekEvents.filter(e => e.tail === t);
-        const totalMs = events.reduce((s, e) => s + (e.duration || 0), 0);
-        return { tail: t, count: events.length, totalMs, events };
-      }).filter(x => x.count > 0);
+        const totalMs = events.reduce((s, e) => s + (e.clippedDuration || 0), 0);
+        const availability = Math.max(0, ((totalWeekMs - totalMs) / totalWeekMs) * 100);
+        return {
+          tail: t,
+          count: events.length,
+          totalMs,
+          events,
+          totalHours: totalMs / 3600000,
+          availability,
+          topReason: events[0]?.desc || "",
+          over24Count: events.filter(e => (e.clippedDuration || 0) >= 24 * 3600000).length
+        };
+      });
+
+      const byTailWithEvents = byTail.filter(x => x.count > 0);
+      const avgAvailability = byTail.length
+        ? byTail.reduce((sum, x) => sum + x.availability, 0) / byTail.length
+        : 100;
+
+      function downloadWeeklyCsv() {
+        const rangeLabel = `${new Date(weekAgo).toLocaleDateString('en-US')} - ${new Date().toLocaleDateString('en-US')}`;
+        const rows = [
+          ["IHC FLEET WEEKLY OOS REPORT", rangeLabel],
+          [],
+          ["Tail", "AOG Events", "OOS Hours", "Events >24h", "Top OOS Reason", "Operational Availability %"]
+        ];
+
+        byTail.forEach(row => {
+          rows.push([
+            row.tail,
+            row.count,
+            durHours(row.totalMs),
+            row.over24Count,
+            row.topReason,
+            `${row.availability.toFixed(1)}%`
+          ]);
+        });
+
+        rows.push([]);
+        rows.push(["Fleet Avg Operational Availability", `${avgAvailability.toFixed(1)}%`]);
+
+        const csv = rows.map(r => r.map(escCsv).join(",")).join("\n");
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `weekly-oos-report-${new Date().toISOString().slice(0, 10)}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(link.href);
+      }
 
       const inp = {
         background: "#050509", border: "1px solid #1a1a2e", color: "#c8c8d8",
@@ -348,11 +451,45 @@ Do not include any explanation or markdown.`,
 
             {tab === 'weekly' && (
               <div>
-                <div style={{ fontSize: 9, letterSpacing: 4, color: "#333355", marginBottom: 14 }}>
-                  7-DAY OUT OF SERVICE REPORT · {new Date(weekAgo).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                  <div style={{ fontSize: 9, letterSpacing: 4, color: "#333355" }}>
+                    7-DAY OUT OF SERVICE REPORT · {new Date(weekAgo).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </div>
+                  <button onClick={downloadWeeklyCsv} style={{ ...btn("#88aaff", "#050514"), marginLeft: "auto" }}>
+                    ⭳ EXPORT CSV
+                  </button>
                 </div>
-                {!byTail.length && <div style={{ textAlign: "center", padding: "60px 0", color: "#1a1a2a", fontSize: 11, letterSpacing: 4 }}>NO AOG EVENTS THIS WEEK</div>}
-                {byTail.map(x => (
+
+                <div style={{ overflowX: "auto", border: "1px solid #151528", marginBottom: 12 }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 720 }}>
+                    <thead>
+                      <tr style={{ background: "#0b0b16" }}>
+                        {["Tail", "AOG Events", "OOS Hours", "Events >24h", "Top OOS Reason", "Operational Availability"].map(h => (
+                          <th key={h} style={{ border: "1px solid #1c1c2d", color: "#7f84ab", fontSize: 10, letterSpacing: 1, textAlign: "left", padding: "8px 10px" }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {byTail.map((x, idx) => (
+                        <tr key={x.tail} style={{ background: idx % 2 ? "#090912" : "#07070f" }}>
+                          <td style={{ border: "1px solid #1a1a2a", color: "#b8c0ff", fontSize: 11, fontWeight: "bold", letterSpacing: 1, padding: "8px 10px" }}>{x.tail}</td>
+                          <td style={{ border: "1px solid #1a1a2a", color: "#5d658f", fontSize: 11, padding: "8px 10px" }}>{x.count}</td>
+                          <td style={{ border: "1px solid #1a1a2a", color: "#ffaa44", fontSize: 11, padding: "8px 10px" }}>{durHours(x.totalMs)}</td>
+                          <td style={{ border: "1px solid #1a1a2a", color: "#c18baa", fontSize: 11, padding: "8px 10px" }}>{x.over24Count}</td>
+                          <td style={{ border: "1px solid #1a1a2a", color: "#6f6f8d", fontSize: 11, padding: "8px 10px" }}>{x.topReason || "—"}</td>
+                          <td style={{ border: "1px solid #1a1a2a", color: x.availability >= 95 ? "#66cc88" : "#d49a52", fontSize: 11, fontWeight: "bold", padding: "8px 10px" }}>{x.availability.toFixed(1)}%</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div style={{ fontSize: 10, color: "#556088", marginBottom: 8 }}>
+                  Fleet avg operational availability: <span style={{ color: "#8eb5ff", fontWeight: "bold" }}>{avgAvailability.toFixed(1)}%</span>
+                </div>
+
+                {!byTailWithEvents.length && <div style={{ textAlign: "center", padding: "20px 0 60px", color: "#1a1a2a", fontSize: 11, letterSpacing: 4 }}>NO AOG EVENTS THIS WEEK</div>}
+                {byTailWithEvents.map(x => (
                   <div key={x.tail} style={{ background: "#090912", border: "1px solid #111122", borderRadius: 2, padding: "12px 14px", marginBottom: 8 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
                       <span style={{ fontSize: 17, fontWeight: "bold", color: "#6666aa", letterSpacing: 2 }}>{x.tail}</span>
@@ -367,7 +504,7 @@ Do not include any explanation or markdown.`,
                           <span>{ts(e.start)}</span>
                           <span style={{ color: "#1a1a2a" }}>→</span>
                           <span>{ts(e.end)}</span>
-                          <span style={{ marginLeft: "auto", color: "#44aa55", fontWeight: "bold" }}>{dur(e.duration)}</span>
+                          <span style={{ marginLeft: "auto", color: "#44aa55", fontWeight: "bold" }}>{dur(e.clippedDuration)}</span>
                         </div>
                         {e.desc && <div style={{ fontSize: 9, color: "#22223a", marginTop: 3, fontStyle: "italic" }}>{e.desc}</div>}
                       </div>
