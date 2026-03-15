@@ -30,6 +30,26 @@ function ts(iso) {
 }
 
 // ── COMPONENT ─────────────────────────────────────────────────────────────────
+
+function startOfWeek(tsLike) {
+  const d = new Date(tsLike);
+  const start = new Date(d);
+  start.setHours(0, 0, 0, 0);
+  start.setDate(start.getDate() - start.getDay());
+  return start;
+}
+
+function weekKey(tsLike) {
+  return startOfWeek(tsLike).toISOString().slice(0, 10);
+}
+
+function weekRangeLabel(key) {
+  const start = new Date(`${key}T00:00:00`);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 6);
+  return `${start.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} - ${end.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
+}
+
 function AOGTracker() {
   const [active, setActive]     = useState([]);
   const [history, setHistory]   = useState([]);
@@ -41,6 +61,8 @@ function AOGTracker() {
   const [loaded, setLoaded]     = useState(false);
   const [lastSync, setLastSync] = useState(null);
   const [syncing, setSyncing]   = useState(false);
+  const [selectedWeek, setSelectedWeek] = useState("current");
+  const [savedWeeklyReports, setSavedWeeklyReports] = useState([]);
 
   // Live duration ticker
   useEffect(() => {
@@ -66,6 +88,8 @@ function AOGTracker() {
             return merged.sort((a, b) => new Date(b.end) - new Date(a.end));
           });
         }
+        const sw = await window.storage.get("aog:saved_weekly_reports");
+        if (sw) setSavedWeeklyReports(JSON.parse(sw.value));
       } catch (e) {}
       setLoaded(true);
     }
@@ -137,14 +161,50 @@ function AOGTracker() {
     setClearing(null);
   }
 
-  // ── WEEKLY REPORT ─────────────────────────────────────────────────────────
-  const weekAgo = Date.now() - 7 * 86400000;
-  const weekEvents = history.filter(h => h.end && new Date(h.end).getTime() > weekAgo);
+  // ── WEEKLY REPORT (full history grouped by week) ─────────────────────────
+  const currentWeekKey = weekKey(Date.now());
+  const weekEventsByKey = history.reduce((acc, event) => {
+    if (!event.end) return acc;
+    const key = weekKey(event.end);
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(event);
+    return acc;
+  }, {});
+
+  const availableWeeks = Object.keys(weekEventsByKey)
+    .sort((a, b) => new Date(b) - new Date(a));
+
+  const effectiveWeekKey = selectedWeek === "current" ? currentWeekKey : selectedWeek;
+  const weekEvents = weekEventsByKey[effectiveWeekKey] || [];
+
   const byTail = FLEET.map(t => {
     const events = weekEvents.filter(e => e.tail === t);
     const totalMs = events.reduce((s, e) => s + (e.duration || 0), 0);
     return { tail: t, count: events.length, totalMs, events };
   }).filter(x => x.count > 0);
+
+  const totalWeekDownMs = byTail.reduce((sum, t) => sum + t.totalMs, 0);
+
+  async function saveWeeklySnapshot() {
+    const keyToSave = effectiveWeekKey;
+    const snapshot = {
+      id: `week-${keyToSave}-${Date.now()}`,
+      weekKey: keyToSave,
+      savedAt: new Date().toISOString(),
+      totalDownMs: totalWeekDownMs,
+      aircraft: byTail.map(x => ({
+        tail: x.tail,
+        count: x.count,
+        totalMs: x.totalMs,
+      })),
+    };
+
+    const next = [snapshot, ...savedWeeklyReports.filter(r => r.weekKey !== keyToSave)];
+    setSavedWeeklyReports(next);
+    try {
+      await window.storage.set("aog:saved_weekly_reports", JSON.stringify(next));
+    } catch (e) {}
+  }
 
   // ── STYLES ────────────────────────────────────────────────────────────────
   const inp = {
@@ -307,18 +367,47 @@ function AOGTracker() {
         {tab === "weekly" && (
           <div>
             <div style={{ fontSize: 9, letterSpacing: 4, color: "#333355", marginBottom: 14 }}>
-              7-DAY OUT OF SERVICE REPORT · {new Date(weekAgo).toLocaleDateString("en-US", { month: "short", day: "numeric" })} – {new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+              WEEK-BY-WEEK OUT OF SERVICE REPORT · {weekRangeLabel(effectiveWeekKey)}
             </div>
-            {!byTail.length && <div style={{ textAlign: "center", padding: "60px 0", color: "#1a1a2a", fontSize: 11, letterSpacing: 4 }}>NO AOG EVENTS THIS WEEK</div>}
+            {/* Week controls */}
+            <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 12, flexWrap: "wrap" }}>
+              <select value={selectedWeek} onChange={e => setSelectedWeek(e.target.value)} style={{ ...inp, maxWidth: 320 }}>
+                <option value="current">Current week ({weekRangeLabel(currentWeekKey)})</option>
+                {availableWeeks.map(w => (
+                  <option key={w} value={w}>{weekRangeLabel(w)}</option>
+                ))}
+              </select>
+              <button onClick={saveWeeklySnapshot} style={btn("#225588", "#000b1a")}>SAVE THIS WEEK REPORT</button>
+              {savedWeeklyReports.find(r => r.weekKey === effectiveWeekKey) && (
+                <span style={{ fontSize: 9, color: "#335577", letterSpacing: 1 }}>
+                  Saved snapshot exists for this week.
+                </span>
+              )}
+            </div>
+
+            {!byTail.length && <div style={{ textAlign: "center", padding: "60px 0", color: "#1a1a2a", fontSize: 11, letterSpacing: 4 }}>NO AOG EVENTS FOR THIS WEEK</div>}
 
             {/* Fleet summary row */}
             {byTail.length > 0 && (
               <div style={{ border: "1px solid #1a1a2e", borderRadius: 2, padding: "10px 14px", marginBottom: 14, display: "flex", gap: 16, flexWrap: "wrap" }}>
                 <span style={{ fontSize: 9, color: "#333355", letterSpacing: 3, alignSelf: "center" }}>FLEET SUMMARY</span>
+                <span style={{ fontSize: 10, color: "#44aa77" }}>TOTAL DOWN: <strong>{dur(totalWeekDownMs)}</strong></span>
                 {byTail.map(x => (
                   <span key={x.tail} style={{ fontSize: 10, color: "#ffaa44" }}>
                     {x.tail}: <strong>{dur(x.totalMs)}</strong>
                   </span>
+                ))}
+              </div>
+            )}
+
+            {savedWeeklyReports.length > 0 && (
+              <div style={{ border: "1px solid #142033", borderRadius: 2, padding: "10px 14px", marginBottom: 14 }}>
+                <div style={{ fontSize: 9, color: "#335577", letterSpacing: 3, marginBottom: 6 }}>SAVED WEEKLY SNAPSHOTS</div>
+                {savedWeeklyReports.slice(0, 6).map(r => (
+                  <div key={r.id} style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: "#2a3a55", padding: "2px 0" }}>
+                    <span>{weekRangeLabel(r.weekKey)}</span>
+                    <span>SAVED {ts(r.savedAt)} · DOWN {dur(r.totalDownMs)}</span>
+                  </div>
                 ))}
               </div>
             )}
