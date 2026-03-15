@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+const { useState, useEffect, useCallback } = React;
 
 // ── CONFIG ────────────────────────────────────────────────────────────────────
 // Path to the JSON file Apps Script writes to your repo.
@@ -30,7 +30,7 @@ function ts(iso) {
 }
 
 // ── COMPONENT ─────────────────────────────────────────────────────────────────
-export default function AOGTracker() {
+function AOGTracker() {
   const [active, setActive]     = useState([]);
   const [history, setHistory]   = useState([]);
   const [tab, setTab]           = useState("live");
@@ -356,3 +356,5 @@ export default function AOGTracker() {
     </div>
   );
 }
+
+window.AOGTracker = AOGTracker;
