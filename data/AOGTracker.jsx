@@ -360,7 +360,7 @@ function AOGTracker() {
 
   // ── RENDER ────────────────────────────────────────────────────────────────
   if (!loaded) return (
-    <div style={{ background: "#08080f", color: "#333", height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "monospace", fontSize: 11, letterSpacing: 4 }}>
+    <div style={{ background: "#08080f", color: "#ffffff", height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "monospace", fontSize: 11, letterSpacing: 4 }}>
       LOADING FLEET DATA...
     </div>
   );
@@ -371,14 +371,14 @@ function AOGTracker() {
       {/* ── HEADER ── */}
       <div style={{ background: "#09090f", borderBottom: "1px solid #111125", padding: "13px 20px", display: "flex", alignItems: "center", gap: 12 }}>
         <div style={{ width: 7, height: 7, borderRadius: "50%", background: active.length ? "#ff2222" : "#22cc55", boxShadow: active.length ? "0 0 10px #ff2222" : "0 0 10px #22cc55", animation: active.length ? "pulse 1.4s infinite" : "none" }} />
-        <span style={{ fontSize: 10, letterSpacing: 4, color: "#3a3a5a" }}>IHC FLEET · AOG TRACKER</span>
+        <span style={{ fontSize: 10, letterSpacing: 4, color: "#ffffff" }}>IHC FLEET · AOG TRACKER</span>
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>
           {lastSync && (
-            <span style={{ fontSize: 9, color: "#2a2a44", letterSpacing: 1 }}>
+            <span style={{ fontSize: 9, color: "#ffffff", letterSpacing: 1 }}>
               LAST EMAIL SYNC: {ts(lastSync)}
             </span>
           )}
-          <button onClick={fetchJSON} disabled={syncing} style={btn("#334466", "#05050f")}>
+          <button onClick={fetchJSON} disabled={syncing} style={btn("#ffffff", "#05050f")}>
             {syncing ? "CHECKING..." : "⟳ REFRESH"}
           </button>
           <span style={{ fontSize: 10, letterSpacing: 2, color: active.length ? "#ff4444" : "#33aa55" }}>
@@ -396,7 +396,7 @@ function AOGTracker() {
                 <div style={{ minWidth: 90 }}>
                   <div style={{ fontSize: 22, fontWeight: "bold", color: "#ff3333", letterSpacing: 3, lineHeight: 1 }}>{a.tail}</div>
                   <div style={{ fontSize: 8, color: "#660000", letterSpacing: 3, marginTop: 3 }}>AOG</div>
-                  <div style={{ fontSize: 8, color: "#222244", marginTop: 2 }}>{a.source === "email" ? "📧 via email" : "✎ manual"}</div>
+                  <div style={{ fontSize: 8, color: "#ffffff", marginTop: 2 }}>{a.source === "email" ? "📧 via email" : "✎ manual"}</div>
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 12, color: "#ffbbbb", marginBottom: 5 }}>{a.desc}</div>
@@ -414,9 +414,9 @@ function AOGTracker() {
               <div style={{ marginTop: 10, borderTop: "1px solid #1a0000", paddingTop: 10, display: "flex", gap: 8, justifyContent: "flex-end" }}>
                 {clearing === a.id ? (
                   <>
-                    <span style={{ fontSize: 10, color: "#666", alignSelf: "center" }}>Confirm returned to service?</span>
+                    <span style={{ fontSize: 10, color: "#ffffff", alignSelf: "center" }}>Confirm returned to service?</span>
                     <button onClick={() => clearAOG(a.id)} style={btn("#44cc44", "#001a00")}>✓ CONFIRM CLEAR</button>
-                    <button onClick={() => setClearing(null)} style={btn("#333")}>CANCEL</button>
+                    <button onClick={() => setClearing(null)} style={btn("#ffffff")}>CANCEL</button>
                   </>
                 ) : (
                   <button onClick={() => setClearing(a.id)} style={btn("#44cc44", "#001500")}>CLEAR AOG</button>
@@ -430,7 +430,7 @@ function AOGTracker() {
       {/* ── TABS ── */}
       <div style={{ padding: "14px 20px 0", display: "flex", gap: 2, borderBottom: "1px solid #0e0e1e" }}>
         {[["live", `LIVE (${active.length})`], ["history", "HISTORY"], ["weekly", "WEEKLY REPORT"]].map(([k, label]) => (
-          <button key={k} onClick={() => setTab(k)} style={{ background: "transparent", border: "none", borderBottom: tab === k ? "2px solid #ff3333" : "2px solid transparent", color: tab === k ? "#cc3333" : "#2a2a44", padding: "7px 14px 9px", cursor: "pointer", fontFamily: "'Courier New',monospace", fontSize: 10, letterSpacing: 2 }}>
+          <button key={k} onClick={() => setTab(k)} style={{ background: "transparent", border: "none", borderBottom: tab === k ? "2px solid #ff3333" : "2px solid transparent", color: "#ffffff", padding: "7px 14px 9px", cursor: "pointer", fontFamily: "'Courier New',monospace", fontSize: 10, letterSpacing: 2 }}>
             {label}
           </button>
         ))}
@@ -446,21 +446,21 @@ function AOGTracker() {
         {/* Manual add form */}
         {adding && (
           <div style={{ background: "#090912", border: "1px solid #1a1a2e", borderRadius: 2, padding: 14, marginBottom: 14 }}>
-            <div style={{ fontSize: 9, letterSpacing: 4, color: "#333355", marginBottom: 10 }}>MANUAL AOG ENTRY</div>
+            <div style={{ fontSize: 9, letterSpacing: 4, color: "#ffffff", marginBottom: 10 }}>MANUAL AOG ENTRY</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
               <div>
-                <div style={{ fontSize: 9, color: "#333355", letterSpacing: 2, marginBottom: 4 }}>TAIL</div>
+                <div style={{ fontSize: 9, color: "#ffffff", letterSpacing: 2, marginBottom: 4 }}>TAIL</div>
                 <select value={form.tail} onChange={e => setForm({ ...form, tail: e.target.value })} style={{ ...inp, appearance: "none" }}>
                   {FLEET.map(t => <option key={t}>{t}</option>)}
                 </select>
               </div>
               <div>
-                <div style={{ fontSize: 9, color: "#333355", letterSpacing: 2, marginBottom: 4 }}>DISCREPANCY ID</div>
+                <div style={{ fontSize: 9, color: "#ffffff", letterSpacing: 2, marginBottom: 4 }}>DISCREPANCY ID</div>
                 <input placeholder="20260311161810" value={form.discId} onChange={e => setForm({ ...form, discId: e.target.value })} style={inp} />
               </div>
             </div>
             <div style={{ marginBottom: 10 }}>
-              <div style={{ fontSize: 9, color: "#333355", letterSpacing: 2, marginBottom: 4 }}>DESCRIPTION</div>
+              <div style={{ fontSize: 9, color: "#ffffff", letterSpacing: 2, marginBottom: 4 }}>DESCRIPTION</div>
               <input placeholder="Broken roller on left sliding door" value={form.desc} onChange={e => setForm({ ...form, desc: e.target.value })} style={inp} onKeyDown={e => e.key === "Enter" && addAOG()} />
             </div>
             <div style={{ display: "flex", justifyContent: "flex-end" }}>
@@ -473,10 +473,10 @@ function AOGTracker() {
 
         {/* Live: empty state */}
         {tab === "live" && !active.length && !adding && (
-          <div style={{ textAlign: "center", padding: "60px 0", color: "#1a1a2a", fontSize: 11, letterSpacing: 4 }}>
+          <div style={{ textAlign: "center", padding: "60px 0", color: "#ffffff", fontSize: 11, letterSpacing: 4 }}>
             <div style={{ fontSize: 30, marginBottom: 10, color: "#1a331a" }}>✓</div>
             NO ACTIVE AOG EVENTS
-            <div style={{ marginTop: 8, fontSize: 9, color: "#111122" }}>
+            <div style={{ marginTop: 8, fontSize: 9, color: "#ffffff" }}>
               Auto-updates every 5 min via Google Apps Script · Gmail → GitHub → here
             </div>
           </div>
@@ -485,17 +485,17 @@ function AOGTracker() {
         {/* History tab */}
         {tab === "history" && (
           <div>
-            {!history.length && <div style={{ textAlign: "center", padding: "60px 0", color: "#1a1a2a", fontSize: 11, letterSpacing: 4 }}>NO CLEARED AOG EVENTS YET</div>}
+            {!history.length && <div style={{ textAlign: "center", padding: "60px 0", color: "#ffffff", fontSize: 11, letterSpacing: 4 }}>NO CLEARED AOG EVENTS YET</div>}
             {history.map(h => (
               <div key={h.id} style={{ border: "1px solid #111122", borderRadius: 2, padding: "10px 12px", marginBottom: 6, display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{ minWidth: 78, fontSize: 14, fontWeight: "bold", color: "#44405a", letterSpacing: 2 }}>{h.tail}</div>
+                <div style={{ minWidth: 78, fontSize: 14, fontWeight: "bold", color: "#ffffff", letterSpacing: 2 }}>{h.tail}</div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 11, color: "#3a3a55" }}>{h.desc}</div>
-                  {h.discId && <div style={{ fontSize: 9, color: "#222233", marginTop: 2 }}>#{h.discId}</div>}
+                  <div style={{ fontSize: 11, color: "#ffffff" }}>{h.desc}</div>
+                  {h.discId && <div style={{ fontSize: 9, color: "#ffffff", marginTop: 2 }}>#{h.discId}</div>}
                 </div>
                 <div style={{ textAlign: "right", fontSize: 10 }}>
-                  <div style={{ color: "#2a2a44" }}>{ts(h.start)}</div>
-                  <div style={{ color: "#2a2a44" }}>→ {ts(h.end)}</div>
+                  <div style={{ color: "#ffffff" }}>{ts(h.start)}</div>
+                  <div style={{ color: "#ffffff" }}>→ {ts(h.end)}</div>
                   <div style={{ color: "#44aa55", fontWeight: "bold", marginTop: 3, fontSize: 12 }}>↓ {dur(h.duration)}</div>
                 </div>
               </div>
@@ -506,7 +506,7 @@ function AOGTracker() {
         {/* Weekly report tab */}
         {tab === "weekly" && (
           <div>
-            <div style={{ fontSize: 9, letterSpacing: 4, color: "#333355", marginBottom: 14 }}>
+            <div style={{ fontSize: 9, letterSpacing: 4, color: "#ffffff", marginBottom: 14 }}>
               WEEK-BY-WEEK OUT OF SERVICE REPORT · {weekRangeLabel(effectiveWeekKey)}
             </div>
             {/* Week controls */}
@@ -519,18 +519,18 @@ function AOGTracker() {
               </select>
               <button onClick={saveWeeklySnapshot} style={btn("#225588", "#000b1a")}>SAVE THIS WEEK REPORT</button>
               {savedWeeklyReports.find(r => r.weekKey === effectiveWeekKey) && (
-                <span style={{ fontSize: 9, color: "#335577", letterSpacing: 1 }}>
+                <span style={{ fontSize: 9, color: "#ffffff", letterSpacing: 1 }}>
                   Saved snapshot exists for this week.
                 </span>
               )}
             </div>
 
-            {!byTail.length && <div style={{ textAlign: "center", padding: "60px 0", color: "#1a1a2a", fontSize: 11, letterSpacing: 4 }}>NO AOG EVENTS FOR THIS WEEK</div>}
+            {!byTail.length && <div style={{ textAlign: "center", padding: "60px 0", color: "#ffffff", fontSize: 11, letterSpacing: 4 }}>NO AOG EVENTS FOR THIS WEEK</div>}
 
             {/* Fleet summary row */}
             {byTail.length > 0 && (
               <div style={{ border: "1px solid #1a1a2e", borderRadius: 2, padding: "10px 14px", marginBottom: 14, display: "flex", gap: 16, flexWrap: "wrap" }}>
-                <span style={{ fontSize: 9, color: "#333355", letterSpacing: 3, alignSelf: "center" }}>FLEET SUMMARY</span>
+                <span style={{ fontSize: 9, color: "#ffffff", letterSpacing: 3, alignSelf: "center" }}>FLEET SUMMARY</span>
                 <span style={{ fontSize: 10, color: "#44aa77" }}>TOTAL DOWN: <strong>{dur(totalWeekDownMs)}</strong></span>
                 {byTail.map(x => (
                   <span key={x.tail} style={{ fontSize: 10, color: "#ffaa44" }}>
@@ -542,9 +542,9 @@ function AOGTracker() {
 
             {savedWeeklyReports.length > 0 && (
               <div style={{ border: "1px solid #142033", borderRadius: 2, padding: "10px 14px", marginBottom: 14 }}>
-                <div style={{ fontSize: 9, color: "#335577", letterSpacing: 3, marginBottom: 6 }}>SAVED WEEKLY SNAPSHOTS</div>
+                <div style={{ fontSize: 9, color: "#ffffff", letterSpacing: 3, marginBottom: 6 }}>SAVED WEEKLY SNAPSHOTS</div>
                 {savedWeeklyReports.slice(0, 6).map(r => (
-                  <div key={r.id} style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: "#2a3a55", padding: "2px 0" }}>
+                  <div key={r.id} style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: "#ffffff", padding: "2px 0" }}>
                     <span>{weekRangeLabel(r.weekKey)}</span>
                     <span>SAVED {ts(r.savedAt)} · DOWN {dur(r.totalDownMs)}</span>
                   </div>
@@ -555,21 +555,21 @@ function AOGTracker() {
             {byTail.map(x => (
               <div key={x.tail} style={{ background: "#090912", border: "1px solid #111122", borderRadius: 2, padding: "12px 14px", marginBottom: 8 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                  <span style={{ fontSize: 17, fontWeight: "bold", color: "#6666aa", letterSpacing: 2 }}>{x.tail}</span>
-                  <span style={{ fontSize: 9, color: "#333355", letterSpacing: 2 }}>{x.count} EVENT{x.count !== 1 ? "S" : ""}</span>
+                  <span style={{ fontSize: 17, fontWeight: "bold", color: "#ffffff", letterSpacing: 2 }}>{x.tail}</span>
+                  <span style={{ fontSize: 9, color: "#ffffff", letterSpacing: 2 }}>{x.count} EVENT{x.count !== 1 ? "S" : ""}</span>
                   <span style={{ marginLeft: "auto", fontSize: 13, color: "#ffaa44", fontWeight: "bold" }}>
                     {dur(x.totalMs)} DOWN
                   </span>
                 </div>
                 {x.events.map(e => (
-                  <div key={e.id} style={{ fontSize: 10, color: "#2a2a44", borderTop: "1px solid #0e0e1e", padding: "6px 0" }}>
+                  <div key={e.id} style={{ fontSize: 10, color: "#ffffff", borderTop: "1px solid #0e0e1e", padding: "6px 0" }}>
                     <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                       <span>{ts(e.weekStart || e.start)}</span>
-                      <span style={{ color: "#1a1a2a" }}>→</span>
+                      <span style={{ color: "#ffffff" }}>→</span>
                       <span>{ts(e.weekEnd || e.end)}</span>
                       <span style={{ marginLeft: "auto", color: "#44aa55", fontWeight: "bold" }}>{dur(e.weeklyDurationMs || e.duration)}</span>
                     </div>
-                    {e.desc && <div style={{ fontSize: 9, color: "#22223a", marginTop: 3, fontStyle: "italic" }}>{e.desc}</div>}
+                    {e.desc && <div style={{ fontSize: 9, color: "#ffffff", marginTop: 3, fontStyle: "italic" }}>{e.desc}</div>}
                   </div>
                 ))}
               </div>
