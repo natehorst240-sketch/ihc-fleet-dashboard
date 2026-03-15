@@ -334,6 +334,18 @@ def calculate_flight_hours_stats(history_data, aircraft_list):
         }
     return stats
 
+# -- AOG Tracking Delete if this fucks the code---------------------------------------------
+
+import os
+os.makedirs("data", exist_ok=True)
+
+# Write an empty seed file if it doesn't exist yet
+aog_path = "data/aog_status.json"
+if not os.path.exists(aog_path):
+    import json
+    with open(aog_path, "w") as f:
+        json.dump({"active": [], "history": [], "lastUpdated": None}, f)
+
 
 # -- POSITIONS -----------------------------------------------------------------
 
