@@ -1951,7 +1951,6 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
     <button class="tab-btn" onclick="switchTab('flight-hours',this)">Flight Hours Tracking</button>
     <button class="tab-btn" onclick="switchTab('component-changes',this)">Component Changes</button>
     <button class="tab-btn" onclick="switchTab('calendar',this)">Calendar</button>
-    <button class="tab-btn" onclick="switchTab('location',this)">Aircraft Location</button>
   </div>
 
   <!-- MAINTENANCE TAB -->
@@ -2258,4 +2257,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
