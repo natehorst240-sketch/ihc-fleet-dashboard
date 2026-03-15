@@ -306,13 +306,15 @@ function AOGTracker() {
     .map((event) => {
       const eventStartMs = parseDateInput(event.start).getTime();
       const eventEndMs = parseDateInput(event.end).getTime();
+      const eventDurationMs = Number.isFinite(event.duration) && event.duration > 0
+        ? event.duration
+        : Math.max(0, eventEndMs - eventStartMs);
       const weeklyDurationMs = overlapMs(eventStartMs, eventEndMs, weekStartMs, weekEndMs);
       if (weeklyDurationMs <= 0) return null;
       return {
         ...event,
+        eventDurationMs,
         weeklyDurationMs,
-        weekStart: new Date(Math.max(eventStartMs, weekStartMs)).toISOString(),
-        weekEnd: new Date(Math.min(eventEndMs, weekEndMs)).toISOString(),
       };
     })
     .filter(Boolean);
@@ -564,11 +566,12 @@ function AOGTracker() {
                 {x.events.map(e => (
                   <div key={e.id} style={{ fontSize: 10, color: "#ffffff", borderTop: "1px solid #0e0e1e", padding: "6px 0" }}>
                     <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                      <span>{ts(e.weekStart || e.start)}</span>
+                      <span>{ts(e.start)}</span>
                       <span style={{ color: "#ffffff" }}>→</span>
-                      <span>{ts(e.weekEnd || e.end)}</span>
-                      <span style={{ marginLeft: "auto", color: "#44aa55", fontWeight: "bold" }}>{dur(e.weeklyDurationMs || e.duration)}</span>
+                      <span>{ts(e.end)}</span>
+                      <span style={{ marginLeft: "auto", color: "#44aa55", fontWeight: "bold" }}>{dur(e.eventDurationMs)}</span>
                     </div>
+                    <div style={{ fontSize: 9, color: "#4dc07f", marginTop: 2 }}>Week contribution: {dur(e.weeklyDurationMs)}</div>
                     {e.desc && <div style={{ fontSize: 9, color: "#ffffff", marginTop: 3, fontStyle: "italic" }}>{e.desc}</div>}
                   </div>
                 ))}
