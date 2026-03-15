@@ -84,6 +84,17 @@ function weekRangeLabel(key) {
   return `${start.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} - ${end.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
 }
 
+function overlapMs(startMs, endMs, windowStartMs, windowEndMs) {
+  const start = Number(startMs);
+  const end = Number(endMs);
+  const from = Number(windowStartMs);
+  const to = Number(windowEndMs);
+  if ([start, end, from, to].some(Number.isNaN)) return 0;
+  const s = Math.max(start, from);
+  const e = Math.min(end, to);
+  return Math.max(0, e - s);
+}
+
 function AOGTracker() {
   const [active, setActive]     = useState([]);
   const [history, setHistory]   = useState([]);
@@ -265,9 +276,17 @@ function AOGTracker() {
   const currentWeekKey = weekKey(Date.now());
   const weekEventsByKey = history.reduce((acc, event) => {
     if (!event.end) return acc;
-    const key = weekKey(event.end);
-    if (!acc[key]) acc[key] = [];
-    acc[key].push(event);
+    const eventStart = parseDateInput(event.start);
+    const eventEnd = parseDateInput(event.end);
+    if (Number.isNaN(eventStart.getTime()) || Number.isNaN(eventEnd.getTime())) return acc;
+
+    const firstWeek = startOfWeek(eventStart);
+    const lastWeek = startOfWeek(eventEnd);
+    for (let cursor = new Date(firstWeek); cursor <= lastWeek; cursor.setDate(cursor.getDate() + 7)) {
+      const key = localDateKey(cursor);
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(event);
+    }
     return acc;
   }, {});
 
@@ -275,11 +294,32 @@ function AOGTracker() {
     .sort((a, b) => new Date(b) - new Date(a));
 
   const effectiveWeekKey = selectedWeek === "current" ? currentWeekKey : selectedWeek;
-  const weekEvents = weekEventsByKey[effectiveWeekKey] || [];
+  const weekStart = parseDateInput(effectiveWeekKey);
+  weekStart.setHours(0, 0, 0, 0);
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekEnd.getDate() + 7);
+
+  const weekStartMs = weekStart.getTime();
+  const weekEndMs = weekEnd.getTime();
+
+  const weekEvents = (weekEventsByKey[effectiveWeekKey] || [])
+    .map((event) => {
+      const eventStartMs = parseDateInput(event.start).getTime();
+      const eventEndMs = parseDateInput(event.end).getTime();
+      const weeklyDurationMs = overlapMs(eventStartMs, eventEndMs, weekStartMs, weekEndMs);
+      if (weeklyDurationMs <= 0) return null;
+      return {
+        ...event,
+        weeklyDurationMs,
+        weekStart: new Date(Math.max(eventStartMs, weekStartMs)).toISOString(),
+        weekEnd: new Date(Math.min(eventEndMs, weekEndMs)).toISOString(),
+      };
+    })
+    .filter(Boolean);
 
   const byTail = FLEET.map(t => {
     const events = weekEvents.filter(e => e.tail === t);
-    const totalMs = events.reduce((s, e) => s + (e.duration || 0), 0);
+    const totalMs = events.reduce((s, e) => s + (e.weeklyDurationMs || 0), 0);
     return { tail: t, count: events.length, totalMs, events };
   }).filter(x => x.count > 0);
 
@@ -524,10 +564,10 @@ function AOGTracker() {
                 {x.events.map(e => (
                   <div key={e.id} style={{ fontSize: 10, color: "#2a2a44", borderTop: "1px solid #0e0e1e", padding: "6px 0" }}>
                     <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                      <span>{ts(e.start)}</span>
+                      <span>{ts(e.weekStart || e.start)}</span>
                       <span style={{ color: "#1a1a2a" }}>→</span>
-                      <span>{ts(e.end)}</span>
-                      <span style={{ marginLeft: "auto", color: "#44aa55", fontWeight: "bold" }}>{dur(e.duration)}</span>
+                      <span>{ts(e.weekEnd || e.end)}</span>
+                      <span style={{ marginLeft: "auto", color: "#44aa55", fontWeight: "bold" }}>{dur(e.weeklyDurationMs || e.duration)}</span>
                     </div>
                     {e.desc && <div style={{ fontSize: 9, color: "#22223a", marginTop: 3, fontStyle: "italic" }}>{e.desc}</div>}
                   </div>
