@@ -22,6 +22,7 @@ function dur(ms) {
 function ts(iso) {
   if (!iso) return "—";
   const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
   return (
     d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) +
     " " +
@@ -31,8 +32,27 @@ function ts(iso) {
 
 // ── COMPONENT ─────────────────────────────────────────────────────────────────
 
+function parseDateInput(tsLike) {
+  if (tsLike instanceof Date) return new Date(tsLike.getTime());
+  if (typeof tsLike === "number") return new Date(tsLike);
+  if (typeof tsLike === "string") {
+    const m = tsLike.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+    return new Date(tsLike);
+  }
+  return new Date(tsLike);
+}
+
+function localDateKey(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 function startOfWeek(tsLike) {
-  const d = new Date(tsLike);
+  const d = parseDateInput(tsLike);
+  if (Number.isNaN(d.getTime())) return new Date(NaN);
   const start = new Date(d);
   start.setHours(0, 0, 0, 0);
   start.setDate(start.getDate() - start.getDay());
@@ -40,11 +60,15 @@ function startOfWeek(tsLike) {
 }
 
 function weekKey(tsLike) {
-  return startOfWeek(tsLike).toISOString().slice(0, 10);
+  const start = startOfWeek(tsLike);
+  if (Number.isNaN(start.getTime())) return "";
+  return localDateKey(start);
 }
 
 function weekRangeLabel(key) {
-  const start = new Date(`${key}T00:00:00`);
+  const start = parseDateInput(key);
+  if (Number.isNaN(start.getTime())) return "—";
+  start.setHours(0, 0, 0, 0);
   const end = new Date(start);
   end.setDate(end.getDate() + 6);
   return `${start.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} - ${end.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
