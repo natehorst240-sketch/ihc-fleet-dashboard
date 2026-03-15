@@ -24,8 +24,12 @@ jsx = jsx.replace("export default function AOGTracker", "function AOGTracker")
 jsx = "const { useState, useEffect, useCallback } = React;\n" + jsx
 jsx = jsx + "\nReactDOM.createRoot(document.getElementById('aog-root')).render(<AOGTracker />);"
 
+# IMPORTANT: The generator uses Python f-strings, so { and } in the JSX
+# must be doubled to {{ and }} so Python doesn't treat them as f-string expressions.
+jsx_escaped = jsx.replace("{", "{{").replace("}", "}}")
+
 # Build the replacement script block
-new_block = '<script type="text/babel">\n' + jsx + '\n</script>'
+new_block = '<script type="text/babel">\n' + jsx_escaped + '\n</script>'
 
 # Find and replace the placeholder block
 old_block = """<script type="text/babel">
