@@ -2136,7 +2136,7 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
     }});
   }})();
 </script>
-<script type="text/babel" src="../AOGTracker.jsx"></script>
+<script type="text/babel" src="./AOGTracker.jsx"></script>
 <script>
 setTimeout(function() {{
   if (typeof AOGTracker !== "undefined") {{

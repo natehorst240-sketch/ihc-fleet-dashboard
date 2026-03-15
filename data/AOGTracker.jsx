@@ -3,7 +3,7 @@ const { useState, useEffect, useCallback } = React;
 // ── CONFIG ────────────────────────────────────────────────────────────────────
 // Path to the JSON file Apps Script writes to your repo.
 // On GitHub Pages this resolves relative to your repo root.
-const AOG_JSON_URL = "./data/aog_status.json";
+const AOG_JSON_URL = "./aog_status.json";
 
 const FLEET = [
   "N251HC","N261HC","N271HC","N281HC","N291HC",
