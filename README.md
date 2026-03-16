@@ -64,7 +64,7 @@ new CSV and the dashboard rebuilds itself — no server required.
 | **Maintenance Due List** | All phase inspections (50 hr – 3 200 hr). Color-coded: green / amber / red / overdue. Filterable table + 200 hr bar chart. |
 | **Components** | Per-aircraft component tracking with remaining hours and retirement flags. |
 | **Flight Hours** | Daily, 7-day, and 30-day utilization averages. Per-aircraft trend charts powered by Chart.js. |
-| **Calendar** | FullCalendar view of upcoming and overdue maintenance events, color-coded by inspection interval. |
+| **Calendar** | Interactive FullCalendar projection of estimated inspection dates with editable event pills, hover detail cards, and a synchronized estimated inspection list. |
 | **Base Location** | AT BASE / AIRBORNE / AWAY status based on GPS distance from assigned base. |
 | **Component Changes** | Monthly breakdown of installed/removed parts from the Component Change Report. |
 

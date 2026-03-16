@@ -131,7 +131,7 @@
   </div>
   <div class="header-meta">
     <div class="date">REPORT DATE: 20 FEB 2026</div>
-    <div>FLEET: 9 AIRCRAFT &nbsp;|&nbsp; 0 AIRBORNE &nbsp;|&nbsp; 6 AT BASE &nbsp;|&nbsp; GENERATED: 16 MAR 2026 17:02</div>
+    <div>FLEET: 9 AIRCRAFT &nbsp;|&nbsp; 0 AIRBORNE &nbsp;|&nbsp; 6 AT BASE &nbsp;|&nbsp; GENERATED: 16 MAR 2026 17:13</div>
   </div>
 </header>
 <div class="legend">
@@ -64006,22 +64006,94 @@ RII</td>
 <style>
 #cal-shell {
   display: grid;
-  grid-template-columns: 1.6fr 1fr;
+  grid-template-columns: 1.8fr 1fr;
   gap: 12px;
   align-items: start;
 }
 @media (max-width: 1100px) {
   #cal-shell { grid-template-columns: 1fr; }
 }
-#calendar-embed-wrap {
+#calendar-wrap {
   border: 1px solid var(--border);
   border-radius: 6px;
-  overflow: hidden;
   background: var(--surface);
   min-height: 720px;
+  padding: 12px;
 }
-#calendar-embed-wrap iframe {
-  min-height: 720px;
+#maint-calendar {
+  min-height: 680px;
+}
+.fc .fc-toolbar-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  letter-spacing: 1.2px;
+  font-size: 24px;
+}
+.fc .fc-button {
+  background: #1e88e5;
+  border-color: #1e88e5;
+  text-transform: uppercase;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+}
+.fc .fc-button:disabled {
+  opacity: .55;
+}
+.fc .fc-daygrid-event {
+  border-radius: 999px;
+  padding: 2px 8px;
+  border: none !important;
+}
+.fc .fc-daygrid-event-dot {
+  display: none;
+}
+.fc-maint-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+}
+.fc-maint-hover {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  background: #0f1720;
+  color: #e8edf2;
+  border: 1px solid #263445;
+  border-radius: 6px;
+  padding: 8px 10px;
+  min-width: 220px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+}
+.fc-hover-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 14px;
+  line-height: 1.2;
+}
+.fc-hover-sub {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  color: #8fa2b8;
+  margin-top: 2px;
+}
+.fc-hover-chart {
+  margin-top: 8px;
+  height: 8px;
+  width: 100%;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #1e2a38;
+}
+.fc-hover-chart > span {
+  display: block;
+  height: 100%;
+}
+.fc-edit-note {
+  margin-bottom: 8px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  color: #4a5568;
 }
 #estimated-inspection-panel {
   border: 1px solid var(--border);
@@ -64052,19 +64124,33 @@ RII</td>
 <div class="cal-legend"><span class="cal-leg-item"><span class="cal-leg-bar" style="background:#00897b"></span>50 HR</span><span class="cal-leg-item"><span class="cal-leg-bar" style="background:#1e88e5"></span>100 HR</span><span class="cal-leg-item"><span class="cal-leg-bar" style="background:#8e24aa"></span>200 HR</span><span class="cal-leg-item"><span class="cal-leg-bar" style="background:#e53935"></span>400 HR</span><span class="cal-leg-item"><span class="cal-leg-bar" style="background:#fb8c00"></span>800 HR</span><span class="cal-leg-item"><span class="cal-leg-bar" style="background:#43a047"></span>2400 HR</span><span class="cal-leg-item"><span class="cal-leg-bar" style="background:#6d4c41"></span>3200 HR</span></div>
 
 <div id="cal-shell">
-  <div id="calendar-embed-wrap">
-    <iframe src="https://embed.styledcalendar.com/#l49dxCrZOOQvry0UChuE" title="Styled Calendar" class="styled-calendar-container" style="width: 100%; border: none;" data-cy="calendar-embed-iframe"></iframe>
+  <div id="calendar-wrap">
+    <div class="fc-edit-note">Drag and drop pills to adjust projected dates (local view only).</div>
+    <div id="maint-calendar"></div>
   </div>
   <div id="estimated-inspection-panel">
     <div class="section-label" style="margin-top:0;">Estimated Inspection Dates</div>
     <div id="estimated-inspection-list"></div>
   </div>
 </div>
-<script async type="module" src="https://embed.styledcalendar.com/assets/parent-window.js"></script>
 <script>
 (function () {
   var MAINT = [{"tail": "N251HC", "interval": 50, "intervalLabel": "50 HR", "dueDate": "2026-03-26", "remLabel": "~10 days remaining", "color": "#00897b"}, {"tail": "N251HC", "interval": 100, "intervalLabel": "100 HR", "dueDate": "2026-04-30", "remLabel": "64.5 hrs remaining (~45 days)", "color": "#1e88e5"}, {"tail": "N251HC", "interval": 200, "intervalLabel": "200 HR", "dueDate": "2026-05-02", "remLabel": "67.1 hrs remaining (~47 days)", "color": "#8e24aa"}, {"tail": "N251HC", "interval": 400, "intervalLabel": "400 HR", "dueDate": "2026-09-20", "remLabel": "267.1 hrs remaining (~188 days)", "color": "#e53935"}, {"tail": "N251HC", "interval": 800, "intervalLabel": "800 HR", "dueDate": "2026-09-28", "remLabel": "277.8 hrs remaining (~196 days)", "color": "#fb8c00"}, {"tail": "N251HC", "interval": 2400, "intervalLabel": "2400 HR", "dueDate": "2028-04-17", "remLabel": "1080.0 hrs remaining (~763 days)", "color": "#43a047"}, {"tail": "N251HC", "interval": 3200, "intervalLabel": "3200 HR", "dueDate": "2026-09-15", "remLabel": "259.5 hrs remaining (~183 days)", "color": "#6d4c41"}, {"tail": "N261HC", "interval": 50, "intervalLabel": "50 HR", "dueDate": "2026-03-29", "remLabel": "~13 days remaining", "color": "#00897b"}, {"tail": "N261HC", "interval": 100, "intervalLabel": "100 HR", "dueDate": "2026-05-24", "remLabel": "50.3 hrs remaining (~69 days)", "color": "#1e88e5"}, {"tail": "N261HC", "interval": 200, "intervalLabel": "200 HR", "dueDate": "2026-05-21", "remLabel": "48.8 hrs remaining (~66 days)", "color": "#8e24aa"}, {"tail": "N261HC", "interval": 400, "intervalLabel": "400 HR", "dueDate": "2027-02-20", "remLabel": "248.8 hrs remaining (~341 days)", "color": "#e53935"}, {"tail": "N261HC", "interval": 800, "intervalLabel": "800 HR", "dueDate": "2027-02-14", "remLabel": "244.1 hrs remaining (~335 days)", "color": "#fb8c00"}, {"tail": "N261HC", "interval": 2400, "intervalLabel": "2400 HR", "dueDate": "2030-02-28", "remLabel": "1053.1 hrs remaining (~1445 days)", "color": "#43a047"}, {"tail": "N261HC", "interval": 3200, "intervalLabel": "3200 HR", "dueDate": "2027-04-14", "remLabel": "287.2 hrs remaining (~394 days)", "color": "#6d4c41"}, {"tail": "N271HC", "interval": 50, "intervalLabel": "50 HR", "dueDate": "2026-03-24", "remLabel": "~8 days remaining", "color": "#00897b"}, {"tail": "N271HC", "interval": 100, "intervalLabel": "100 HR", "dueDate": "2026-05-21", "remLabel": "36.3 hrs remaining (~66 days)", "color": "#1e88e5"}, {"tail": "N271HC", "interval": 200, "intervalLabel": "200 HR", "dueDate": "2026-11-22", "remLabel": "136.3 hrs remaining (~251 days)", "color": "#8e24aa"}, {"tail": "N271HC", "interval": 400, "intervalLabel": "400 HR", "dueDate": "2027-01-12", "remLabel": "164.3 hrs remaining (~302 days)", "color": "#e53935"}, {"tail": "N271HC", "interval": 800, "intervalLabel": "800 HR", "dueDate": "2027-01-29", "remLabel": "173.6 hrs remaining (~319 days)", "color": "#fb8c00"}, {"tail": "N271HC", "interval": 2400, "intervalLabel": "2400 HR", "dueDate": "2027-01-03", "remLabel": "159.1 hrs remaining (~293 days)", "color": "#43a047"}, {"tail": "N271HC", "interval": 3200, "intervalLabel": "3200 HR", "dueDate": "2039-03-08", "remLabel": "2573.6 hrs remaining (~4740 days)", "color": "#6d4c41"}, {"tail": "N281HC", "interval": 50, "intervalLabel": "50 HR", "dueDate": "2026-04-12", "remLabel": "~27 days remaining", "color": "#00897b"}, {"tail": "N281HC", "interval": 100, "intervalLabel": "100 HR", "dueDate": "2026-03-18", "remLabel": "4.4 hrs remaining (~2 days)", "color": "#1e88e5"}, {"tail": "N281HC", "interval": 200, "intervalLabel": "200 HR", "dueDate": "2026-03-16", "remLabel": "0.5 hrs remaining (~0 days)", "color": "#8e24aa"}, {"tail": "N281HC", "interval": 400, "intervalLabel": "400 HR", "dueDate": "2026-07-17", "remLabel": "200.5 hrs remaining (~123 days)", "color": "#e53935"}, {"tail": "N281HC", "interval": 800, "intervalLabel": "800 HR", "dueDate": "2027-03-19", "remLabel": "600.5 hrs remaining (~368 days)", "color": "#fb8c00"}, {"tail": "N281HC", "interval": 2400, "intervalLabel": "2400 HR", "dueDate": "2026-07-19", "remLabel": "204.0 hrs remaining (~125 days)", "color": "#43a047"}, {"tail": "N281HC", "interval": 3200, "intervalLabel": "3200 HR", "dueDate": "2031-04-01", "remLabel": "3000.5 hrs remaining (~1842 days)", "color": "#6d4c41"}, {"tail": "N291HC", "interval": 50, "intervalLabel": "50 HR", "dueDate": "2026-04-02", "remLabel": "~17 days remaining", "color": "#00897b"}, {"tail": "N291HC", "interval": 100, "intervalLabel": "100 HR", "dueDate": "2026-06-25", "remLabel": "56.6 hrs remaining (~101 days)", "color": "#1e88e5"}, {"tail": "N291HC", "interval": 200, "intervalLabel": "200 HR", "dueDate": "2026-06-26", "remLabel": "57.3 hrs remaining (~102 days)", "color": "#8e24aa"}, {"tail": "N291HC", "interval": 400, "intervalLabel": "400 HR", "dueDate": "2026-07-04", "remLabel": "61.7 hrs remaining (~110 days)", "color": "#e53935"}, {"tail": "N291HC", "interval": 800, "intervalLabel": "800 HR", "dueDate": "2028-06-21", "remLabel": "461.7 hrs remaining (~828 days)", "color": "#fb8c00"}, {"tail": "N291HC", "interval": 2400, "intervalLabel": "2400 HR", "dueDate": "2032-06-04", "remLabel": "1266.2 hrs remaining (~2272 days)", "color": "#43a047"}, {"tail": "N291HC", "interval": 3200, "intervalLabel": "3200 HR", "dueDate": "2028-07-12", "remLabel": "473.3 hrs remaining (~849 days)", "color": "#6d4c41"}, {"tail": "N431HC", "interval": 50, "intervalLabel": "50 HR", "dueDate": "2026-04-13", "remLabel": "~28 days remaining", "color": "#00897b"}, {"tail": "N431HC", "interval": 100, "intervalLabel": "100 HR", "dueDate": "2026-07-16", "remLabel": "71.6 hrs remaining (~122 days)", "color": "#1e88e5"}, {"tail": "N431HC", "interval": 200, "intervalLabel": "200 HR", "dueDate": "2027-01-02", "remLabel": "171.6 hrs remaining (~292 days)", "color": "#8e24aa"}, {"tail": "N431HC", "interval": 400, "intervalLabel": "400 HR", "dueDate": "2027-12-10", "remLabel": "371.6 hrs remaining (~634 days)", "color": "#e53935"}, {"tail": "N431HC", "interval": 800, "intervalLabel": "800 HR", "dueDate": "2027-12-22", "remLabel": "378.4 hrs remaining (~646 days)", "color": "#fb8c00"}, {"tail": "N431HC", "interval": 2400, "intervalLabel": "2400 HR", "dueDate": "2028-01-10", "remLabel": "389.7 hrs remaining (~665 days)", "color": "#43a047"}, {"tail": "N431HC", "interval": 3200, "intervalLabel": "3200 HR", "dueDate": "2031-10-07", "remLabel": "1189.7 hrs remaining (~2031 days)", "color": "#6d4c41"}, {"tail": "N531HC", "interval": 50, "intervalLabel": "50 HR", "dueDate": "2026-04-10", "remLabel": "~25 days remaining", "color": "#00897b"}, {"tail": "N531HC", "interval": 100, "intervalLabel": "100 HR", "dueDate": "2026-06-12", "remLabel": "92.7 hrs remaining (~88 days)", "color": "#1e88e5"}, {"tail": "N531HC", "interval": 200, "intervalLabel": "200 HR", "dueDate": "2026-06-15", "remLabel": "95.1 hrs remaining (~91 days)", "color": "#8e24aa"}, {"tail": "N531HC", "interval": 400, "intervalLabel": "400 HR", "dueDate": "2026-06-17", "remLabel": "97.5 hrs remaining (~93 days)", "color": "#e53935"}, {"tail": "N531HC", "interval": 800, "intervalLabel": "800 HR", "dueDate": "2027-07-06", "remLabel": "497.5 hrs remaining (~477 days)", "color": "#fb8c00"}, {"tail": "N531HC", "interval": 2400, "intervalLabel": "2400 HR", "dueDate": "2029-11-07", "remLabel": "1389.3 hrs remaining (~1332 days)", "color": "#43a047"}, {"tail": "N531HC", "interval": 3200, "intervalLabel": "3200 HR", "dueDate": "2033-10-23", "remLabel": "2897.5 hrs remaining (~2778 days)", "color": "#6d4c41"}];
+  var calEl = document.getElementById('maint-calendar');
   var listEl = document.getElementById('estimated-inspection-list');
+  var hoverEl = null;
+
+  function clamp(num, min, max) {
+    return Math.max(min, Math.min(max, num));
+  }
+
+  function getChartPct(remLabel) {
+    var match = /(~?)(\d+(?:\.\d+)?)\s*days remaining/i.exec(remLabel || '');
+    if (!match) return 100;
+    var days = Number(match[2]);
+    if (!isFinite(days)) return 100;
+    return clamp((days / 30) * 100, 4, 100);
+  }
 
   function fmtDate(dateStr) {
     var d = new Date(dateStr + 'T00:00:00');
@@ -64106,7 +64192,78 @@ RII</td>
     }).join('');
   }
 
+  function removeHover() {
+    if (hoverEl && hoverEl.parentNode) hoverEl.parentNode.removeChild(hoverEl);
+    hoverEl = null;
+  }
+
+  function showHover(ev, e) {
+    removeHover();
+    var pct = getChartPct(ev.remLabel);
+    hoverEl = document.createElement('div');
+    hoverEl.className = 'fc-maint-hover';
+    hoverEl.innerHTML =
+      '<div class="fc-hover-title">' + ev.tail + ' · ' + ev.intervalLabel + '</div>' +
+      '<div class="fc-hover-sub">' + (ev.remLabel || 'Projected maintenance event') + '</div>' +
+      '<div class="fc-hover-chart"><span style="width:' + pct + '%;background:' + (ev.color || '#4a5568') + ';"></span></div>';
+    document.body.appendChild(hoverEl);
+    moveHover(e);
+  }
+
+  function moveHover(e) {
+    if (!hoverEl || !e) return;
+    var x = e.clientX + 14;
+    var y = e.clientY + 14;
+    hoverEl.style.left = x + 'px';
+    hoverEl.style.top = y + 'px';
+  }
+
+  function renderCalendar() {
+    if (!calEl || !window.FullCalendar) return;
+    var events = MAINT.map(function(ev, idx) {
+      return {
+        id: String(idx + 1),
+        title: ev.tail + ' ' + ev.intervalLabel,
+        start: ev.dueDate,
+        allDay: true,
+        backgroundColor: ev.color,
+        borderColor: ev.color,
+        extendedProps: ev
+      };
+    });
+
+    var calendar = new FullCalendar.Calendar(calEl, {
+      initialView: 'dayGridMonth',
+      height: 680,
+      editable: true,
+      eventStartEditable: true,
+      dayMaxEvents: 4,
+      headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,listMonth' },
+      events: events,
+      eventContent: function(arg) {
+        var ev = arg.event.extendedProps || {};
+        var node = document.createElement('div');
+        node.className = 'fc-maint-pill';
+        node.innerHTML = '<strong>' + (ev.tail || '') + '</strong><span>' + (ev.intervalLabel || '') + '</span>';
+        return { domNodes: [node] };
+      },
+      eventMouseEnter: function(info) { showHover(info.event.extendedProps || {}, info.jsEvent); },
+      eventMouseLeave: function() { removeHover(); },
+      eventDragStart: function() { removeHover(); },
+      eventDrop: function(info) {
+        var props = info.event.extendedProps || {};
+        props.dueDate = info.event.startStr;
+        renderInspectionList();
+      }
+    });
+
+    calendar.render();
+    window.addEventListener('fleet:calendar:shown', function() { calendar.updateSize(); });
+    document.addEventListener('mousemove', moveHover);
+  }
+
   renderInspectionList();
+  renderCalendar();
 })();
 </script>
 
@@ -64234,7 +64391,7 @@ RII</td>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 <script>
-  const DASHBOARD_VERSION = "20260316170238";
+  const DASHBOARD_VERSION = "20260316171344";
 
   // Auto-reload when a newer build is deployed
   (function() {

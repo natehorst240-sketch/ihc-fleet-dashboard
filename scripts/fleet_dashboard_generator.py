@@ -846,22 +846,94 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
 <style>
 #cal-shell {{
   display: grid;
-  grid-template-columns: 1.6fr 1fr;
+  grid-template-columns: 1.8fr 1fr;
   gap: 12px;
   align-items: start;
 }}
 @media (max-width: 1100px) {{
   #cal-shell {{ grid-template-columns: 1fr; }}
 }}
-#calendar-embed-wrap {{
+#calendar-wrap {{
   border: 1px solid var(--border);
   border-radius: 6px;
-  overflow: hidden;
   background: var(--surface);
   min-height: 720px;
+  padding: 12px;
 }}
-#calendar-embed-wrap iframe {{
-  min-height: 720px;
+#maint-calendar {{
+  min-height: 680px;
+}}
+.fc .fc-toolbar-title {{
+  font-family: 'Barlow Condensed', sans-serif;
+  letter-spacing: 1.2px;
+  font-size: 24px;
+}}
+.fc .fc-button {{
+  background: #1e88e5;
+  border-color: #1e88e5;
+  text-transform: uppercase;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+}}
+.fc .fc-button:disabled {{
+  opacity: .55;
+}}
+.fc .fc-daygrid-event {{
+  border-radius: 999px;
+  padding: 2px 8px;
+  border: none !important;
+}}
+.fc .fc-daygrid-event-dot {{
+  display: none;
+}}
+.fc-maint-pill {{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+}}
+.fc-maint-hover {{
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  background: #0f1720;
+  color: #e8edf2;
+  border: 1px solid #263445;
+  border-radius: 6px;
+  padding: 8px 10px;
+  min-width: 220px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+}}
+.fc-hover-title {{
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 14px;
+  line-height: 1.2;
+}}
+.fc-hover-sub {{
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  color: #8fa2b8;
+  margin-top: 2px;
+}}
+.fc-hover-chart {{
+  margin-top: 8px;
+  height: 8px;
+  width: 100%;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #1e2a38;
+}}
+.fc-hover-chart > span {{
+  display: block;
+  height: 100%;
+}}
+.fc-edit-note {{
+  margin-bottom: 8px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  color: #4a5568;
 }}
 #estimated-inspection-panel {{
   border: 1px solid var(--border);
@@ -892,19 +964,33 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
 <div class="cal-legend">{legend_html}</div>
 
 <div id="cal-shell">
-  <div id="calendar-embed-wrap">
-    <iframe src="https://embed.styledcalendar.com/#l49dxCrZOOQvry0UChuE" title="Styled Calendar" class="styled-calendar-container" style="width: 100%; border: none;" data-cy="calendar-embed-iframe"></iframe>
+  <div id="calendar-wrap">
+    <div class="fc-edit-note">Drag and drop pills to adjust projected dates (local view only).</div>
+    <div id="maint-calendar"></div>
   </div>
   <div id="estimated-inspection-panel">
     <div class="section-label" style="margin-top:0;">Estimated Inspection Dates</div>
     <div id="estimated-inspection-list"></div>
   </div>
 </div>
-<script async type="module" src="https://embed.styledcalendar.com/assets/parent-window.js"></script>
 <script>
 (function () {{
   var MAINT = {events_json};
+  var calEl = document.getElementById('maint-calendar');
   var listEl = document.getElementById('estimated-inspection-list');
+  var hoverEl = null;
+
+  function clamp(num, min, max) {{
+    return Math.max(min, Math.min(max, num));
+  }}
+
+  function getChartPct(remLabel) {{
+    var match = /(~?)(\d+(?:\.\d+)?)\s*days remaining/i.exec(remLabel || '');
+    if (!match) return 100;
+    var days = Number(match[2]);
+    if (!isFinite(days)) return 100;
+    return clamp((days / 30) * 100, 4, 100);
+  }}
 
   function fmtDate(dateStr) {{
     var d = new Date(dateStr + 'T00:00:00');
@@ -946,7 +1032,78 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
     }}).join('');
   }}
 
+  function removeHover() {{
+    if (hoverEl && hoverEl.parentNode) hoverEl.parentNode.removeChild(hoverEl);
+    hoverEl = null;
+  }}
+
+  function showHover(ev, e) {{
+    removeHover();
+    var pct = getChartPct(ev.remLabel);
+    hoverEl = document.createElement('div');
+    hoverEl.className = 'fc-maint-hover';
+    hoverEl.innerHTML =
+      '<div class="fc-hover-title">' + ev.tail + ' · ' + ev.intervalLabel + '</div>' +
+      '<div class="fc-hover-sub">' + (ev.remLabel || 'Projected maintenance event') + '</div>' +
+      '<div class="fc-hover-chart"><span style="width:' + pct + '%;background:' + (ev.color || '#4a5568') + ';"></span></div>';
+    document.body.appendChild(hoverEl);
+    moveHover(e);
+  }}
+
+  function moveHover(e) {{
+    if (!hoverEl || !e) return;
+    var x = e.clientX + 14;
+    var y = e.clientY + 14;
+    hoverEl.style.left = x + 'px';
+    hoverEl.style.top = y + 'px';
+  }}
+
+  function renderCalendar() {{
+    if (!calEl || !window.FullCalendar) return;
+    var events = MAINT.map(function(ev, idx) {{
+      return {{
+        id: String(idx + 1),
+        title: ev.tail + ' ' + ev.intervalLabel,
+        start: ev.dueDate,
+        allDay: true,
+        backgroundColor: ev.color,
+        borderColor: ev.color,
+        extendedProps: ev
+      }};
+    }});
+
+    var calendar = new FullCalendar.Calendar(calEl, {{
+      initialView: 'dayGridMonth',
+      height: 680,
+      editable: true,
+      eventStartEditable: true,
+      dayMaxEvents: 4,
+      headerToolbar: {{ left: 'prev,next today', center: 'title', right: 'dayGridMonth,listMonth' }},
+      events: events,
+      eventContent: function(arg) {{
+        var ev = arg.event.extendedProps || {{}};
+        var node = document.createElement('div');
+        node.className = 'fc-maint-pill';
+        node.innerHTML = '<strong>' + (ev.tail || '') + '</strong><span>' + (ev.intervalLabel || '') + '</span>';
+        return {{ domNodes: [node] }};
+      }},
+      eventMouseEnter: function(info) {{ showHover(info.event.extendedProps || {{}}, info.jsEvent); }},
+      eventMouseLeave: function() {{ removeHover(); }},
+      eventDragStart: function() {{ removeHover(); }},
+      eventDrop: function(info) {{
+        var props = info.event.extendedProps || {{}};
+        props.dueDate = info.event.startStr;
+        renderInspectionList();
+      }}
+    }});
+
+    calendar.render();
+    window.addEventListener('fleet:calendar:shown', function() {{ calendar.updateSize(); }});
+    document.addEventListener('mousemove', moveHover);
+  }}
+
   renderInspectionList();
+  renderCalendar();
 }})();
 </script>
 """
