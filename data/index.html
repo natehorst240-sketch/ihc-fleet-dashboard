@@ -131,7 +131,7 @@
   </div>
   <div class="header-meta">
     <div class="date">REPORT DATE: 20 FEB 2026</div>
-    <div>FLEET: 9 AIRCRAFT &nbsp;|&nbsp; 0 AIRBORNE &nbsp;|&nbsp; 6 AT BASE &nbsp;|&nbsp; GENERATED: 16 MAR 2026 16:35</div>
+    <div>FLEET: 9 AIRCRAFT &nbsp;|&nbsp; 0 AIRBORNE &nbsp;|&nbsp; 6 AT BASE &nbsp;|&nbsp; GENERATED: 16 MAR 2026 17:02</div>
   </div>
 </header>
 <div class="legend">
@@ -64005,211 +64005,32 @@ RII</td>
 
 <style>
 #cal-shell {
-  display: flex;
-  gap: 0;
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 12px;
+  align-items: start;
+}
+@media (max-width: 1100px) {
+  #cal-shell { grid-template-columns: 1fr; }
+}
+#calendar-embed-wrap {
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: 6px;
   overflow: hidden;
   background: var(--surface);
-  height: 720px;
+  min-height: 720px;
 }
-#fc-wrap {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  --fc-border-color:               #1e2530;
-  --fc-button-bg-color:            transparent;
-  --fc-button-border-color:        #1e2530;
-  --fc-button-text-color:          #a0aec0;
-  --fc-button-hover-bg-color:      rgba(41,182,246,0.15);
-  --fc-button-hover-border-color:  #29b6f6;
-  --fc-button-hover-text-color:    #29b6f6;
-  --fc-button-active-bg-color:     rgba(41,182,246,0.2);
-  --fc-button-active-border-color: #29b6f6;
-  --fc-button-active-text-color:   #29b6f6;
-  --fc-today-bg-color:             rgba(41,182,246,0.06);
-  --fc-page-bg-color:              var(--surface);
-  --fc-neutral-bg-color:           var(--surface2);
-  --fc-more-link-text-color:       #29b6f6;
-  --fc-popover-bg-color:           #0d1117;
-  --fc-popover-border-color:       #29b6f6;
+#calendar-embed-wrap iframe {
+  min-height: 720px;
 }
-#fc-wrap .fc {
-  height: 100%;
-  font-family: 'Barlow', sans-serif;
-}
-#fc-wrap .fc-toolbar.fc-header-toolbar {
-  padding: 14px 16px 12px;
-  margin-bottom: 0 !important;
-  border-bottom: 1px solid var(--border);
-}
-#fc-wrap .fc-toolbar-title {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-weight: 900; font-size: 20px;
-  letter-spacing: 3px; color: #e8edf2;
-  text-transform: uppercase;
-}
-#fc-wrap .fc-button {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-weight: 700; font-size: 11px;
-  letter-spacing: 1.5px; text-transform: uppercase;
-  border-radius: 2px; padding: 5px 12px;
-  box-shadow: none !important;
-}
-#fc-wrap .fc-button:focus { box-shadow: none !important; outline: none; }
-#fc-wrap .fc-col-header-cell {
+#estimated-inspection-panel {
+  border: 1px solid var(--border);
+  border-radius: 6px;
   background: var(--surface2);
-  border-color: var(--border) !important;
-  padding: 6px 0;
+  padding: 12px;
+  max-height: 720px;
+  overflow: auto;
 }
-#fc-wrap .fc-col-header-cell-cushion {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-weight: 700; font-size: 11px;
-  letter-spacing: 2px; color: #4a5568;
-  text-decoration: none; text-transform: uppercase;
-}
-#fc-wrap .fc-daygrid-day {
-  background: var(--surface);
-  border-color: #1e2530 !important;
-  cursor: pointer;
-}
-#fc-wrap .fc-daygrid-day:hover { background: #0f1419; }
-#fc-wrap .fc-day-today { background: rgba(41,182,246,0.05) !important; }
-#fc-wrap .fc-daygrid-day.fc-day-selected {
-  background: rgba(41,182,246,0.09) !important;
-  box-shadow: inset 0 0 0 1px #29b6f6;
-}
-#fc-wrap .fc-daygrid-day-number {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 11px; color: #4a5568;
-  text-decoration: none; padding: 4px 6px;
-}
-#fc-wrap .fc-daygrid-day-top {
-  position: relative;
-  min-height: 20px;
-  padding-right: 46px;
-}
-#fc-wrap .fc-day-today .fc-daygrid-day-number {
-  color: #29b6f6; font-weight: 700;
-}
-#fc-wrap .fc-event {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 10px; font-weight: 700;
-  border-radius: 3px;
-  cursor: pointer;
-  padding: 1px 4px;
-  margin-top: 2px;
-  min-height: 16px;
-  border: none !important;
-}
-#fc-wrap .fc-event.fc-event-start { border-radius: 3px 0 0 3px; }
-#fc-wrap .fc-event.fc-event-end   { border-radius: 0 3px 3px 0; }
-#fc-wrap .fc-event.fc-event-start.fc-event-end { border-radius: 3px; }
-#fc-wrap .fc-event:hover { filter: brightness(1.15); }
-#fc-wrap .fc-daygrid-event-harness {
-  margin-top: 0 !important;
-}
-#fc-wrap .fc-daygrid-day-events {
-  margin: 0 2px;
-}
-#fc-wrap .fc-more-link {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 9px; color: #29b6f6; padding: 0; line-height: 1;
-}
-#fc-wrap .fc-popover {
-  background: #0d1117 !important;
-  border: 1px solid #29b6f6 !important;
-  border-radius: 4px !important;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.6) !important;
-}
-#fc-wrap .fc-popover-header {
-  background: #111418 !important;
-  border-bottom: 1px solid #1e2530 !important;
-  padding: 8px 12px !important;
-}
-#fc-wrap .fc-popover-title {
-  font-family: 'Barlow Condensed', sans-serif !important;
-  font-size: 12px !important; letter-spacing: 2px !important;
-  color: #29b6f6 !important; text-transform: uppercase !important;
-}
-#fc-wrap .fc-popover-close { color: #4a5568 !important; }
-#fc-wrap .fc-popover-body { padding: 6px !important; }
-#fc-wrap .fc-event.note-ev {
-  background-color: rgba(255,171,0,0.2) !important;
-  border-left-color: #ffab00 !important;
-  color: #ffab00 !important;
-}
-#fc-wrap .fc-scrollgrid { border-color: #1e2530; }
-
-/* ── Right panel ─────────────────────────────────────────────────────────── */
-#cal-panel {
-  width: 260px; flex-shrink: 0;
-  border-left: 1px solid var(--border);
-  display: flex; flex-direction: column;
-  overflow: hidden; background: var(--surface2);
-}
-#cal-panel-date {
-  padding: 14px 16px 10px;
-  border-bottom: 1px solid var(--border); flex-shrink: 0;
-}
-#cal-panel-date-main {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-weight: 900; font-size: 22px;
-  letter-spacing: 1px; color: #e8edf2;
-}
-#cal-panel-date-sub {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 10px; color: #4a5568; letter-spacing: 1px; margin-top: 2px;
-}
-#cal-panel-events {
-  flex: 1; overflow-y: auto; padding: 8px 0;
-}
-.pan-ev-item {
-  padding: 10px 16px;
-  border-bottom: 1px solid rgba(30,37,48,0.6);
-  cursor: default;
-}
-.pan-ev-item:last-child { border-bottom: none; }
-.pan-ev-row { display: flex; gap: 10px; align-items: flex-start; }
-.pan-ev-bar {
-  width: 4px; height: 38px; border-radius: 2px; flex-shrink: 0; margin-top: 2px;
-}
-.pan-ev-title {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-weight: 700; font-size: 15px;
-  letter-spacing: 0.5px; color: #e8edf2; line-height: 1.2;
-}
-.pan-ev-sub {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 9px; color: #4a5568; margin-top: 4px; line-height: 1.6;
-}
-.pan-ev-urgency {
-  display: inline-block; font-family: 'Share Tech Mono', monospace;
-  font-size: 8px; font-weight: 700; letter-spacing: 1px;
-  padding: 1px 5px; border-radius: 2px; margin-top: 4px;
-}
-.pan-placeholder {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 10px; color: #2a3240;
-  letter-spacing: 1px; line-height: 2.4;
-  text-align: center; padding: 40px 20px;
-}
-#cal-panel-footer {
-  flex-shrink: 0; border-top: 1px solid var(--border); padding: 10px 12px;
-}
-#btn-add-note {
-  display: block; width: 100%;
-  background: transparent; border: 1px solid #1e2530;
-  color: #4a5568; border-radius: 2px; padding: 7px; cursor: pointer;
-  font-family: 'Barlow Condensed', sans-serif;
-  font-weight: 700; font-size: 11px;
-  letter-spacing: 2px; text-transform: uppercase; transition: all 0.15s;
-}
-#btn-add-note:hover { border-color: #ffab00; color: #ffab00; }
-
-/* ── Legend ──────────────────────────────────────────────────────────────── */
 .cal-legend {
   display: flex; gap: 14px; flex-wrap: wrap;
   margin-bottom: 12px; align-items: center;
@@ -64217,313 +64038,75 @@ RII</td>
   font-size: 10px; color: #4a5568;
 }
 .cal-leg-item { display: flex; align-items: center; gap: 6px; }
-.cal-leg-bar {
-  width: 28px; height: 8px; border-radius: 2px; flex-shrink: 0;
-}
-
-/* ── Note modal ──────────────────────────────────────────────────────────── */
-#note-modal {
-  display: none; position: fixed; inset: 0;
-  background: rgba(0,0,0,0.75); z-index: 9999;
-  align-items: center; justify-content: center;
-}
-#note-modal-box {
-  background: #0d1117; border: 1px solid #29b6f6;
-  border-radius: 6px; padding: 28px;
-  min-width: 320px; max-width: 460px; width: 90%;
-}
-.nm-label {
-  display: block; font-family: 'Share Tech Mono', monospace;
-  font-size: 10px; color: #4a5568; letter-spacing: 1px; margin-bottom: 4px;
-}
-.nm-input, .nm-textarea {
-  width: 100%; box-sizing: border-box;
-  background: #161c25; border: 1px solid #1e2530;
-  border-radius: 3px; color: #e8edf2; padding: 8px;
-  font-family: 'Share Tech Mono', monospace; font-size: 13px;
-  margin-bottom: 12px;
-}
-.nm-textarea { font-size: 12px; resize: vertical; }
-.nm-row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
-.nm-btn {
-  padding: 7px 16px; border-radius: 3px; cursor: pointer;
-  font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
-  font-size: 12px; letter-spacing: 1px; text-transform: uppercase;
-}
-.nm-save   { background: #29b6f6; border: none; color: #000; }
-.nm-cancel { background: transparent; border: 1px solid #1e2530; color: #4a5568; }
-.nm-clear  { background: transparent; border: 1px solid rgba(192,57,43,0.4); color: #c0392b; }
+.cal-leg-bar { width: 28px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+.cal-date-group { border-top: 1px solid var(--border); padding: 10px 0; }
+.cal-date-group:first-child { border-top: none; padding-top: 0; }
+.cal-date-title { font-family: 'Barlow Condensed', sans-serif; font-size: 16px; color: #e8edf2; letter-spacing: .8px; }
+.cal-date-sub { font-family: 'Share Tech Mono', monospace; font-size: 10px; color: #4a5568; margin-bottom: 6px; }
+.cal-ev { border-left: 4px solid #4a5568; padding-left: 8px; margin-bottom: 7px; }
+.cal-ev-title { font-family: 'Barlow Condensed', sans-serif; color: #e8edf2; font-size: 14px; }
+.cal-ev-sub { font-family: 'Share Tech Mono', monospace; color: #4a5568; font-size: 10px; }
 </style>
 
 <div class="section-label">PROJECTED MAINTENANCE CALENDAR</div>
-<div class="cal-legend">
-  <span class="cal-leg-item"><span class="cal-leg-bar" style="background:#00897b"></span>50 HR</span>
-  <span class="cal-leg-item"><span class="cal-leg-bar" style="background:#1e88e5"></span>100 HR</span>
-  <span class="cal-leg-item"><span class="cal-leg-bar" style="background:#8e24aa"></span>200 HR</span>
-  <span class="cal-leg-item"><span class="cal-leg-bar" style="background:#e53935"></span>400 HR</span>
-  <span class="cal-leg-item"><span class="cal-leg-bar" style="background:#fb8c00"></span>800 HR</span>
-  <span class="cal-leg-item"><span class="cal-leg-bar" style="background:#43a047"></span>2400 HR</span>
-  <span class="cal-leg-item"><span class="cal-leg-bar" style="background:#6d4c41"></span>3200 HR</span>
-  <span class="cal-leg-item"><span class="cal-leg-bar" style="background:rgba(255,171,0,0.4);border:1px solid #ffab00"></span>NOTE</span>
-</div>
+<div class="cal-legend"><span class="cal-leg-item"><span class="cal-leg-bar" style="background:#00897b"></span>50 HR</span><span class="cal-leg-item"><span class="cal-leg-bar" style="background:#1e88e5"></span>100 HR</span><span class="cal-leg-item"><span class="cal-leg-bar" style="background:#8e24aa"></span>200 HR</span><span class="cal-leg-item"><span class="cal-leg-bar" style="background:#e53935"></span>400 HR</span><span class="cal-leg-item"><span class="cal-leg-bar" style="background:#fb8c00"></span>800 HR</span><span class="cal-leg-item"><span class="cal-leg-bar" style="background:#43a047"></span>2400 HR</span><span class="cal-leg-item"><span class="cal-leg-bar" style="background:#6d4c41"></span>3200 HR</span></div>
 
 <div id="cal-shell">
-  <div id="fc-wrap">
-    <div id="fc-calendar"></div>
+  <div id="calendar-embed-wrap">
+    <iframe src="https://embed.styledcalendar.com/#l49dxCrZOOQvry0UChuE" title="Styled Calendar" class="styled-calendar-container" style="width: 100%; border: none;" data-cy="calendar-embed-iframe"></iframe>
   </div>
-  <div id="cal-panel">
-    <div id="cal-panel-date">
-      <div id="cal-panel-date-main">SELECT A DAY</div>
-      <div id="cal-panel-date-sub">CLICK ANY DATE TO VIEW</div>
-    </div>
-    <div id="cal-panel-events">
-      <div class="pan-placeholder" id="pan-placeholder">CLICK ANY DATE<br>TO SEE EVENTS</div>
-      <div id="pan-ev-list"></div>
-    </div>
-    <div id="cal-panel-footer">
-      <button id="btn-add-note">+ ADD NOTE</button>
-    </div>
+  <div id="estimated-inspection-panel">
+    <div class="section-label" style="margin-top:0;">Estimated Inspection Dates</div>
+    <div id="estimated-inspection-list"></div>
   </div>
 </div>
-
-<div id="note-modal">
-  <div id="note-modal-box" onclick="event.stopPropagation()">
-    <div style="font-size:10px;color:#29b6f6;letter-spacing:2px;margin-bottom:4px;font-family:'Share Tech Mono',monospace;">NOTE</div>
-    <div id="nm-date-lbl" style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:18px;color:#e8edf2;letter-spacing:1px;margin-bottom:18px;"></div>
-    <label class="nm-label" for="nm-label-inp">LABEL <span style="color:#2a3240">(shows on calendar)</span></label>
-    <input id="nm-label-inp" type="text" maxlength="40" class="nm-input" placeholder="e.g. 50 HR INSP BOOKED">
-    <label class="nm-label" for="nm-text-inp">NOTES</label>
-    <textarea id="nm-text-inp" rows="3" maxlength="400" class="nm-textarea" placeholder="Additional details..."></textarea>
-    <div class="nm-row">
-      <button class="nm-btn nm-clear"  id="nm-btn-clear">CLEAR</button>
-      <button class="nm-btn nm-cancel" id="nm-btn-cancel">CANCEL</button>
-      <button class="nm-btn nm-save"   id="nm-btn-save">SAVE</button>
-    </div>
-  </div>
-</div>
-
+<script async type="module" src="https://embed.styledcalendar.com/assets/parent-window.js"></script>
 <script>
 (function () {
-  var NOTES_KEY = 'ihc_cal_notes_v5';
-  var activeDate = null;
-  var cal;
+  var MAINT = [{"tail": "N251HC", "interval": 50, "intervalLabel": "50 HR", "dueDate": "2026-03-26", "remLabel": "~10 days remaining", "color": "#00897b"}, {"tail": "N251HC", "interval": 100, "intervalLabel": "100 HR", "dueDate": "2026-04-30", "remLabel": "64.5 hrs remaining (~45 days)", "color": "#1e88e5"}, {"tail": "N251HC", "interval": 200, "intervalLabel": "200 HR", "dueDate": "2026-05-02", "remLabel": "67.1 hrs remaining (~47 days)", "color": "#8e24aa"}, {"tail": "N251HC", "interval": 400, "intervalLabel": "400 HR", "dueDate": "2026-09-20", "remLabel": "267.1 hrs remaining (~188 days)", "color": "#e53935"}, {"tail": "N251HC", "interval": 800, "intervalLabel": "800 HR", "dueDate": "2026-09-28", "remLabel": "277.8 hrs remaining (~196 days)", "color": "#fb8c00"}, {"tail": "N251HC", "interval": 2400, "intervalLabel": "2400 HR", "dueDate": "2028-04-17", "remLabel": "1080.0 hrs remaining (~763 days)", "color": "#43a047"}, {"tail": "N251HC", "interval": 3200, "intervalLabel": "3200 HR", "dueDate": "2026-09-15", "remLabel": "259.5 hrs remaining (~183 days)", "color": "#6d4c41"}, {"tail": "N261HC", "interval": 50, "intervalLabel": "50 HR", "dueDate": "2026-03-29", "remLabel": "~13 days remaining", "color": "#00897b"}, {"tail": "N261HC", "interval": 100, "intervalLabel": "100 HR", "dueDate": "2026-05-24", "remLabel": "50.3 hrs remaining (~69 days)", "color": "#1e88e5"}, {"tail": "N261HC", "interval": 200, "intervalLabel": "200 HR", "dueDate": "2026-05-21", "remLabel": "48.8 hrs remaining (~66 days)", "color": "#8e24aa"}, {"tail": "N261HC", "interval": 400, "intervalLabel": "400 HR", "dueDate": "2027-02-20", "remLabel": "248.8 hrs remaining (~341 days)", "color": "#e53935"}, {"tail": "N261HC", "interval": 800, "intervalLabel": "800 HR", "dueDate": "2027-02-14", "remLabel": "244.1 hrs remaining (~335 days)", "color": "#fb8c00"}, {"tail": "N261HC", "interval": 2400, "intervalLabel": "2400 HR", "dueDate": "2030-02-28", "remLabel": "1053.1 hrs remaining (~1445 days)", "color": "#43a047"}, {"tail": "N261HC", "interval": 3200, "intervalLabel": "3200 HR", "dueDate": "2027-04-14", "remLabel": "287.2 hrs remaining (~394 days)", "color": "#6d4c41"}, {"tail": "N271HC", "interval": 50, "intervalLabel": "50 HR", "dueDate": "2026-03-24", "remLabel": "~8 days remaining", "color": "#00897b"}, {"tail": "N271HC", "interval": 100, "intervalLabel": "100 HR", "dueDate": "2026-05-21", "remLabel": "36.3 hrs remaining (~66 days)", "color": "#1e88e5"}, {"tail": "N271HC", "interval": 200, "intervalLabel": "200 HR", "dueDate": "2026-11-22", "remLabel": "136.3 hrs remaining (~251 days)", "color": "#8e24aa"}, {"tail": "N271HC", "interval": 400, "intervalLabel": "400 HR", "dueDate": "2027-01-12", "remLabel": "164.3 hrs remaining (~302 days)", "color": "#e53935"}, {"tail": "N271HC", "interval": 800, "intervalLabel": "800 HR", "dueDate": "2027-01-29", "remLabel": "173.6 hrs remaining (~319 days)", "color": "#fb8c00"}, {"tail": "N271HC", "interval": 2400, "intervalLabel": "2400 HR", "dueDate": "2027-01-03", "remLabel": "159.1 hrs remaining (~293 days)", "color": "#43a047"}, {"tail": "N271HC", "interval": 3200, "intervalLabel": "3200 HR", "dueDate": "2039-03-08", "remLabel": "2573.6 hrs remaining (~4740 days)", "color": "#6d4c41"}, {"tail": "N281HC", "interval": 50, "intervalLabel": "50 HR", "dueDate": "2026-04-12", "remLabel": "~27 days remaining", "color": "#00897b"}, {"tail": "N281HC", "interval": 100, "intervalLabel": "100 HR", "dueDate": "2026-03-18", "remLabel": "4.4 hrs remaining (~2 days)", "color": "#1e88e5"}, {"tail": "N281HC", "interval": 200, "intervalLabel": "200 HR", "dueDate": "2026-03-16", "remLabel": "0.5 hrs remaining (~0 days)", "color": "#8e24aa"}, {"tail": "N281HC", "interval": 400, "intervalLabel": "400 HR", "dueDate": "2026-07-17", "remLabel": "200.5 hrs remaining (~123 days)", "color": "#e53935"}, {"tail": "N281HC", "interval": 800, "intervalLabel": "800 HR", "dueDate": "2027-03-19", "remLabel": "600.5 hrs remaining (~368 days)", "color": "#fb8c00"}, {"tail": "N281HC", "interval": 2400, "intervalLabel": "2400 HR", "dueDate": "2026-07-19", "remLabel": "204.0 hrs remaining (~125 days)", "color": "#43a047"}, {"tail": "N281HC", "interval": 3200, "intervalLabel": "3200 HR", "dueDate": "2031-04-01", "remLabel": "3000.5 hrs remaining (~1842 days)", "color": "#6d4c41"}, {"tail": "N291HC", "interval": 50, "intervalLabel": "50 HR", "dueDate": "2026-04-02", "remLabel": "~17 days remaining", "color": "#00897b"}, {"tail": "N291HC", "interval": 100, "intervalLabel": "100 HR", "dueDate": "2026-06-25", "remLabel": "56.6 hrs remaining (~101 days)", "color": "#1e88e5"}, {"tail": "N291HC", "interval": 200, "intervalLabel": "200 HR", "dueDate": "2026-06-26", "remLabel": "57.3 hrs remaining (~102 days)", "color": "#8e24aa"}, {"tail": "N291HC", "interval": 400, "intervalLabel": "400 HR", "dueDate": "2026-07-04", "remLabel": "61.7 hrs remaining (~110 days)", "color": "#e53935"}, {"tail": "N291HC", "interval": 800, "intervalLabel": "800 HR", "dueDate": "2028-06-21", "remLabel": "461.7 hrs remaining (~828 days)", "color": "#fb8c00"}, {"tail": "N291HC", "interval": 2400, "intervalLabel": "2400 HR", "dueDate": "2032-06-04", "remLabel": "1266.2 hrs remaining (~2272 days)", "color": "#43a047"}, {"tail": "N291HC", "interval": 3200, "intervalLabel": "3200 HR", "dueDate": "2028-07-12", "remLabel": "473.3 hrs remaining (~849 days)", "color": "#6d4c41"}, {"tail": "N431HC", "interval": 50, "intervalLabel": "50 HR", "dueDate": "2026-04-13", "remLabel": "~28 days remaining", "color": "#00897b"}, {"tail": "N431HC", "interval": 100, "intervalLabel": "100 HR", "dueDate": "2026-07-16", "remLabel": "71.6 hrs remaining (~122 days)", "color": "#1e88e5"}, {"tail": "N431HC", "interval": 200, "intervalLabel": "200 HR", "dueDate": "2027-01-02", "remLabel": "171.6 hrs remaining (~292 days)", "color": "#8e24aa"}, {"tail": "N431HC", "interval": 400, "intervalLabel": "400 HR", "dueDate": "2027-12-10", "remLabel": "371.6 hrs remaining (~634 days)", "color": "#e53935"}, {"tail": "N431HC", "interval": 800, "intervalLabel": "800 HR", "dueDate": "2027-12-22", "remLabel": "378.4 hrs remaining (~646 days)", "color": "#fb8c00"}, {"tail": "N431HC", "interval": 2400, "intervalLabel": "2400 HR", "dueDate": "2028-01-10", "remLabel": "389.7 hrs remaining (~665 days)", "color": "#43a047"}, {"tail": "N431HC", "interval": 3200, "intervalLabel": "3200 HR", "dueDate": "2031-10-07", "remLabel": "1189.7 hrs remaining (~2031 days)", "color": "#6d4c41"}, {"tail": "N531HC", "interval": 50, "intervalLabel": "50 HR", "dueDate": "2026-04-10", "remLabel": "~25 days remaining", "color": "#00897b"}, {"tail": "N531HC", "interval": 100, "intervalLabel": "100 HR", "dueDate": "2026-06-12", "remLabel": "92.7 hrs remaining (~88 days)", "color": "#1e88e5"}, {"tail": "N531HC", "interval": 200, "intervalLabel": "200 HR", "dueDate": "2026-06-15", "remLabel": "95.1 hrs remaining (~91 days)", "color": "#8e24aa"}, {"tail": "N531HC", "interval": 400, "intervalLabel": "400 HR", "dueDate": "2026-06-17", "remLabel": "97.5 hrs remaining (~93 days)", "color": "#e53935"}, {"tail": "N531HC", "interval": 800, "intervalLabel": "800 HR", "dueDate": "2027-07-06", "remLabel": "497.5 hrs remaining (~477 days)", "color": "#fb8c00"}, {"tail": "N531HC", "interval": 2400, "intervalLabel": "2400 HR", "dueDate": "2029-11-07", "remLabel": "1389.3 hrs remaining (~1332 days)", "color": "#43a047"}, {"tail": "N531HC", "interval": 3200, "intervalLabel": "3200 HR", "dueDate": "2033-10-23", "remLabel": "2897.5 hrs remaining (~2778 days)", "color": "#6d4c41"}];
+  var listEl = document.getElementById('estimated-inspection-list');
 
-  var INTERVAL_COLORS = {"50": "#00897b", "100": "#1e88e5", "200": "#8e24aa", "400": "#e53935", "800": "#fb8c00", "2400": "#43a047", "3200": "#6d4c41"};
-
-  var URGENCY_COLORS = {
-    overdue: '#c0392b', urgent: '#e67e22', soon: '#f39c12', ok: '#2980b9'
-  };
-
-  function loadNotes() {
-    try { return JSON.parse(localStorage.getItem(NOTES_KEY) || '{}'); }
-    catch (e) { return {}; }
-  }
-  function saveNotes(n) { localStorage.setItem(NOTES_KEY, JSON.stringify(n)); }
-
-  var MAINT = [{"id": "maint_N251HC_50", "title": "N251HC  50h", "start": "2026-03-26", "end": "2026-03-27", "allDay": true, "backgroundColor": "#00897b", "borderColor": "#00897b", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N251HC", "interval": 50, "urgency": "urgent", "urgencyLabel": "DUE \u226430 DAYS", "remHrs": 14.5, "remLabel": "~10 days remaining", "dueDate": "2026-03-26", "color": "#00897b"}}, {"id": "maint_N251HC_100", "title": "N251HC  100h", "start": "2026-04-30", "end": "2026-05-01", "allDay": true, "backgroundColor": "#1e88e5", "borderColor": "#1e88e5", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N251HC", "interval": 100, "urgency": "soon", "urgencyLabel": "DUE \u226490 DAYS", "remHrs": 64.5, "remLabel": "64.5 hrs remaining (~45 days)", "dueDate": "2026-04-30", "color": "#1e88e5"}}, {"id": "maint_N251HC_200", "title": "N251HC  200h", "start": "2026-05-02", "end": "2026-05-05", "allDay": true, "backgroundColor": "#8e24aa", "borderColor": "#8e24aa", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N251HC", "interval": 200, "urgency": "soon", "urgencyLabel": "DUE \u226490 DAYS", "remHrs": 67.1, "remLabel": "67.1 hrs remaining (~47 days)", "dueDate": "2026-05-02", "color": "#8e24aa"}}, {"id": "maint_N251HC_400", "title": "N251HC  400h", "start": "2026-09-20", "end": "2026-09-24", "allDay": true, "backgroundColor": "#e53935", "borderColor": "#e53935", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N251HC", "interval": 400, "urgency": "ok", "urgencyLabel": "SCHEDULED >90 DAYS", "remHrs": 267.1, "remLabel": "267.1 hrs remaining (~188 days)", "dueDate": "2026-09-20", "color": "#e53935"}}, {"id": "maint_N251HC_800", "title": "N251HC  800h", "start": "2026-09-28", "end": "2026-10-02", "allDay": true, "backgroundColor": "#fb8c00", "borderColor": "#fb8c00", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N251HC", "interval": 800, "urgency": "ok", "urgencyLabel": "SCHEDULED >90 DAYS", "remHrs": 277.8, "remLabel": "277.8 hrs remaining (~196 days)", "dueDate": "2026-09-28", "color": "#fb8c00"}}, {"id": "maint_N251HC_2400", "title": "N251HC  2400h", "start": "2028-04-17", "end": "2028-04-18", "allDay": true, "backgroundColor": "#43a047", "borderColor": "#43a047", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N251HC", "interval": 2400, "urgency": "ok", "urgencyLabel": "SCHEDULED >90 DAYS", "remHrs": 1080.0, "remLabel": "1080.0 hrs remaining (~763 days)", "dueDate": "2028-04-17", "color": "#43a047"}}, {"id": "maint_N251HC_3200", "title": "N251HC  3200h", "start": "2026-09-15", "end": "2026-10-06", "allDay": true, "backgroundColor": "#6d4c41", "borderColor": "#6d4c41", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N251HC", "interval": 3200, "urgency": "ok", "urgencyLabel": "SCHEDULED >90 DAYS", "remHrs": 259.5, "remLabel": "259.5 hrs remaining (~183 days)", "dueDate": "2026-09-15", "color": "#6d4c41"}}, {"id": "maint_N261HC_50", "title": "N261HC  50h", "start": "2026-03-29", "end": "2026-03-30", "allDay": true, "backgroundColor": "#00897b", "borderColor": "#00897b", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N261HC", "interval": 50, "urgency": "urgent", "urgencyLabel": "DUE \u226430 DAYS", "remHrs": 0.3, "remLabel": "~13 days remaining", "dueDate": "2026-03-29", "color": "#00897b"}}, {"id": "maint_N261HC_100", "title": "N261HC  100h", "start": "2026-05-24", "end": "2026-05-25", "allDay": true, "backgroundColor": "#1e88e5", "borderColor": "#1e88e5", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N261HC", "interval": 100, "urgency": "soon", "urgencyLabel": "DUE \u226490 DAYS", "remHrs": 50.3, "remLabel": "50.3 hrs remaining (~69 days)", "dueDate": "2026-05-24", "color": "#1e88e5"}}, {"id": "maint_N261HC_200", "title": "N261HC  200h", "start": "2026-05-21", "end": "2026-05-24", "allDay": true, "backgroundColor": "#8e24aa", "borderColor": "#8e24aa", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N261HC", "interval": 200, "urgency": "soon", "urgencyLabel": "DUE \u226490 DAYS", "remHrs": 48.8, "remLabel": "48.8 hrs remaining (~66 days)", "dueDate": "2026-05-21", "color": "#8e24aa"}}, {"id": "maint_N261HC_400", "title": "N261HC  400h", "start": "2027-02-20", "end": "2027-02-24", "allDay": true, "backgroundColor": "#e53935", "borderColor": "#e53935", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N261HC", "interval": 400, "urgency": "ok", "urgencyLabel": "SCHEDULED >90 DAYS", "remHrs": 248.8, "remLabel": "248.8 hrs remaining (~341 days)", "dueDate": "2027-02-20", "color": "#e53935"}}, {"id": "maint_N261HC_800", "title": "N261HC  800h", "start": "2027-02-14", "end": "2027-02-18", "allDay": true, "backgroundColor": "#fb8c00", "borderColor": "#fb8c00", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N261HC", "interval": 800, "urgency": "ok", "urgencyLabel": "SCHEDULED >90 DAYS", "remHrs": 244.1, "remLabel": "244.1 hrs remaining (~335 days)", "dueDate": "2027-02-14", "color": "#fb8c00"}}, {"id": "maint_N261HC_2400", "title": "N261HC  2400h", "start": "2030-02-28", "end": "2030-03-01", "allDay": true, "backgroundColor": "#43a047", "borderColor": "#43a047", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N261HC", "interval": 2400, "urgency": "ok", "urgencyLabel": "SCHEDULED >90 DAYS", "remHrs": 1053.1, "remLabel": "1053.1 hrs remaining (~1445 days)", "dueDate": "2030-02-28", "color": "#43a047"}}, {"id": "maint_N261HC_3200", "title": "N261HC  3200h", "start": "2027-04-14", "end": "2027-05-05", "allDay": true, "backgroundColor": "#6d4c41", "borderColor": "#6d4c41", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N261HC", "interval": 3200, "urgency": "ok", "urgencyLabel": "SCHEDULED >90 DAYS", "remHrs": 287.2, "remLabel": "287.2 hrs remaining (~394 days)", "dueDate": "2027-04-14", "color": "#6d4c41"}}, {"id": "maint_N271HC_50", "title": "N271HC  50h", "start": "2026-03-24", "end": "2026-03-25", "allDay": true, "backgroundColor": "#00897b", "borderColor": "#00897b", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N271HC", "interval": 50, "urgency": "urgent", "urgencyLabel": "DUE \u226430 DAYS", "remHrs": 36.2, "remLabel": "~8 days remaining", "dueDate": "2026-03-24", "color": "#00897b"}}, {"id": "maint_N271HC_100", "title": "N271HC  100h", "start": "2026-05-21", "end": "2026-05-22", "allDay": true, "backgroundColor": "#1e88e5", "borderColor": "#1e88e5", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N271HC", "interval": 100, "urgency": "soon", "urgencyLabel": "DUE \u226490 DAYS", "remHrs": 36.3, "remLabel": "36.3 hrs remaining (~66 days)", "dueDate": "2026-05-21", "color": "#1e88e5"}}, {"id": "maint_N271HC_200", "title": "N271HC  200h", "start": "2026-11-22", "end": "2026-11-25", "allDay": true, "backgroundColor": "#8e24aa", "borderColor": "#8e24aa", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N271HC", "interval": 200, "urgency": "ok", "urgencyLabel": "SCHEDULED >90 DAYS", "remHrs": 136.3, "remLabel": "136.3 hrs remaining (~251 days)", "dueDate": "2026-11-22", "color": "#8e24aa"}}, {"id": "maint_N271HC_400", "title": "N271HC  400h", "start": "2027-01-12", "end": "2027-01-16", "allDay": true, "backgroundColor": "#e53935", "borderColor": "#e53935", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N271HC", "interval": 400, "urgency": "ok", "urgencyLabel": "SCHEDULED >90 DAYS", "remHrs": 164.3, "remLabel": "164.3 hrs remaining (~302 days)", "dueDate": "2027-01-12", "color": "#e53935"}}, {"id": "maint_N271HC_800", "title": "N271HC  800h", "start": "2027-01-29", "end": "2027-02-02", "allDay": true, "backgroundColor": "#fb8c00", "borderColor": "#fb8c00", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N271HC", "interval": 800, "urgency": "ok", "urgencyLabel": "SCHEDULED >90 DAYS", "remHrs": 173.6, "remLabel": "173.6 hrs remaining (~319 days)", "dueDate": "2027-01-29", "color": "#fb8c00"}}, {"id": "maint_N271HC_2400", "title": "N271HC  2400h", "start": "2027-01-03", "end": "2027-01-04", "allDay": true, "backgroundColor": "#43a047", "borderColor": "#43a047", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N271HC", "interval": 2400, "urgency": "ok", "urgencyLabel": "SCHEDULED >90 DAYS", "remHrs": 159.1, "remLabel": "159.1 hrs remaining (~293 days)", "dueDate": "2027-01-03", "color": "#43a047"}}, {"id": "maint_N271HC_3200", "title": "N271HC  3200h", "start": "2039-03-08", "end": "2039-03-29", "allDay": true, "backgroundColor": "#6d4c41", "borderColor": "#6d4c41", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N271HC", "interval": 3200, "urgency": "ok", "urgencyLabel": "SCHEDULED >90 DAYS", "remHrs": 2573.6, "remLabel": "2573.6 hrs remaining (~4740 days)", "dueDate": "2039-03-08", "color": "#6d4c41"}}, {"id": "maint_N281HC_50", "title": "N281HC  50h", "start": "2026-04-12", "end": "2026-04-13", "allDay": true, "backgroundColor": "#00897b", "borderColor": "#00897b", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N281HC", "interval": 50, "urgency": "urgent", "urgencyLabel": "DUE \u226430 DAYS", "remHrs": 3.0, "remLabel": "~27 days remaining", "dueDate": "2026-04-12", "color": "#00897b"}}, {"id": "maint_N281HC_100", "title": "N281HC  100h", "start": "2026-03-18", "end": "2026-03-19", "allDay": true, "backgroundColor": "#1e88e5", "borderColor": "#1e88e5", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N281HC", "interval": 100, "urgency": "urgent", "urgencyLabel": "DUE \u226430 DAYS", "remHrs": 4.4, "remLabel": "4.4 hrs remaining (~2 days)", "dueDate": "2026-03-18", "color": "#1e88e5"}}, {"id": "maint_N281HC_200", "title": "N281HC  200h", "start": "2026-03-16", "end": "2026-03-19", "allDay": true, "backgroundColor": "#8e24aa", "borderColor": "#8e24aa", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N281HC", "interval": 200, "urgency": "urgent", "urgencyLabel": "DUE \u226430 DAYS", "remHrs": 0.5, "remLabel": "0.5 hrs remaining (~0 days)", "dueDate": "2026-03-16", "color": "#8e24aa"}}, {"id": "maint_N281HC_400", "title": "N281HC  400h", "start": "2026-07-17", "end": "2026-07-21", "allDay": true, "backgroundColor": "#e53935", "borderColor": "#e53935", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N281HC", "interval": 400, "urgency": "ok", "urgencyLabel": "SCHEDULED >90 DAYS", "remHrs": 200.5, "remLabel": "200.5 hrs remaining (~123 days)", "dueDate": "2026-07-17", "color": "#e53935"}}, {"id": "maint_N281HC_800", "title": "N281HC  800h", "start": "2027-03-19", "end": "2027-03-23", "allDay": true, "backgroundColor": "#fb8c00", "borderColor": "#fb8c00", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N281HC", "interval": 800, "urgency": "ok", "urgencyLabel": "SCHEDULED >90 DAYS", "remHrs": 600.5, "remLabel": "600.5 hrs remaining (~368 days)", "dueDate": "2027-03-19", "color": "#fb8c00"}}, {"id": "maint_N281HC_2400", "title": "N281HC  2400h", "start": "2026-07-19", "end": "2026-07-20", "allDay": true, "backgroundColor": "#43a047", "borderColor": "#43a047", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N281HC", "interval": 2400, "urgency": "ok", "urgencyLabel": "SCHEDULED >90 DAYS", "remHrs": 204.0, "remLabel": "204.0 hrs remaining (~125 days)", "dueDate": "2026-07-19", "color": "#43a047"}}, {"id": "maint_N281HC_3200", "title": "N281HC  3200h", "start": "2031-04-01", "end": "2031-04-22", "allDay": true, "backgroundColor": "#6d4c41", "borderColor": "#6d4c41", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N281HC", "interval": 3200, "urgency": "ok", "urgencyLabel": "SCHEDULED >90 DAYS", "remHrs": 3000.5, "remLabel": "3000.5 hrs remaining (~1842 days)", "dueDate": "2031-04-01", "color": "#6d4c41"}}, {"id": "maint_N291HC_50", "title": "N291HC  50h", "start": "2026-04-02", "end": "2026-04-03", "allDay": true, "backgroundColor": "#00897b", "borderColor": "#00897b", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N291HC", "interval": 50, "urgency": "urgent", "urgencyLabel": "DUE \u226430 DAYS", "remHrs": 6.6, "remLabel": "~17 days remaining", "dueDate": "2026-04-02", "color": "#00897b"}}, {"id": "maint_N291HC_100", "title": "N291HC  100h", "start": "2026-06-25", "end": "2026-06-26", "allDay": true, "backgroundColor": "#1e88e5", "borderColor": "#1e88e5", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N291HC", "interval": 100, "urgency": "ok", "urgencyLabel": "SCHEDULED >90 DAYS", "remHrs": 56.6, "remLabel": "56.6 hrs remaining (~101 days)", "dueDate": "2026-06-25", "color": "#1e88e5"}}, {"id": "maint_N291HC_200", "title": "N291HC  200h", "start": "2026-06-26", "end": "2026-06-29", "allDay": true, "backgroundColor": "#8e24aa", "borderColor": "#8e24aa", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N291HC", "interval": 200, "urgency": "ok", "urgencyLabel": "SCHEDULED >90 DAYS", "remHrs": 57.3, "remLabel": "57.3 hrs remaining (~102 days)", "dueDate": "2026-06-26", "color": "#8e24aa"}}, {"id": "maint_N291HC_400", "title": "N291HC  400h", "start": "2026-07-04", "end": "2026-07-08", "allDay": true, "backgroundColor": "#e53935", "borderColor": "#e53935", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N291HC", "interval": 400, "urgency": "ok", "urgencyLabel": "SCHEDULED >90 DAYS", "remHrs": 61.7, "remLabel": "61.7 hrs remaining (~110 days)", "dueDate": "2026-07-04", "color": "#e53935"}}, {"id": "maint_N291HC_800", "title": "N291HC  800h", "start": "2028-06-21", "end": "2028-06-25", "allDay": true, "backgroundColor": "#fb8c00", "borderColor": "#fb8c00", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N291HC", "interval": 800, "urgency": "ok", "urgencyLabel": "SCHEDULED >90 DAYS", "remHrs": 461.7, "remLabel": "461.7 hrs remaining (~828 days)", "dueDate": "2028-06-21", "color": "#fb8c00"}}, {"id": "maint_N291HC_2400", "title": "N291HC  2400h", "start": "2032-06-04", "end": "2032-06-05", "allDay": true, "backgroundColor": "#43a047", "borderColor": "#43a047", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N291HC", "interval": 2400, "urgency": "ok", "urgencyLabel": "SCHEDULED >90 DAYS", "remHrs": 1266.2, "remLabel": "1266.2 hrs remaining (~2272 days)", "dueDate": "2032-06-04", "color": "#43a047"}}, {"id": "maint_N291HC_3200", "title": "N291HC  3200h", "start": "2028-07-12", "end": "2028-08-02", "allDay": true, "backgroundColor": "#6d4c41", "borderColor": "#6d4c41", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N291HC", "interval": 3200, "urgency": "ok", "urgencyLabel": "SCHEDULED >90 DAYS", "remHrs": 473.3, "remLabel": "473.3 hrs remaining (~849 days)", "dueDate": "2028-07-12", "color": "#6d4c41"}}, {"id": "maint_N431HC_50", "title": "N431HC  50h", "start": "2026-04-13", "end": "2026-04-14", "allDay": true, "backgroundColor": "#00897b", "borderColor": "#00897b", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N431HC", "interval": 50, "urgency": "urgent", "urgencyLabel": "DUE \u226430 DAYS", "remHrs": 21.6, "remLabel": "~28 days remaining", "dueDate": "2026-04-13", "color": "#00897b"}}, {"id": "maint_N431HC_100", "title": "N431HC  100h", "start": "2026-07-16", "end": "2026-07-17", "allDay": true, "backgroundColor": "#1e88e5", "borderColor": "#1e88e5", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N431HC", "interval": 100, "urgency": "ok", "urgencyLabel": "SCHEDULED >90 DAYS", "remHrs": 71.6, "remLabel": "71.6 hrs remaining (~122 days)", "dueDate": "2026-07-16", "color": "#1e88e5"}}, {"id": "maint_N431HC_200", "title": "N431HC  200h", "start": "2027-01-02", "end": "2027-01-05", "allDay": true, "backgroundColor": "#8e24aa", "borderColor": "#8e24aa", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N431HC", "interval": 200, "urgency": "ok", "urgencyLabel": "SCHEDULED >90 DAYS", "remHrs": 171.6, "remLabel": "171.6 hrs remaining (~292 days)", "dueDate": "2027-01-02", "color": "#8e24aa"}}, {"id": "maint_N431HC_400", "title": "N431HC  400h", "start": "2027-12-10", "end": "2027-12-14", "allDay": true, "backgroundColor": "#e53935", "borderColor": "#e53935", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N431HC", "interval": 400, "urgency": "ok", "urgencyLabel": "SCHEDULED >90 DAYS", "remHrs": 371.6, "remLabel": "371.6 hrs remaining (~634 days)", "dueDate": "2027-12-10", "color": "#e53935"}}, {"id": "maint_N431HC_800", "title": "N431HC  800h", "start": "2027-12-22", "end": "2027-12-26", "allDay": true, "backgroundColor": "#fb8c00", "borderColor": "#fb8c00", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N431HC", "interval": 800, "urgency": "ok", "urgencyLabel": "SCHEDULED >90 DAYS", "remHrs": 378.4, "remLabel": "378.4 hrs remaining (~646 days)", "dueDate": "2027-12-22", "color": "#fb8c00"}}, {"id": "maint_N431HC_2400", "title": "N431HC  2400h", "start": "2028-01-10", "end": "2028-01-11", "allDay": true, "backgroundColor": "#43a047", "borderColor": "#43a047", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N431HC", "interval": 2400, "urgency": "ok", "urgencyLabel": "SCHEDULED >90 DAYS", "remHrs": 389.7, "remLabel": "389.7 hrs remaining (~665 days)", "dueDate": "2028-01-10", "color": "#43a047"}}, {"id": "maint_N431HC_3200", "title": "N431HC  3200h", "start": "2031-10-07", "end": "2031-10-28", "allDay": true, "backgroundColor": "#6d4c41", "borderColor": "#6d4c41", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N431HC", "interval": 3200, "urgency": "ok", "urgencyLabel": "SCHEDULED >90 DAYS", "remHrs": 1189.7, "remLabel": "1189.7 hrs remaining (~2031 days)", "dueDate": "2031-10-07", "color": "#6d4c41"}}, {"id": "maint_N531HC_50", "title": "N531HC  50h", "start": "2026-04-10", "end": "2026-04-11", "allDay": true, "backgroundColor": "#00897b", "borderColor": "#00897b", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N531HC", "interval": 50, "urgency": "urgent", "urgencyLabel": "DUE \u226430 DAYS", "remHrs": 42.7, "remLabel": "~25 days remaining", "dueDate": "2026-04-10", "color": "#00897b"}}, {"id": "maint_N531HC_100", "title": "N531HC  100h", "start": "2026-06-12", "end": "2026-06-13", "allDay": true, "backgroundColor": "#1e88e5", "borderColor": "#1e88e5", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N531HC", "interval": 100, "urgency": "soon", "urgencyLabel": "DUE \u226490 DAYS", "remHrs": 92.7, "remLabel": "92.7 hrs remaining (~88 days)", "dueDate": "2026-06-12", "color": "#1e88e5"}}, {"id": "maint_N531HC_200", "title": "N531HC  200h", "start": "2026-06-15", "end": "2026-06-18", "allDay": true, "backgroundColor": "#8e24aa", "borderColor": "#8e24aa", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N531HC", "interval": 200, "urgency": "ok", "urgencyLabel": "SCHEDULED >90 DAYS", "remHrs": 95.1, "remLabel": "95.1 hrs remaining (~91 days)", "dueDate": "2026-06-15", "color": "#8e24aa"}}, {"id": "maint_N531HC_400", "title": "N531HC  400h", "start": "2026-06-17", "end": "2026-06-21", "allDay": true, "backgroundColor": "#e53935", "borderColor": "#e53935", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N531HC", "interval": 400, "urgency": "ok", "urgencyLabel": "SCHEDULED >90 DAYS", "remHrs": 97.5, "remLabel": "97.5 hrs remaining (~93 days)", "dueDate": "2026-06-17", "color": "#e53935"}}, {"id": "maint_N531HC_800", "title": "N531HC  800h", "start": "2027-07-06", "end": "2027-07-10", "allDay": true, "backgroundColor": "#fb8c00", "borderColor": "#fb8c00", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N531HC", "interval": 800, "urgency": "ok", "urgencyLabel": "SCHEDULED >90 DAYS", "remHrs": 497.5, "remLabel": "497.5 hrs remaining (~477 days)", "dueDate": "2027-07-06", "color": "#fb8c00"}}, {"id": "maint_N531HC_2400", "title": "N531HC  2400h", "start": "2029-11-07", "end": "2029-11-08", "allDay": true, "backgroundColor": "#43a047", "borderColor": "#43a047", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N531HC", "interval": 2400, "urgency": "ok", "urgencyLabel": "SCHEDULED >90 DAYS", "remHrs": 1389.3, "remLabel": "1389.3 hrs remaining (~1332 days)", "dueDate": "2029-11-07", "color": "#43a047"}}, {"id": "maint_N531HC_3200", "title": "N531HC  3200h", "start": "2033-10-23", "end": "2033-11-13", "allDay": true, "backgroundColor": "#6d4c41", "borderColor": "#6d4c41", "textColor": "#fff", "extendedProps": {"type": "maintenance", "tail": "N531HC", "interval": 3200, "urgency": "ok", "urgencyLabel": "SCHEDULED >90 DAYS", "remHrs": 2897.5, "remLabel": "2897.5 hrs remaining (~2778 days)", "dueDate": "2033-10-23", "color": "#6d4c41"}}];
-
-  function allNoteEvents() {
-    return Object.entries(loadNotes()).map(function([dk, n]) {
-      return {
-        id: 'note_' + dk, title: 'NOTE: ' + (n.label || 'Note'),
-        start: dk, allDay: true, classNames: ['note-ev'],
-        extendedProps: { type: 'note', dateKey: dk, label: n.label||'', text: n.text||'' },
-      };
-    });
+  function fmtDate(dateStr) {
+    var d = new Date(dateStr + 'T00:00:00');
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
   }
 
-  var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  var DAYS   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-  function fmtDate(ds) {
-    var d = new Date(ds + 'T00:00:00');
-    return DAYS[d.getDay()] + ', ' + MONTHS[d.getMonth()] + ' ' + d.getDate();
-  }
-
-  var panDateMain = document.getElementById('cal-panel-date-main');
-  var panDateSub  = document.getElementById('cal-panel-date-sub');
-  var panEvList   = document.getElementById('pan-ev-list');
-  var panPholder  = document.getElementById('pan-placeholder');
-
-  function renderPanel(dateStr) {
-    activeDate = dateStr;
-    panDateMain.textContent = fmtDate(dateStr);
-    panDateSub.textContent  = dateStr;
-    panPholder.style.display = 'none';
-
-    var dDate = new Date(dateStr + 'T00:00:00');
-    var evs = [];
-
-    MAINT.forEach(function(ev) {
-      var s = new Date(ev.start + 'T00:00:00');
-      var e = new Date(ev.end   + 'T00:00:00');
-      if (dDate >= s && dDate < e) evs.push(ev);
-    });
-
-    var notes = loadNotes();
-    if (notes[dateStr]) {
-      var n = notes[dateStr];
-      evs.push({
-        title: 'NOTE: ' + (n.label || 'Note'),
-        backgroundColor: 'rgba(255,171,0,0.3)',
-        extendedProps: { type:'note', text: n.text||'', label: n.label||'' },
-      });
-    }
-
-    if (!evs.length) {
-      panEvList.innerHTML =
-        '<div style="font-family:&quot;Share Tech Mono&quot;,monospace;font-size:10px;color:#2a3240;padding:20px 16px;letter-spacing:1px;">NO EVENTS</div>';
-      document.getElementById('btn-add-note').textContent = '+ ADD NOTE';
+  function renderInspectionList() {
+    if (!listEl) return;
+    if (!Array.isArray(MAINT) || !MAINT.length) {
+      listEl.innerHTML = '<div class="cal-date-sub">No estimated inspection dates available.</div>';
       return;
     }
 
-    panEvList.innerHTML = evs.map(function(ev) {
-      var ep    = ev.extendedProps || {};
-      var color = ev.backgroundColor || '#4a5568';
-      var title = ev.title || '';
-      var sub   = '';
-      var urgencyHtml = '';
+    MAINT.sort(function(a,b) {
+      if (a.dueDate === b.dueDate) return String(a.tail).localeCompare(String(b.tail));
+      return String(a.dueDate).localeCompare(String(b.dueDate));
+    });
 
-      if (ep.type === 'maintenance') {
-        var uc = URGENCY_COLORS[ep.urgency] || '#4a5568';
-        sub = ep.remLabel || '';
-        urgencyHtml =
-          '<div class="pan-ev-urgency" style="background:' + uc + '22;' +
-          'color:' + uc + ';border:1px solid ' + uc + '44;">' +
-          ep.urgencyLabel + '</div>';
-      } else {
-        sub = ep.text || '';
-      }
+    var byDate = MAINT.reduce(function(acc, ev) {
+      var key = ev.dueDate || 'Unknown';
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(ev);
+      return acc;
+    }, {});
 
-      return '<div class="pan-ev-item">' +
-        '<div class="pan-ev-row">' +
-          '<div class="pan-ev-bar" style="background:' + color + '"></div>' +
-          '<div>' +
-            '<div class="pan-ev-title">' + title + '</div>' +
-            (sub ? '<div class="pan-ev-sub">' + sub + '</div>' : '') +
-            urgencyHtml +
-          '</div>' +
-        '</div>' +
+    listEl.innerHTML = Object.keys(byDate).map(function(dateKey) {
+      var evs = byDate[dateKey];
+      return '<div class="cal-date-group">' +
+        '<div class="cal-date-title">' + fmtDate(dateKey) + '</div>' +
+        '<div class="cal-date-sub">' + evs.length + ' projected event' + (evs.length === 1 ? '' : 's') + '</div>' +
+        evs.map(function(ev) {
+          return '<div class="cal-ev" style="border-left-color:' + (ev.color || '#4a5568') + '">' +
+            '<div class="cal-ev-title">' + ev.tail + ' · ' + ev.intervalLabel + '</div>' +
+            '<div class="cal-ev-sub">' + (ev.remLabel || '') + '</div>' +
+          '</div>';
+        }).join('') +
       '</div>';
     }).join('');
-
-    document.getElementById('btn-add-note').textContent =
-      notes[dateStr] ? 'EDIT NOTE' : '+ ADD NOTE';
   }
 
-  /* ── Modal ────────────────────────────────────────────────────────────── */
-  var noteModal  = document.getElementById('note-modal');
-  var nmDateLbl  = document.getElementById('nm-date-lbl');
-  var nmLabelInp = document.getElementById('nm-label-inp');
-  var nmTextInp  = document.getElementById('nm-text-inp');
-
-  function openModal(dk) {
-    var n = loadNotes()[dk] || {};
-    nmDateLbl.textContent = fmtDate(dk) + ' — ' + dk;
-    nmLabelInp.value = n.label || '';
-    nmTextInp.value  = n.text  || '';
-    noteModal.style.display = 'flex';
-    setTimeout(function() { nmLabelInp.focus(); }, 50);
-  }
-  function closeModal() { noteModal.style.display = 'none'; }
-
-  function saveModal() {
-    var dk = activeDate;
-    var label = nmLabelInp.value.trim();
-    var text  = nmTextInp.value.trim();
-    var notes = loadNotes();
-    if (label || text) { notes[dk] = { label: label, text: text }; }
-    else { delete notes[dk]; }
-    saveNotes(notes);
-    refreshNoteEvents();
-    if (activeDate) renderPanel(activeDate);
-    closeModal();
-  }
-
-  function clearNote() {
-    if (!activeDate) return;
-    var notes = loadNotes();
-    delete notes[activeDate];
-    saveNotes(notes);
-    refreshNoteEvents();
-    renderPanel(activeDate);
-    closeModal();
-  }
-
-  document.getElementById('nm-btn-save').addEventListener('click', saveModal);
-  document.getElementById('nm-btn-cancel').addEventListener('click', closeModal);
-  document.getElementById('nm-btn-clear').addEventListener('click', clearNote);
-  document.getElementById('btn-add-note').addEventListener('click', function() {
-    if (activeDate) openModal(activeDate);
-  });
-  noteModal.addEventListener('click', function(e) { if (e.target===noteModal) closeModal(); });
-  noteModal.addEventListener('keydown', function(e) {
-    if (e.key==='Escape') { e.preventDefault(); closeModal(); }
-    if ((e.ctrlKey||e.metaKey) && e.key==='Enter') { e.preventDefault(); saveModal(); }
-  });
-  nmLabelInp.addEventListener('keydown', function(e) {
-    if (e.key==='Enter') { e.preventDefault(); nmTextInp.focus(); }
-  });
-
-  function refreshNoteEvents() {
-    if (!cal) return;
-    cal.getEvents().forEach(function(e) {
-      if (e.id && e.id.startsWith('note_')) e.remove();
-    });
-    allNoteEvents().forEach(function(ev) { cal.addEvent(ev); });
-  }
-
-  /* ── FullCalendar ─────────────────────────────────────────────────────── */
-  function initCalendar() {
-    if (typeof FullCalendar === 'undefined') { setTimeout(initCalendar, 150); return; }
-
-    cal = new FullCalendar.Calendar(document.getElementById('fc-calendar'), {
-      initialView:    'dayGridMonth',
-      initialDate:    '2026-03-16',
-      height:         '100%',
-      firstDay:       0,
-      fixedWeekCount: false,
-      dayMaxEvents:   5,
-      moreLinkClick:  'popover',
-      headerToolbar: {
-        left:   'prev,next today',
-        center: 'title',
-        right:  '',
-      },
-      buttonText: { today: 'TODAY' },
-      events: MAINT.concat(allNoteEvents()),
-
-      dateClick: function(info) {
-        document.querySelectorAll('.fc-day-selected').forEach(function(el) {
-          el.classList.remove('fc-day-selected');
-        });
-        var cell = document.querySelector(
-          '.fc-daygrid-day[data-date="' + info.dateStr + '"]'
-        );
-        if (cell) cell.classList.add('fc-day-selected');
-        renderPanel(info.dateStr);
-      },
-
-      eventClick: function(info) {
-        info.jsEvent.stopPropagation();
-        var ds     = info.event.startStr;
-        var today  = new Date('2026-03-16' + 'T00:00:00');
-        var startD = new Date(ds + 'T00:00:00');
-        renderPanel(startD < today ? '2026-03-16' : ds);
-      },
-    });
-
-    cal.render();
-
-    window.addEventListener('fleet:calendar:shown', function() {
-      if (!cal) return;
-      cal.updateSize();
-      cal.render();
-    });
-  }
-
-  document.readyState === 'loading'
-    ? document.addEventListener('DOMContentLoaded', initCalendar)
-    : initCalendar();
+  renderInspectionList();
 })();
 </script>
 
@@ -64651,7 +64234,7 @@ RII</td>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 <script>
-  const DASHBOARD_VERSION = "20260316163507";
+  const DASHBOARD_VERSION = "20260316170238";
 
   // Auto-reload when a newer build is deployed
   (function() {
