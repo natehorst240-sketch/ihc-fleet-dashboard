@@ -133,6 +133,15 @@ function AOGTracker() {
     boot();
   }, []);
 
+  // Keep dashboard status current while the page stays open.
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      fetchJSON();
+    }, 60 * 1000);
+
+    return () => window.clearInterval(intervalId);
+  }, []);
+
   // ── FETCH remote JSON written by Apps Script ──────────────────────────────
   async function fetchJSON(localOverrides = {}) {
     setSyncing(true);
@@ -167,12 +176,8 @@ function AOGTracker() {
         if (event.end) remoteHistoryForUi.push(event);
       });
 
-      setActive(prev => {
-        const merged = [...remoteActive].filter(a => !localCleared[a.id]);
-        prev.forEach(p => {
-          if (!merged.find(m => m.id === p.id) && !localCleared[p.id]) merged.push(p);
-        });
-        return merged;
+      setActive(() => {
+        return [...remoteActive].filter(a => !localCleared[a.id]);
       });
 
       setHistory(prev => {
