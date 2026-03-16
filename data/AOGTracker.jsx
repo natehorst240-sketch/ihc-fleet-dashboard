@@ -95,6 +95,21 @@ function overlapMs(startMs, endMs, windowStartMs, windowEndMs) {
   return Math.max(0, e - s);
 }
 
+function isCsvResolved(event) {
+  if (!event || typeof event !== "object") return false;
+  const marker = [
+    event.resolutionSource,
+    event.resolvedSource,
+    event.resolvedBy,
+    event.closedBy,
+    event.endSource,
+  ]
+    .filter(Boolean)
+    .map((value) => String(value).toLowerCase());
+  if (marker.some((value) => value.includes("csv") || value.includes("camp"))) return true;
+  return Boolean(event.csvComplianceDate || event.complianceDate || event.resolvedFromCsvAt);
+}
+
 function AOGTracker() {
   const [active, setActive]     = useState([]);
   const [history, setHistory]   = useState([]);
@@ -179,8 +194,26 @@ function AOGTracker() {
       if (!localOverrides.localActive && localActiveRaw?.value) localActive = JSON.parse(localActiveRaw.value);
 
       // Merge remote active with any we already know about locally
+      const remoteActive = [...(data.active || [])];
+      const remoteHistoryForUi = [];
+
+      remoteHistory.forEach((event) => {
+        if (!event?.id || localCleared[event.id]) {
+          if (event?.end) remoteHistoryForUi.push(event);
+          return;
+        }
+
+        const shouldRemainActive = event.source === "email" && !isCsvResolved(event);
+        if (shouldRemainActive) {
+          remoteActive.push({ ...event, end: null, duration: null });
+          return;
+        }
+
+        if (event.end) remoteHistoryForUi.push(event);
+      });
+
       setActive(prev => {
-        const merged = [...(data.active || [])].filter(a => !localCleared[a.id]);
+        const merged = [...remoteActive].filter(a => !localCleared[a.id]);
         prev.forEach(p => {
           if (!merged.find(m => m.id === p.id) && !localCleared[p.id]) merged.push(p);
         });
@@ -191,7 +224,7 @@ function AOGTracker() {
       });
 
       setHistory(prev => {
-        const merged = [...remoteHistory];
+        const merged = [...remoteHistoryForUi];
         prev.forEach(item => {
           if (!merged.find(m => m.id === item.id)) merged.push(item);
         });
