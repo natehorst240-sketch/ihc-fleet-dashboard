@@ -783,6 +783,7 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
     if interval_cfg:
         INTERVAL_COLOR = {_interval_key(iv): iv.get('color', '#4a5568') for iv in interval_cfg}
         INTERVAL_LABEL = {_interval_key(iv): iv.get('label', str(_interval_key(iv))) for iv in interval_cfg}
+        INTERVAL_DURATION_DAYS = {_interval_key(iv): max(1, int(iv.get('calendar_duration_days', 1) or 1)) for iv in interval_cfg}
     else:
         INTERVAL_COLOR = {
             50:   '#00897b',
@@ -794,6 +795,15 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
             3200: '#6d4c41',
         }
         INTERVAL_LABEL = {k: f"{k} HR" for k in INTERVAL_COLOR}
+        INTERVAL_DURATION_DAYS = {
+            50: 1,
+            100: 1,
+            200: 3,
+            400: 4,
+            800: 4,
+            2400: 7,
+            3200: 21,
+        }
 
     maint_events = []
     for ac in aircraft_list:
@@ -829,6 +839,7 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
                 'interval': interval,
                 'intervalLabel': INTERVAL_LABEL.get(interval, f'{interval} HR'),
                 'dueDate': due.isoformat(),
+                'durationDays': INTERVAL_DURATION_DAYS.get(interval, 1),
                 'remLabel': rem_label,
                 'color': INTERVAL_COLOR.get(interval, '#4a5568'),
             })
@@ -1061,10 +1072,20 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
   function renderCalendar() {{
     if (!calEl || !window.FullCalendar) return;
     var events = MAINT.map(function(ev, idx) {{
+      var durationDays = Math.max(1, Number(ev.durationDays) || 1);
+      var endDate = null;
+      if (durationDays > 1) {{
+        var dueDate = new Date(ev.dueDate + 'T00:00:00');
+        if (!isNaN(dueDate.getTime())) {{
+          dueDate.setDate(dueDate.getDate() + durationDays);
+          endDate = dueDate.toISOString().slice(0, 10);
+        }}
+      }}
       return {{
         id: String(idx + 1),
         title: ev.tail + ' ' + ev.intervalLabel,
         start: ev.dueDate,
+        end: endDate,
         allDay: true,
         backgroundColor: ev.color,
         borderColor: ev.color,
