@@ -14,7 +14,7 @@
   <script>window.GOOGLE_CLIENT_ID = "920544975888-bdoe7s0s15jh99e72t7m1sj0vmk3fq53.apps.googleusercontent.com";</script>
   
   <script type="text/babel">
-    const { useState, useEffect, useCallback } = React;
+    const { useState, useEffect, useCallback, useRef } = React;
 
     const FLEET = ["N251HC","N261HC","N271HC","N281HC","N291HC","N431HC","N531HC","N631HC","N731HC"];
 
@@ -71,6 +71,14 @@
       const [clearing, setClearing] = useState(null);
       const [syncing, setSyncing] = useState(false);
       const [syncLog, setSyncLog] = useState("");
+      const [lastSync, setLastSync] = useState(null);
+      const [locallyClearedIds, setLocallyClearedIds] = useState({});
+      // Ref so interval callbacks always see the latest cleared IDs without stale closure.
+      const locallyClearedRef = useRef({});
+
+      useEffect(() => {
+        locallyClearedRef.current = locallyClearedIds;
+      }, [locallyClearedIds]);
 
       useEffect(() => {
         const i = setInterval(() => setNow(Date.now()), 15000);
@@ -80,16 +88,32 @@
       useEffect(() => {
         async function load() {
           try {
-            const a = await storage.get("aog:active");
-            const h = await storage.get("aog:history");
+            const [a, h, lc] = await Promise.all([
+              storage.get("aog:active"),
+              storage.get("aog:history"),
+              storage.get("aog:locally_cleared_ids"),
+            ]);
             if (a?.value) setActive(JSON.parse(a.value));
             if (h?.value) setHistory(JSON.parse(h.value));
+            if (lc?.value) {
+              const cleared = JSON.parse(lc.value);
+              setLocallyClearedIds(cleared);
+              locallyClearedRef.current = cleared;
+            }
           } catch (e) {
             console.warn("AOG load failed", e);
           }
           setLoaded(true);
+          // Fetch remote JSON immediately after localStorage is hydrated.
+          fetchFromJson();
         }
         load();
+      }, []);
+
+      // Poll aog_status.json (kept current by Apps Script → GitHub) every 60s.
+      useEffect(() => {
+        const id = setInterval(fetchFromJson, 60 * 1000);
+        return () => clearInterval(id);
       }, []);
 
       const save = useCallback(async (a, h) => {
@@ -100,6 +124,31 @@
           console.warn("AOG save failed", e);
         }
       }, []);
+
+      async function fetchFromJson() {
+        try {
+          const res = await fetch("./aog_status.json?t=" + Date.now());
+          if (!res.ok) return;
+          const data = await res.json();
+          const cleared = locallyClearedRef.current;
+
+          // Preserve manually-entered local events that aren't in the remote JSON.
+          const localActiveRaw = await storage.get("aog:active");
+          const localActive = localActiveRaw?.value ? JSON.parse(localActiveRaw.value) : [];
+          const manualEvents = localActive.filter(e => e.source === "manual");
+
+          const remoteActive = (data.active || []).filter(e => !cleared[e.id]);
+          const merged = [...remoteActive];
+          manualEvents.forEach(m => {
+            if (!merged.find(e => e.id === m.id)) merged.push(m);
+          });
+
+          setActive(merged);
+          if (data.lastUpdated) setLastSync(data.lastUpdated);
+        } catch (e) {
+          console.warn("Could not fetch aog_status.json:", e);
+        }
+      }
 
       async function syncEmails() {
         const apiKey = window.ANTHROPIC_API_KEY;
@@ -215,6 +264,14 @@ Do not include any explanation or markdown.`,
         setActive(na);
         setHistory(nh);
         save(na, nh);
+        // Track email-sourced events that were manually cleared so they don't
+        // reappear from aog_status.json on the next poll.
+        if (item.source === "email") {
+          const newCleared = { ...locallyClearedRef.current, [id]: true };
+          setLocallyClearedIds(newCleared);
+          locallyClearedRef.current = newCleared;
+          storage.set("aog:locally_cleared_ids", JSON.stringify(newCleared));
+        }
         setClearing(null);
       }
 
@@ -308,6 +365,11 @@ Do not include any explanation or markdown.`,
             <div style={{ width: 7, height: 7, borderRadius: "50%", background: active.length ? "#ff2222" : "#22cc55", boxShadow: active.length ? "0 0 10px #ff2222" : "0 0 10px #22cc55", animation: active.length ? "pulse 1.4s infinite" : "none" }} />
             <span style={{ fontSize: 10, letterSpacing: 4, color: "#3a3a5a" }}>IHC FLEET · AOG TRACKER</span>
             <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
+              {lastSync && (
+                <span style={{ fontSize: 9, color: "#4a5a6a", letterSpacing: 1 }}>
+                  LAST EMAIL SYNC: {ts(lastSync)}
+                </span>
+              )}
               {syncLog && <span style={{ fontSize: 9, color: "#444466", maxWidth: 260, textAlign: "right" }}>{syncLog}</span>}
               <button onClick={syncEmails} disabled={syncing} style={btn("#3355aa", "#05050f")}>
                 {syncing ? "SYNCING..." : "⟳ SYNC GMAIL"}
