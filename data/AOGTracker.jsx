@@ -149,7 +149,15 @@ function AOGTracker() {
       const res = await fetch(AOG_JSON_URL + "?t=" + Date.now()); // cache-bust
       if (!res.ok) throw new Error("HTTP " + res.status);
       const data = await res.json();
-      const remoteHistory = data.history || [];
+      const remoteActiveFromFeed = Array.isArray(data)
+        ? data
+        : (data.active || data.active_events || data.activeEvents || []);
+      const remoteHistory = Array.isArray(data)
+        ? []
+        : (data.history || data.resolved || data.resolved_events || data.resolvedEvents || []);
+      const feedLastUpdated = Array.isArray(data)
+        ? null
+        : (data.lastUpdated || data.last_updated || data.updated_at || null);
       const localHistoryRaw = localOverrides.localHistory ? null : await storage.get("aog:local_history");
       const localClearedRaw = localOverrides.localCleared ? null : await storage.get("aog:locally_cleared_ids");
       let localHistory = localOverrides.localHistory || [];
@@ -158,7 +166,7 @@ function AOGTracker() {
       if (!localOverrides.localCleared && localClearedRaw?.value) localCleared = JSON.parse(localClearedRaw.value);
 
       // Merge remote active with any we already know about locally
-      const remoteActive = [...(data.active || [])];
+      const remoteActive = [...remoteActiveFromFeed];
       const remoteHistoryForUi = [];
 
       remoteHistory.forEach((event) => {
@@ -177,7 +185,12 @@ function AOGTracker() {
       });
 
       setActive(() => {
-        return [...remoteActive].filter(a => !localCleared[a.id]);
+        const merged = [];
+        remoteActive.forEach((event) => {
+          if (!event || !event.id || localCleared[event.id]) return;
+          if (!merged.find((item) => item.id === event.id)) merged.push(event);
+        });
+        return merged;
       });
 
       setHistory(prev => {
@@ -195,7 +208,7 @@ function AOGTracker() {
 
       setLocallyClearedIds(localCleared);
 
-      if (data.lastUpdated) setLastSync(data.lastUpdated);
+      if (feedLastUpdated) setLastSync(feedLastUpdated);
     } catch (e) {
       console.warn("Could not fetch aog_status.json:", e.message);
     }
