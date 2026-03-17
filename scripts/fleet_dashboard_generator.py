@@ -946,6 +946,49 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
   font-size: 10px;
   color: #4a5568;
 }}
+.fc-note-controls {{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+}}
+.fc-note-controls input[type="date"],
+.fc-note-controls input[type="text"] {{
+  background: #0f1720;
+  border: 1px solid #2d4054;
+  color: #e8edf2;
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+}}
+.fc-note-controls input[type="text"] {{
+  min-width: 220px;
+}}
+.fc-note-controls input[type="color"] {{
+  width: 34px;
+  height: 30px;
+  border: 1px solid #2d4054;
+  border-radius: 4px;
+  background: transparent;
+  padding: 1px;
+}}
+.fc-note-controls button {{
+  border: none;
+  border-radius: 4px;
+  padding: 6px 10px;
+  background: #546e7a;
+  color: #e8edf2;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  letter-spacing: .6px;
+  text-transform: uppercase;
+  cursor: pointer;
+}}
+.fc-note-controls button:hover {{
+  filter: brightness(1.08);
+}}
 #estimated-inspection-panel {{
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -977,6 +1020,12 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
 <div id="cal-shell">
   <div id="calendar-wrap">
     <div class="fc-edit-note">Drag and drop pills to adjust projected dates (local view only).</div>
+    <div class="fc-note-controls">
+      <input id="cal-note-date" type="date" aria-label="Note date" />
+      <input id="cal-note-text" type="text" maxlength="60" placeholder="Custom calendar note" aria-label="Custom calendar note" />
+      <input id="cal-note-color" type="color" value="#fdd835" aria-label="Note color" />
+      <button id="cal-note-add" type="button">Add note pill</button>
+    </div>
     <div id="maint-calendar"></div>
   </div>
   <div id="estimated-inspection-panel">
@@ -987,9 +1036,93 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
 <script>
 (function () {{
   var MAINT = {events_json};
+  var CUSTOM_NOTE_STORAGE_KEY = 'fleet-calendar-custom-notes-v1';
   var calEl = document.getElementById('maint-calendar');
   var listEl = document.getElementById('estimated-inspection-list');
+  var noteDateEl = document.getElementById('cal-note-date');
+  var noteTextEl = document.getElementById('cal-note-text');
+  var noteColorEl = document.getElementById('cal-note-color');
+  var noteAddEl = document.getElementById('cal-note-add');
   var hoverEl = null;
+  var customNotes = [];
+  var calendar = null;
+
+  function escHtml(text) {{
+    return String(text || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }}
+
+  function parseDateValue(value) {{
+    var text = String(value || '').trim();
+    if (!/^\d{{4}}-\d{{2}}-\d{{2}}$/.test(text)) return null;
+    var dt = new Date(text + 'T00:00:00');
+    if (isNaN(dt.getTime())) return null;
+    return text;
+  }}
+
+  function loadCustomNotes() {{
+    try {{
+      var raw = localStorage.getItem(CUSTOM_NOTE_STORAGE_KEY);
+      if (!raw) return [];
+      var parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      return parsed.filter(function(note) {{
+        return note && note.id && parseDateValue(note.start) && String(note.title || '').trim();
+      }}).map(function(note) {{
+        var color = /^#[0-9a-fA-F]{{6}}$/.test(note.color || '') ? note.color : '#fdd835';
+        return {{
+          id: String(note.id),
+          start: parseDateValue(note.start),
+          title: String(note.title).trim().slice(0, 60),
+          color: color,
+        }};
+      }});
+    }} catch (err) {{
+      return [];
+    }}
+  }}
+
+  function saveCustomNotes() {{
+    try {{
+      localStorage.setItem(CUSTOM_NOTE_STORAGE_KEY, JSON.stringify(customNotes));
+    }} catch (err) {{
+      // Best effort only.
+    }}
+  }}
+
+  function createNoteEvent(note) {{
+    return {{
+      id: String(note.id),
+      title: note.title,
+      start: note.start,
+      allDay: true,
+      backgroundColor: note.color,
+      borderColor: note.color,
+      extendedProps: {{
+        tail: 'NOTE',
+        intervalLabel: note.title,
+        remLabel: 'Custom note',
+        color: note.color,
+        isCustomNote: true,
+        noteId: note.id,
+      }}
+    }};
+  }}
+
+  function refreshCustomEvents() {{
+    if (!calendar) return;
+    calendar.getEvents().forEach(function(ev) {{
+      var props = ev.extendedProps || {{}};
+      if (props.isCustomNote) ev.remove();
+    }});
+    customNotes.forEach(function(note) {{
+      calendar.addEvent(createNoteEvent(note));
+    }});
+  }}
 
   function clamp(num, min, max) {{
     return Math.max(min, Math.min(max, num));
@@ -1054,7 +1187,7 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
     hoverEl = document.createElement('div');
     hoverEl.className = 'fc-maint-hover';
     hoverEl.innerHTML =
-      '<div class="fc-hover-title">' + ev.tail + ' · ' + ev.intervalLabel + '</div>' +
+      '<div class="fc-hover-title">' + escHtml(ev.tail) + ' · ' + escHtml(ev.intervalLabel) + '</div>' +
       '<div class="fc-hover-sub">' + (ev.remLabel || 'Projected maintenance event') + '</div>' +
       '<div class="fc-hover-chart"><span style="width:' + pct + '%;background:' + (ev.color || '#4a5568') + ';"></span></div>';
     document.body.appendChild(hoverEl);
@@ -1071,7 +1204,7 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
 
   function renderCalendar() {{
     if (!calEl || !window.FullCalendar) return;
-    var events = MAINT.map(function(ev, idx) {{
+    var maintEvents = MAINT.map(function(ev, idx) {{
       var durationDays = Math.max(1, Number(ev.durationDays) || 1);
       var endDate = null;
       if (durationDays > 1) {{
@@ -1093,7 +1226,10 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
       }};
     }});
 
-    var calendar = new FullCalendar.Calendar(calEl, {{
+    customNotes = loadCustomNotes();
+    var events = maintEvents.concat(customNotes.map(createNoteEvent));
+
+    calendar = new FullCalendar.Calendar(calEl, {{
       initialView: 'dayGridMonth',
       height: 680,
       editable: true,
@@ -1105,14 +1241,41 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
         var ev = arg.event.extendedProps || {{}};
         var node = document.createElement('div');
         node.className = 'fc-maint-pill';
-        node.innerHTML = '<strong>' + (ev.tail || '') + '</strong><span>' + (ev.intervalLabel || '') + '</span>';
+        if (ev.isCustomNote) {{
+          node.innerHTML = '<strong>NOTE</strong><span>' + escHtml(arg.event.title || ev.intervalLabel || '') + '</span>';
+        }} else {{
+          node.innerHTML = '<strong>' + escHtml(ev.tail || '') + '</strong><span>' + escHtml(ev.intervalLabel || '') + '</span>';
+        }}
         return {{ domNodes: [node] }};
       }},
       eventMouseEnter: function(info) {{ showHover(info.event.extendedProps || {{}}, info.jsEvent); }},
       eventMouseLeave: function() {{ removeHover(); }},
       eventDragStart: function() {{ removeHover(); }},
+      eventClick: function(info) {{
+        var props = info.event.extendedProps || {{}};
+        if (!props.isCustomNote) return;
+        info.jsEvent.preventDefault();
+        var note = customNotes.find(function(item) {{ return item.id === props.noteId; }});
+        if (!note) return;
+        var nextTitle = window.prompt('Edit note text:', note.title || '');
+        if (nextTitle === null) return;
+        var cleaned = String(nextTitle || '').trim();
+        if (!cleaned) return;
+        note.title = cleaned.slice(0, 60);
+        saveCustomNotes();
+        info.event.setProp('title', note.title);
+        info.event.setExtendedProp('intervalLabel', note.title);
+      }},
       eventDrop: function(info) {{
         var props = info.event.extendedProps || {{}};
+        if (props.isCustomNote) {{
+          var note = customNotes.find(function(item) {{ return item.id === props.noteId; }});
+          if (note) {{
+            note.start = info.event.startStr;
+            saveCustomNotes();
+          }}
+          return;
+        }}
         props.dueDate = info.event.startStr;
         renderInspectionList();
       }}
@@ -1121,6 +1284,26 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
     calendar.render();
     window.addEventListener('fleet:calendar:shown', function() {{ calendar.updateSize(); }});
     document.addEventListener('mousemove', moveHover);
+
+    if (noteDateEl) noteDateEl.value = new Date().toISOString().slice(0, 10);
+    if (noteAddEl) {{
+      noteAddEl.addEventListener('click', function() {{
+        var dateVal = parseDateValue(noteDateEl && noteDateEl.value);
+        var textVal = String(noteTextEl && noteTextEl.value || '').trim();
+        var colorVal = String(noteColorEl && noteColorEl.value || '#fdd835').trim();
+        if (!dateVal || !textVal) return;
+        if (!/^#[0-9a-fA-F]{{6}}$/.test(colorVal)) colorVal = '#fdd835';
+        customNotes.push({{
+          id: 'note-' + Date.now() + '-' + Math.floor(Math.random() * 10000),
+          start: dateVal,
+          title: textVal.slice(0, 60),
+          color: colorVal,
+        }});
+        saveCustomNotes();
+        refreshCustomEvents();
+        noteTextEl.value = '';
+      }});
+    }}
   }}
 
   renderInspectionList();
