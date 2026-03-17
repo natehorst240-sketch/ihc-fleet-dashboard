@@ -1175,7 +1175,7 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
       eventClick: function(info) {{
         var ev = info.event.extendedProps || {{}};
         if (ev.type !== 'note') return;
-        var action = prompt('Note: "' + (ev.noteText || '') + '"\n\nEnter new text to edit, or type DELETE to remove:');
+        var action = prompt('Note: "' + (ev.noteText || '') + '"\\n\\nEnter new text to edit, or type DELETE to remove:');
         if (action === null) return;
         if (action.trim().toUpperCase() === 'DELETE') {{
           info.event.remove();
