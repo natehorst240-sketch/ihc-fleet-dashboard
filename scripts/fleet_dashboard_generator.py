@@ -905,6 +905,18 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
   font-family: 'Share Tech Mono', monospace;
   font-size: 10px;
 }}
+.fc-note-pill {{
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  cursor: pointer;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}}
 .fc-maint-hover {{
   position: fixed;
   z-index: 9999;
@@ -944,7 +956,7 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
   margin-bottom: 8px;
   font-family: 'Share Tech Mono', monospace;
   font-size: 10px;
-  color: #4a5568;
+  color: #8fa2b8;
 }}
 #estimated-inspection-panel {{
   border: 1px solid var(--border);
@@ -976,7 +988,7 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
 
 <div id="cal-shell">
   <div id="calendar-wrap">
-    <div class="fc-edit-note">Drag and drop pills to adjust projected dates (local view only).</div>
+    <div class="fc-edit-note">Drag and drop pills to adjust projected dates · Click a date to add a custom note (local view only).</div>
     <div id="maint-calendar"></div>
   </div>
   <div id="estimated-inspection-panel">
@@ -1069,9 +1081,38 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
     hoverEl.style.top = y + 'px';
   }}
 
+  var NOTE_STORE = 'fleet-cal-notes';
+
+  function saveNotes(cal) {{
+    var notes = cal.getEvents()
+      .filter(function(e) {{ return (e.extendedProps || {{}}).type === 'note'; }})
+      .map(function(e) {{
+        return {{ id: e.id, title: e.title, start: e.startStr, noteText: (e.extendedProps || {{}}).noteText || '' }};
+      }});
+    try {{ localStorage.setItem(NOTE_STORE, JSON.stringify(notes)); }} catch(ex) {{}}
+  }}
+
+  function loadNoteEvents() {{
+    try {{
+      var stored = localStorage.getItem(NOTE_STORE);
+      if (!stored) return [];
+      return JSON.parse(stored).map(function(n) {{
+        return {{
+          id: n.id,
+          title: n.title,
+          start: n.start,
+          allDay: true,
+          backgroundColor: '#1e3a4a',
+          borderColor: '#4a9eca',
+          extendedProps: {{ type: 'note', noteText: n.noteText }}
+        }};
+      }});
+    }} catch(ex) {{ return []; }}
+  }}
+
   function renderCalendar() {{
     if (!calEl || !window.FullCalendar) return;
-    var events = MAINT.map(function(ev, idx) {{
+    var maintEvents = MAINT.map(function(ev, idx) {{
       var durationDays = Math.max(1, Number(ev.durationDays) || 1);
       var endDate = null;
       if (durationDays > 1) {{
@@ -1092,6 +1133,7 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
         extendedProps: ev
       }};
     }});
+    var events = maintEvents.concat(loadNoteEvents());
 
     var calendar = new FullCalendar.Calendar(calEl, {{
       initialView: 'dayGridMonth',
@@ -1104,17 +1146,60 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
       eventContent: function(arg) {{
         var ev = arg.event.extendedProps || {{}};
         var node = document.createElement('div');
-        node.className = 'fc-maint-pill';
-        node.innerHTML = '<strong>' + (ev.tail || '') + '</strong><span>' + (ev.intervalLabel || '') + '</span>';
+        if (ev.type === 'note') {{
+          node.className = 'fc-note-pill';
+          node.title = ev.noteText || '';
+          node.innerHTML = '&#9998; <span>' + (ev.noteText || 'Note') + '</span>';
+        }} else {{
+          node.className = 'fc-maint-pill';
+          node.innerHTML = '<strong>' + (ev.tail || '') + '</strong><span>' + (ev.intervalLabel || '') + '</span>';
+        }}
         return {{ domNodes: [node] }};
       }},
-      eventMouseEnter: function(info) {{ showHover(info.event.extendedProps || {{}}, info.jsEvent); }},
+      dateClick: function(info) {{
+        var text = prompt('Add note for ' + info.dateStr + ':');
+        if (text && text.trim()) {{
+          var noteId = 'note-' + Date.now();
+          calendar.addEvent({{
+            id: noteId,
+            title: text.trim(),
+            start: info.dateStr,
+            allDay: true,
+            backgroundColor: '#1e3a4a',
+            borderColor: '#4a9eca',
+            extendedProps: {{ type: 'note', noteText: text.trim() }}
+          }});
+          saveNotes(calendar);
+        }}
+      }},
+      eventClick: function(info) {{
+        var ev = info.event.extendedProps || {{}};
+        if (ev.type !== 'note') return;
+        var action = prompt('Note: "' + (ev.noteText || '') + '"\n\nEnter new text to edit, or type DELETE to remove:');
+        if (action === null) return;
+        if (action.trim().toUpperCase() === 'DELETE') {{
+          info.event.remove();
+          saveNotes(calendar);
+        }} else if (action.trim()) {{
+          info.event.setExtendedProp('noteText', action.trim());
+          info.event.setProp('title', action.trim());
+          saveNotes(calendar);
+        }}
+      }},
+      eventMouseEnter: function(info) {{
+        if ((info.event.extendedProps || {{}}).type === 'note') return;
+        showHover(info.event.extendedProps || {{}}, info.jsEvent);
+      }},
       eventMouseLeave: function() {{ removeHover(); }},
       eventDragStart: function() {{ removeHover(); }},
       eventDrop: function(info) {{
         var props = info.event.extendedProps || {{}};
-        props.dueDate = info.event.startStr;
-        renderInspectionList();
+        if (props.type === 'note') {{
+          saveNotes(calendar);
+        }} else {{
+          props.dueDate = info.event.startStr;
+          renderInspectionList();
+        }}
       }}
     }});
 
