@@ -144,6 +144,12 @@ the Actions pipeline rebuilds and redeploys automatically.
 `Due-List_BIG_WEEKLY_aw109sp.csv` in the repo. If your export bot commits that file to
 `main`, the push trigger will also rebuild immediately.
 
+Both scheduled workflows now also refresh `data/aog_status.json` before rebuilding.
+Set these repository secrets to enable the AOG sync:
+
+- `AOG_STATUS_URL`: HTTPS endpoint returning active/history AOG JSON.
+- `AOG_STATUS_TOKEN` (optional): Bearer token for authenticated endpoints.
+
 Or via the command line:
 
 ```bash
