@@ -17,6 +17,8 @@ jobs:
       TROOTRAX_PASS: ${{ secrets.TROOTRAX_PASS }}
       TROOTRAX_CUSTOMER_ID: ${{ secrets.TROOTRAX_CUSTOMER_ID }}
       GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+      AOG_STATUS_URL: ${{ secrets.AOG_STATUS_URL }}
+      AOG_STATUS_TOKEN: ${{ secrets.AOG_STATUS_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
@@ -28,6 +30,8 @@ jobs:
       - name: Refresh aircraft locations (Trootrax)
         if: ${{ env.TROOTRAX_USER != '' && env.TROOTRAX_PASS != '' }}
         run: python scripts/trootrax.py
+      - name: Refresh AOG status feed
+        run: python scripts/update_aog_status.py
       - name: Build dashboard
         run: python scripts/fleet_dashboard_generator.py
       - name: Commit output
@@ -37,5 +41,6 @@ jobs:
           git add data/index.html data/flight_hours_history.json data/dashboard_version.json
           [ -f data/base_assignments.json ] && git add data/base_assignments.json
           [ -f data/aircraft_locations.json ] && git add data/aircraft_locations.json
+          [ -f data/aog_status.json ] && git add data/aog_status.json
           git diff --staged --quiet || git commit -m "ci: rebuild dashboard"
           git push
