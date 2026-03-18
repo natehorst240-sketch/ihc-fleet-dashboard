@@ -64375,7 +64375,7 @@ RII</td>
 <div class="location-wrap">
   <div class="location-map-col">
     <div id="location-map"></div>
-    <div class="location-map-note">&#x1F7E2; airborne (&gt;40 kts) &middot; &#x1F535; stationary &middot; icon rotates to heading</div>
+    <div class="location-map-note">&#x1F7E2; airborne (&gt;40 kts) &middot; &#x1F535; stationary &middot; icon rotates to heading &middot; <a onclick="window._clearGmapsKey()">Change key</a></div>
   </div>
   <div class="location-cards-col">
     <div id="location-grid" class="location-grid"></div>
@@ -64385,7 +64385,7 @@ RII</td>
 (function() {
   var AC_HRS = {"N251HC": "6,076.1", "N261HC": "6,087.1", "N271HC": "6,979.8", "N281HC": "6,519.9", "N291HC": "5,901.2", "N431HC": "2,013.7", "N531HC": "3,338.4", "N631HC": "1,847.5", "N731HC": "20.6"};
   var TRACKED_TAILS = new Set(["N251HC", "N261HC", "N271HC", "N281HC", "N291HC", "N431HC", "N531HC", "N631HC", "N731HC"]);
-  var HAS_BUILD_KEY = true;
+  var HAS_BUILD_KEY = false;
   var GMAPS_LS_KEY = 'ihc_gmaps_key';
 
   function esc(t) { return String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -64566,8 +64566,7 @@ RII</td>
   setInterval(refresh, 60000);
 })();
 </script>
-<script>window.__gmapsReady=function(){window.initLocationMap();};</script>
-<script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBxxiqmqpmNFUCnefZZBOeKHpSF6whcHt0&callback=__gmapsReady&loading=async&libraries=marker"></script>
+
   </div>
   <div id="tab-aog" class="tab-content">
     <div id="aog-root"></div>
@@ -64580,7 +64579,7 @@ RII</td>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 <script>
-  const DASHBOARD_VERSION = "20260318110901";
+  const DASHBOARD_VERSION = "20260318110931";
 
   // Auto-reload when a newer build is deployed
   (function() {
