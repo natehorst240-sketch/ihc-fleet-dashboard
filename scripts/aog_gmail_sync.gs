@@ -3,7 +3,7 @@
 //
 // Script Properties required (Project Settings → Script Properties):
 //   GITHUB_TOKEN  — Fine-grained PAT with Contents: Read & Write on this repo only
-//   GITHUB_REPO   — e.g. "natehull/ihc-fleet-dashboard"
+//   GITHUB_REPO   — e.g. "natehorst240-sketchl/ihc-fleet-dashboard"
 //   GITHUB_BRANCH — e.g. "main"
 
 const GMAIL_QUERY = 'from:(veryon) subject:"New Discrepancy Reported" newer_than:60d';
