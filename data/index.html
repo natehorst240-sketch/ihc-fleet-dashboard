@@ -131,7 +131,7 @@
   </div>
   <div class="header-meta">
     <div class="date">REPORT DATE: 18 MAR 2026</div>
-    <div>FLEET: 9 AIRCRAFT &nbsp;|&nbsp; 0 AIRBORNE &nbsp;|&nbsp; 5 AT BASE &nbsp;|&nbsp; GENERATED: 18 MAR 2026 11:57</div>
+    <div>FLEET: 9 AIRCRAFT &nbsp;|&nbsp; 0 AIRBORNE &nbsp;|&nbsp; 5 AT BASE &nbsp;|&nbsp; GENERATED: 18 MAR 2026 13:06</div>
   </div>
 </header>
 <div class="legend">
@@ -64354,7 +64354,7 @@ RII</td>
 .location-wrap{display:flex;gap:12px;margin-top:10px;align-items:flex-start;}
 .location-map-col{flex:2;min-width:0;}
 .location-cards-col{flex:1;min-width:200px;max-height:520px;overflow-y:auto;}
-#location-map{width:100%;height:520px;border-radius:6px;border:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;}
+#location-map{width:100%;height:520px;border-radius:6px;border:1px solid var(--border);background:var(--surface);display:block;}
 .location-map-note{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:4px;opacity:.7;display:flex;align-items:center;gap:10px;}
 .location-map-note a{color:var(--muted);text-decoration:underline;cursor:pointer;}
 .location-grid{display:grid;grid-template-columns:1fr;gap:8px;}
@@ -64375,7 +64375,7 @@ RII</td>
 <div class="location-wrap">
   <div class="location-map-col">
     <div id="location-map"></div>
-    <div class="location-map-note">&#x1F7E2; airborne (&gt;40 kts) &middot; &#x1F535; stationary &middot; icon rotates to heading &middot; <a onclick="window._clearGmapsKey()">Change key</a></div>
+    <div class="location-map-note">&#x1F534; airborne (&gt;40 kts) &middot; &#x26AA; stationary &middot; icon rotates to heading &middot; <a onclick="window._clearGmapsKey()">Change key</a></div>
   </div>
   <div class="location-cards-col">
     <div id="location-grid" class="location-grid"></div>
@@ -64396,34 +64396,21 @@ RII</td>
 
   var _map = null, _markers = [], _infoWindow = null, _pendingPoints = null;
 
-  // Helicopter icon (svgrepo) rendered as <img> with data URI so Google Maps
-  // AdvancedMarkerElement cannot override the color via CSS cascade.
-  function makeHeliImg(color) {
-    var svg = '<svg fill="' + color + '" width="40" height="40" viewBox="0 -8 72 72"'
-      + ' xmlns="http://www.w3.org/2000/svg">'
-      + '<path d="M60.64,28.1a1.24,1.24,0,0,0-1.27-1.22l-14.89-.33c.61-.91,1.51-2.05,2.78-3.57,'
-      + '6.16-7.36,4.19-9.8,4.19-9.8s-2.28-2-9.91,3.84c-1.31,1-2.34,1.76-3.19,2.31l.3-14.09a1.19,'
-      + '1.19,0,1,0-2.38,0l-.34,15.33c-2,.44-3-1.25-7.33-3.31,0,0-2.34.91-2.86,2.77a39.41,39.41,'
-      + '0,0,1,3.39,6.24l-14.5-.31a1.2,1.2,0,1,0-.05,2.39l14.6.31a1.28,1.28,0,0,0,.35.59L19.84,'
-      + '41.61l-4.57-3.24.54-1.25S12,39.7,11.5,41.34l-.14,2,1.37-.48.41-1.31L16,45.91s-.79.9-.24,'
-      + '1.47,1.55-.1,1.55-.1l4.35,3.1-1.32.35-.54,1.35,2,0c1.65-.39,4.4-4.13,4.4-4.13l-1.28.49'
-      + '-3-4.71,12.81-9.15a1.31,1.31,0,0,0,1,.45l-.32,15a1.19,1.19,0,1,0,2.38,0L38,35.23a42.17,'
-      + '42.17,0,0,1,5.67,3.47c1.88-.44,2.87-2.75,2.87-2.75-1.71-4.1-3.24-5.34-3.09-7l15.87.34A1.25,'
-      + '1.25,0,0,0,60.64,28.1Z"/>'
-      + '</svg>';
-    var img = document.createElement('img');
-    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
-    img.width = 40;
-    img.height = 40;
-    img.style.display = 'block';
-    return img;
-  }
+  // Helicopter top-view SVG — 48px, nose points UP (north when heading=0)
+  // White stroke outline keeps icon readable over any map tile colour
+  var HELI_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="-24 -24 48 48">'
+    + '<rect x="-21" y="-8" width="42" height="4.5" rx="2.25" fill="currentColor" opacity="0.82" stroke="white" stroke-width="0.9"/>'
+    + '<ellipse cx="0" cy="-6" rx="6" ry="11" fill="currentColor" stroke="white" stroke-width="1.5"/>'
+    + '<rect x="-2" y="5" width="4" height="12" rx="2" fill="currentColor" stroke="white" stroke-width="1"/>'
+    + '<rect x="-10" y="15" width="20" height="4" rx="2" fill="currentColor" opacity="0.82" stroke="white" stroke-width="0.9"/>'
+    + '<ellipse cx="0" cy="-13" rx="3" ry="3.5" fill="white" opacity="0.5"/>'
+    + '</svg>';
 
   window.initLocationMap = function() {
     var mapEl = document.getElementById('location-map');
     if (!mapEl) return;
     mapEl.innerHTML = '';
-    mapEl.style.display = '';
+    mapEl.style.cssText = ''; // clear prompt's inline flex, fall back to CSS display:block
     _map = new google.maps.Map(mapEl, {
       zoom: 7, center: {lat: 39.3, lng: -111.9}, mapId: 'DEMO_MAP_ID',
       mapTypeId: 'terrain', streetViewControl: false, fullscreenControl: true
@@ -64440,27 +64427,19 @@ RII</td>
     var lats = [], lngs = [];
     points.forEach(function(p) {
       var el = document.createElement('div');
-      el.style.display = 'flex';
-      el.style.flexDirection = 'column';
-      el.style.alignItems = 'center';
+      el.innerHTML = HELI_SVG;
+      el.style.color = p.state === 'AIRBORNE' ? '#dc2626' : '#94a3b8';
+      el.style.transform = 'rotate(' + (p.heading || 0) + 'deg)';
       el.style.cursor = 'pointer';
-      var svgWrap = document.createElement('div');
-      svgWrap.appendChild(makeHeliImg('#ef4444'));
-      svgWrap.style.transform = 'rotate(' + (p.heading || 0) + 'deg)';
-      var label = document.createElement('div');
-      label.textContent = p.tail || '';
-      label.style.cssText = 'margin-top:3px;font-family:monospace;font-size:10px;font-weight:700;'
-        + 'color:#fff;background:rgba(0,0,0,0.65);padding:1px 5px;border-radius:3px;white-space:nowrap;';
-      el.appendChild(svgWrap);
-      el.appendChild(label);
+      el.style.filter = 'drop-shadow(0 1px 3px rgba(0,0,0,0.55))';
       var marker = new google.maps.marker.AdvancedMarkerElement({
         map: _map, position: {lat: p.position.lat, lng: p.position.lng}, content: el, title: p.tail
       });
       (function(mk, pt) {
         mk.addListener('click', function() {
           _infoWindow.setContent(
-            '<div style="font-family:monospace;font-size:12px;line-height:1.6;color:#000000;">'
-            + '<b style="font-size:14px;color:#000000;">' + esc(pt.tail) + '</b><br>'
+            '<div style="font-family:monospace;font-size:12px;line-height:1.6;">'
+            + '<b style="font-size:14px;">' + esc(pt.tail) + '</b><br>'
             + 'State: ' + esc(pt.state || 'UNKNOWN') + '<br>'
             + 'Speed: ' + esc(String(pt.speed_kts || 0)) + ' kts<br>'
             + 'Heading: ' + esc(String(pt.heading || 0)) + '&deg;<br>'
@@ -64482,7 +64461,7 @@ RII</td>
 
   function loadMapsScript(key) {
     var mapEl = document.getElementById('location-map');
-    if (mapEl) { mapEl.innerHTML = ''; mapEl.style.display = ''; }
+    if (mapEl) { mapEl.innerHTML = ''; mapEl.style.cssText = ''; }
     window.__gmapsReady = function() { window.initLocationMap(); };
     var s = document.createElement('script');
     s.async = true;
@@ -64495,6 +64474,7 @@ RII</td>
   function showKeyPrompt(errMsg) {
     var mapEl = document.getElementById('location-map');
     if (!mapEl) return;
+    mapEl.style.cssText = 'display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;';
     mapEl.innerHTML =
       '<div style="font-family:var(--mono);font-size:13px;color:var(--heading);margin-bottom:2px;">&#x1F5FA; Google Maps API Key</div>'
       + '<div style="font-family:var(--mono);font-size:10px;color:var(--muted);max-width:340px;text-align:center;line-height:1.5;">'
@@ -64539,7 +64519,7 @@ RII</td>
     points.sort(function(a,b){ return a.tail.localeCompare(b.tail); });
     wrap.innerHTML = points.map(function(p) {
       var dot = '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:'
-        + (p.state === 'AIRBORNE' ? '#4ade80' : '#60a5fa') + ';margin-right:4px;vertical-align:middle;"></span>';
+        + (p.state === 'AIRBORNE' ? '#dc2626' : '#94a3b8') + ';margin-right:4px;vertical-align:middle;"></span>';
       return '<div class="location-card"><div class="location-card-head"><div class="location-card-tail">'+dot+esc(p.tail)+
         '</div><div class="location-card-state">'+esc(p.state || 'UNKNOWN')+
         '</div></div><div class="location-card-row">'+esc((p.position.lat||0).toFixed(4))+', '+esc((p.position.lng||0).toFixed(4))+
@@ -64603,7 +64583,7 @@ RII</td>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 <script>
-  const DASHBOARD_VERSION = "20260318115724";
+  const DASHBOARD_VERSION = "20260318130605";
 
   // Auto-reload when a newer build is deployed
   (function() {
