@@ -64,7 +64,7 @@ new CSV and the dashboard rebuilds itself — no server required.
 | **Maintenance Due List** | All phase inspections (50 hr – 3 200 hr). Color-coded: green / amber / red / overdue. Filterable table + 200 hr bar chart. |
 | **Components** | Per-aircraft component tracking with remaining hours and retirement flags. |
 | **Flight Hours** | Daily, 7-day, and 30-day utilization averages. Per-aircraft trend charts powered by Chart.js. |
-| **Calendar** | FullCalendar view of upcoming and overdue maintenance events, color-coded by inspection interval. |
+| **Calendar** | Interactive FullCalendar projection of estimated inspection dates with editable event pills, hover detail cards, and a synchronized estimated inspection list. |
 | **Base Location** | AT BASE / AIRBORNE / AWAY status based on GPS distance from assigned base. |
 | **Component Changes** | Monthly breakdown of installed/removed parts from the Component Change Report. |
 
@@ -143,6 +143,12 @@ the Actions pipeline rebuilds and redeploys automatically.
 `build_dashboard.yml` runs every 6 hours and rebuilds from the latest committed
 `Due-List_BIG_WEEKLY_aw109sp.csv` in the repo. If your export bot commits that file to
 `main`, the push trigger will also rebuild immediately.
+
+Both scheduled workflows now also refresh `data/aog_status.json` before rebuilding.
+Set these repository secrets to enable the AOG sync:
+
+- `AOG_STATUS_URL`: HTTPS endpoint returning active/history AOG JSON.
+- `AOG_STATUS_TOKEN` (optional): Bearer token for authenticated endpoints.
 
 Or via the command line:
 

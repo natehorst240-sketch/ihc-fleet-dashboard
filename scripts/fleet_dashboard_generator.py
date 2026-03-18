@@ -779,43 +779,32 @@ from datetime import datetime, timedelta, date
 def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
     today_dt  = datetime.today()
     today     = today_dt.date()
-    today_str = today_dt.strftime('%Y-%m-%d')
 
     if interval_cfg:
-        INTERVAL_COLOR        = {_interval_key(iv): iv.get('color', '#4a5568') for iv in interval_cfg}
-        INTERVAL_DURATION_DAYS = {_interval_key(iv): iv.get('calendar_duration_days', 1) for iv in interval_cfg}
-        # Labels for calendar legend
+        INTERVAL_COLOR = {_interval_key(iv): iv.get('color', '#4a5568') for iv in interval_cfg}
         INTERVAL_LABEL = {_interval_key(iv): iv.get('label', str(_interval_key(iv))) for iv in interval_cfg}
+        INTERVAL_DURATION_DAYS = {_interval_key(iv): max(1, int(iv.get('calendar_duration_days', 1) or 1)) for iv in interval_cfg}
     else:
-        # Each inspection interval has a fixed color — permanent, not urgency-based
         INTERVAL_COLOR = {
-            50:   '#00897b',   # teal
-            100:  '#1e88e5',   # blue
-            200:  '#8e24aa',   # purple
-            400:  '#e53935',   # red
-            800:  '#fb8c00',   # orange
-            2400: '#43a047',   # green
-            3200: '#6d4c41',   # brown
+            50:   '#00897b',
+            100:  '#1e88e5',
+            200:  '#8e24aa',
+            400:  '#e53935',
+            800:  '#fb8c00',
+            2400: '#43a047',
+            3200: '#6d4c41',
         }
-        # Planned maintenance downtime shown on calendar (in days)
+        INTERVAL_LABEL = {k: f"{k} HR" for k in INTERVAL_COLOR}
         INTERVAL_DURATION_DAYS = {
             50: 1,
             100: 1,
             200: 3,
             400: 4,
             800: 4,
+            2400: 7,
             3200: 21,
         }
-        INTERVAL_LABEL = {k: f"{k}h" for k in INTERVAL_COLOR}
 
-    URGENCY_LABEL = {
-        'overdue': 'OVERDUE',
-        'urgent':  'DUE ≤30 DAYS',
-        'soon':    'DUE ≤90 DAYS',
-        'ok':      'SCHEDULED >90 DAYS',
-    }
-
-    # ── Build spanning events ─────────────────────────────────────────────────
     maint_events = []
     for ac in aircraft_list:
         tail = ac['tail']
@@ -834,276 +823,149 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
             if rem_hrs is None and rem_days is None:
                 continue
 
-            color = INTERVAL_COLOR.get(interval, '#4a5568')
-
             if rem_hrs is not None and rem_hrs < 0:
-                due       = today
-                due_str   = due.isoformat()
-                days_long = INTERVAL_DURATION_DAYS.get(interval, 1)
-                bar_start = due
-                bar_end   = due + timedelta(days=days_long)
-                urgency   = 'overdue'
+                due = today
                 rem_label = f'{abs(rem_hrs):.1f} hrs PAST LIMIT'
             elif rem_days is not None:
-                days_away = rem_days
-                due       = today + timedelta(days=int(days_away))
-                due_str   = due.isoformat()
-                urgency   = ('overdue' if days_away < 0 else
-                             'urgent'  if days_away <= 30 else
-                             'soon'    if days_away <= 90 else 'ok')
-                rem_label = (f'{abs(days_away):.0f} days PAST LIMIT'
-                             if days_away < 0 else
-                             f'~{days_away:.0f} days remaining')
-
-                days_long = INTERVAL_DURATION_DAYS.get(interval, 1)
-                bar_start = due
-                bar_end   = due + timedelta(days=days_long)
+                due = today + timedelta(days=int(rem_days))
+                rem_label = (f'{abs(rem_days):.0f} days PAST LIMIT' if rem_days < 0 else f'~{rem_days:.0f} days remaining')
             else:
                 days_away = rem_hrs / avg_daily
-                due       = today + timedelta(days=int(days_away))
-                due_str   = due.isoformat()
-                urgency   = ('urgent' if days_away <= 30 else
-                             'soon'   if days_away <= 90 else 'ok')
+                due = today + timedelta(days=int(days_away))
                 rem_label = f'{rem_hrs:.1f} hrs remaining (~{int(days_away)} days)'
 
-                days_long = INTERVAL_DURATION_DAYS.get(interval, 1)
-                bar_start = due
-                bar_end   = due + timedelta(days=days_long)
-
-            iv_label = INTERVAL_LABEL.get(interval, f'{interval}h')
             maint_events.append({
-                'id':              f'maint_{tail}_{interval}',
-                'title':           f'{tail}  {iv_label}',
-                'start':           bar_start.isoformat(),
-                'end':             bar_end.isoformat(),
-                'allDay':          True,
-                'backgroundColor': color,
-                'borderColor':     color,
-                'textColor':       '#fff',
-                'extendedProps': {
-                    'type':         'maintenance',
-                    'tail':         tail,
-                    'interval':     interval,
-                    'urgency':      urgency,
-                    'urgencyLabel': URGENCY_LABEL[urgency],
-                    'remHrs':       rem_hrs,
-                    'remLabel':     rem_label,
-                    'dueDate':      due_str,
-                    'color':        color,
-                },
+                'tail': tail,
+                'interval': interval,
+                'intervalLabel': INTERVAL_LABEL.get(interval, f'{interval} HR'),
+                'dueDate': due.isoformat(),
+                'durationDays': INTERVAL_DURATION_DAYS.get(interval, 1),
+                'remLabel': rem_label,
+                'color': INTERVAL_COLOR.get(interval, '#4a5568'),
             })
 
-    events_json    = json.dumps(maint_events)
-    interval_colors = json.dumps(INTERVAL_COLOR)
+    events_json = json.dumps(maint_events)
+
+    legend_items = []
+    for key in sorted(INTERVAL_COLOR.keys(), key=lambda x: (isinstance(x, str), x)):
+        legend_items.append(
+            f'<span class="cal-leg-item"><span class="cal-leg-bar" style="background:{INTERVAL_COLOR[key]}"></span>{INTERVAL_LABEL.get(key, str(key))}</span>'
+        )
+    legend_html = ''.join(legend_items)
 
     return f"""
 <style>
 #cal-shell {{
-  display: flex;
-  gap: 0;
+  display: grid;
+  grid-template-columns: 1.8fr 1fr;
+  gap: 12px;
+  align-items: start;
+}}
+@media (max-width: 1100px) {{
+  #cal-shell {{ grid-template-columns: 1fr; }}
+}}
+#calendar-wrap {{
   border: 1px solid var(--border);
-  border-radius: 4px;
-  overflow: hidden;
+  border-radius: 6px;
   background: var(--surface);
-  height: 720px;
+  min-height: 720px;
+  padding: 12px;
 }}
-#fc-wrap {{
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  --fc-border-color:               #1e2530;
-  --fc-button-bg-color:            transparent;
-  --fc-button-border-color:        #1e2530;
-  --fc-button-text-color:          #a0aec0;
-  --fc-button-hover-bg-color:      rgba(41,182,246,0.15);
-  --fc-button-hover-border-color:  #29b6f6;
-  --fc-button-hover-text-color:    #29b6f6;
-  --fc-button-active-bg-color:     rgba(41,182,246,0.2);
-  --fc-button-active-border-color: #29b6f6;
-  --fc-button-active-text-color:   #29b6f6;
-  --fc-today-bg-color:             rgba(41,182,246,0.06);
-  --fc-page-bg-color:              var(--surface);
-  --fc-neutral-bg-color:           var(--surface2);
-  --fc-more-link-text-color:       #29b6f6;
-  --fc-popover-bg-color:           #0d1117;
-  --fc-popover-border-color:       #29b6f6;
+#maint-calendar {{
+  min-height: 680px;
 }}
-#fc-wrap .fc {{
-  height: 100%;
-  font-family: 'Barlow', sans-serif;
-}}
-#fc-wrap .fc-toolbar.fc-header-toolbar {{
-  padding: 14px 16px 12px;
-  margin-bottom: 0 !important;
-  border-bottom: 1px solid var(--border);
-}}
-#fc-wrap .fc-toolbar-title {{
+.fc .fc-toolbar-title {{
   font-family: 'Barlow Condensed', sans-serif;
-  font-weight: 900; font-size: 20px;
-  letter-spacing: 3px; color: #e8edf2;
+  letter-spacing: 1.2px;
+  font-size: 24px;
+}}
+.fc .fc-button {{
+  background: #1e88e5;
+  border-color: #1e88e5;
   text-transform: uppercase;
-}}
-#fc-wrap .fc-button {{
-  font-family: 'Barlow Condensed', sans-serif;
-  font-weight: 700; font-size: 11px;
-  letter-spacing: 1.5px; text-transform: uppercase;
-  border-radius: 2px; padding: 5px 12px;
-  box-shadow: none !important;
-}}
-#fc-wrap .fc-button:focus {{ box-shadow: none !important; outline: none; }}
-#fc-wrap .fc-col-header-cell {{
-  background: var(--surface2);
-  border-color: var(--border) !important;
-  padding: 6px 0;
-}}
-#fc-wrap .fc-col-header-cell-cushion {{
-  font-family: 'Barlow Condensed', sans-serif;
-  font-weight: 700; font-size: 11px;
-  letter-spacing: 2px; color: #4a5568;
-  text-decoration: none; text-transform: uppercase;
-}}
-#fc-wrap .fc-daygrid-day {{
-  background: var(--surface);
-  border-color: #1e2530 !important;
-  cursor: pointer;
-}}
-#fc-wrap .fc-daygrid-day:hover {{ background: #0f1419; }}
-#fc-wrap .fc-day-today {{ background: rgba(41,182,246,0.05) !important; }}
-#fc-wrap .fc-daygrid-day.fc-day-selected {{
-  background: rgba(41,182,246,0.09) !important;
-  box-shadow: inset 0 0 0 1px #29b6f6;
-}}
-#fc-wrap .fc-daygrid-day-number {{
   font-family: 'Share Tech Mono', monospace;
-  font-size: 11px; color: #4a5568;
-  text-decoration: none; padding: 4px 6px;
+  font-size: 10px;
+  letter-spacing: 1px;
 }}
-#fc-wrap .fc-daygrid-day-top {{
-  position: relative;
-  min-height: 20px;
-  padding-right: 46px;
+.fc .fc-button:disabled {{
+  opacity: .55;
 }}
-#fc-wrap .fc-day-today .fc-daygrid-day-number {{
-  color: #29b6f6; font-weight: 700;
-}}
-#fc-wrap .fc-event {{
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 10px; font-weight: 700;
-  border-radius: 3px;
-  cursor: pointer;
-  padding: 1px 4px;
-  margin-top: 2px;
-  min-height: 16px;
+.fc .fc-daygrid-event {{
+  border-radius: 999px;
+  padding: 2px 8px;
   border: none !important;
 }}
-#fc-wrap .fc-event.fc-event-start {{ border-radius: 3px 0 0 3px; }}
-#fc-wrap .fc-event.fc-event-end   {{ border-radius: 0 3px 3px 0; }}
-#fc-wrap .fc-event.fc-event-start.fc-event-end {{ border-radius: 3px; }}
-#fc-wrap .fc-event:hover {{ filter: brightness(1.15); }}
-#fc-wrap .fc-daygrid-event-harness {{
-  margin-top: 0 !important;
+.fc .fc-daygrid-event-dot {{
+  display: none;
 }}
-#fc-wrap .fc-daygrid-day-events {{
-  margin: 0 2px;
-}}
-#fc-wrap .fc-more-link {{
+.fc-maint-pill {{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-family: 'Share Tech Mono', monospace;
-  font-size: 9px; color: #29b6f6; padding: 0; line-height: 1;
+  font-size: 10px;
 }}
-#fc-wrap .fc-popover {{
-  background: #0d1117 !important;
-  border: 1px solid #29b6f6 !important;
-  border-radius: 4px !important;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.6) !important;
+.fc-note-pill {{
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  cursor: pointer;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }}
-#fc-wrap .fc-popover-header {{
-  background: #111418 !important;
-  border-bottom: 1px solid #1e2530 !important;
-  padding: 8px 12px !important;
+.fc-maint-hover {{
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  background: #0f1720;
+  color: #e8edf2;
+  border: 1px solid #263445;
+  border-radius: 6px;
+  padding: 8px 10px;
+  min-width: 220px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
 }}
-#fc-wrap .fc-popover-title {{
-  font-family: 'Barlow Condensed', sans-serif !important;
-  font-size: 12px !important; letter-spacing: 2px !important;
-  color: #29b6f6 !important; text-transform: uppercase !important;
-}}
-#fc-wrap .fc-popover-close {{ color: #4a5568 !important; }}
-#fc-wrap .fc-popover-body {{ padding: 6px !important; }}
-#fc-wrap .fc-event.note-ev {{
-  background-color: rgba(255,171,0,0.2) !important;
-  border-left-color: #ffab00 !important;
-  color: #ffab00 !important;
-}}
-#fc-wrap .fc-scrollgrid {{ border-color: #1e2530; }}
-
-/* ── Right panel ─────────────────────────────────────────────────────────── */
-#cal-panel {{
-  width: 260px; flex-shrink: 0;
-  border-left: 1px solid var(--border);
-  display: flex; flex-direction: column;
-  overflow: hidden; background: var(--surface2);
-}}
-#cal-panel-date {{
-  padding: 14px 16px 10px;
-  border-bottom: 1px solid var(--border); flex-shrink: 0;
-}}
-#cal-panel-date-main {{
+.fc-hover-title {{
   font-family: 'Barlow Condensed', sans-serif;
-  font-weight: 900; font-size: 22px;
-  letter-spacing: 1px; color: #e8edf2;
+  font-size: 14px;
+  line-height: 1.2;
 }}
-#cal-panel-date-sub {{
+.fc-hover-sub {{
   font-family: 'Share Tech Mono', monospace;
-  font-size: 10px; color: #4a5568; letter-spacing: 1px; margin-top: 2px;
+  font-size: 10px;
+  color: #8fa2b8;
+  margin-top: 2px;
 }}
-#cal-panel-events {{
-  flex: 1; overflow-y: auto; padding: 8px 0;
+.fc-hover-chart {{
+  margin-top: 8px;
+  height: 8px;
+  width: 100%;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #1e2a38;
 }}
-.pan-ev-item {{
-  padding: 10px 16px;
-  border-bottom: 1px solid rgba(30,37,48,0.6);
-  cursor: default;
+.fc-hover-chart > span {{
+  display: block;
+  height: 100%;
 }}
-.pan-ev-item:last-child {{ border-bottom: none; }}
-.pan-ev-row {{ display: flex; gap: 10px; align-items: flex-start; }}
-.pan-ev-bar {{
-  width: 4px; height: 38px; border-radius: 2px; flex-shrink: 0; margin-top: 2px;
-}}
-.pan-ev-title {{
-  font-family: 'Barlow Condensed', sans-serif;
-  font-weight: 700; font-size: 15px;
-  letter-spacing: 0.5px; color: #e8edf2; line-height: 1.2;
-}}
-.pan-ev-sub {{
+.fc-edit-note {{
+  margin-bottom: 8px;
   font-family: 'Share Tech Mono', monospace;
-  font-size: 9px; color: #4a5568; margin-top: 4px; line-height: 1.6;
+  font-size: 10px;
+  color: #8fa2b8;
 }}
-.pan-ev-urgency {{
-  display: inline-block; font-family: 'Share Tech Mono', monospace;
-  font-size: 8px; font-weight: 700; letter-spacing: 1px;
-  padding: 1px 5px; border-radius: 2px; margin-top: 4px;
+#estimated-inspection-panel {{
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface2);
+  padding: 12px;
+  max-height: 720px;
+  overflow: auto;
 }}
-.pan-placeholder {{
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 10px; color: #2a3240;
-  letter-spacing: 1px; line-height: 2.4;
-  text-align: center; padding: 40px 20px;
-}}
-#cal-panel-footer {{
-  flex-shrink: 0; border-top: 1px solid var(--border); padding: 10px 12px;
-}}
-#btn-add-note {{
-  display: block; width: 100%;
-  background: transparent; border: 1px solid #1e2530;
-  color: #4a5568; border-radius: 2px; padding: 7px; cursor: pointer;
-  font-family: 'Barlow Condensed', sans-serif;
-  font-weight: 700; font-size: 11px;
-  letter-spacing: 2px; text-transform: uppercase; transition: all 0.15s;
-}}
-#btn-add-note:hover {{ border-color: #ffab00; color: #ffab00; }}
-
-/* ── Legend ──────────────────────────────────────────────────────────────── */
 .cal-legend {{
   display: flex; gap: 14px; flex-wrap: wrap;
   margin-bottom: 12px; align-items: center;
@@ -1111,320 +973,246 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
   font-size: 10px; color: #4a5568;
 }}
 .cal-leg-item {{ display: flex; align-items: center; gap: 6px; }}
-.cal-leg-bar {{
-  width: 28px; height: 8px; border-radius: 2px; flex-shrink: 0;
-}}
-
-/* ── Note modal ──────────────────────────────────────────────────────────── */
-#note-modal {{
-  display: none; position: fixed; inset: 0;
-  background: rgba(0,0,0,0.75); z-index: 9999;
-  align-items: center; justify-content: center;
-}}
-#note-modal-box {{
-  background: #0d1117; border: 1px solid #29b6f6;
-  border-radius: 6px; padding: 28px;
-  min-width: 320px; max-width: 460px; width: 90%;
-}}
-.nm-label {{
-  display: block; font-family: 'Share Tech Mono', monospace;
-  font-size: 10px; color: #4a5568; letter-spacing: 1px; margin-bottom: 4px;
-}}
-.nm-input, .nm-textarea {{
-  width: 100%; box-sizing: border-box;
-  background: #161c25; border: 1px solid #1e2530;
-  border-radius: 3px; color: #e8edf2; padding: 8px;
-  font-family: 'Share Tech Mono', monospace; font-size: 13px;
-  margin-bottom: 12px;
-}}
-.nm-textarea {{ font-size: 12px; resize: vertical; }}
-.nm-row {{ display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }}
-.nm-btn {{
-  padding: 7px 16px; border-radius: 3px; cursor: pointer;
-  font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
-  font-size: 12px; letter-spacing: 1px; text-transform: uppercase;
-}}
-.nm-save   {{ background: #29b6f6; border: none; color: #000; }}
-.nm-cancel {{ background: transparent; border: 1px solid #1e2530; color: #4a5568; }}
-.nm-clear  {{ background: transparent; border: 1px solid rgba(192,57,43,0.4); color: #c0392b; }}
+.cal-leg-bar {{ width: 28px; height: 8px; border-radius: 2px; flex-shrink: 0; }}
+.cal-date-group {{ border-top: 1px solid var(--border); padding: 10px 0; }}
+.cal-date-group:first-child {{ border-top: none; padding-top: 0; }}
+.cal-date-title {{ font-family: 'Barlow Condensed', sans-serif; font-size: 16px; color: #e8edf2; letter-spacing: .8px; }}
+.cal-date-sub {{ font-family: 'Share Tech Mono', monospace; font-size: 10px; color: #4a5568; margin-bottom: 6px; }}
+.cal-ev {{ border-left: 4px solid #4a5568; padding-left: 8px; margin-bottom: 7px; }}
+.cal-ev-title {{ font-family: 'Barlow Condensed', sans-serif; color: #e8edf2; font-size: 14px; }}
+.cal-ev-sub {{ font-family: 'Share Tech Mono', monospace; color: #4a5568; font-size: 10px; }}
 </style>
 
 <div class="section-label">PROJECTED MAINTENANCE CALENDAR</div>
-<div class="cal-legend">
-  <span class="cal-leg-item"><span class="cal-leg-bar" style="background:#00897b"></span>50 HR</span>
-  <span class="cal-leg-item"><span class="cal-leg-bar" style="background:#1e88e5"></span>100 HR</span>
-  <span class="cal-leg-item"><span class="cal-leg-bar" style="background:#8e24aa"></span>200 HR</span>
-  <span class="cal-leg-item"><span class="cal-leg-bar" style="background:#e53935"></span>400 HR</span>
-  <span class="cal-leg-item"><span class="cal-leg-bar" style="background:#fb8c00"></span>800 HR</span>
-  <span class="cal-leg-item"><span class="cal-leg-bar" style="background:#43a047"></span>2400 HR</span>
-  <span class="cal-leg-item"><span class="cal-leg-bar" style="background:#6d4c41"></span>3200 HR</span>
-  <span class="cal-leg-item"><span class="cal-leg-bar" style="background:rgba(255,171,0,0.4);border:1px solid #ffab00"></span>NOTE</span>
-</div>
+<div class="cal-legend">{legend_html}</div>
 
 <div id="cal-shell">
-  <div id="fc-wrap">
-    <div id="fc-calendar"></div>
+  <div id="calendar-wrap">
+    <div class="fc-edit-note">Drag and drop pills to adjust projected dates · Click a date to add a custom note (local view only).</div>
+    <div id="maint-calendar"></div>
   </div>
-  <div id="cal-panel">
-    <div id="cal-panel-date">
-      <div id="cal-panel-date-main">SELECT A DAY</div>
-      <div id="cal-panel-date-sub">CLICK ANY DATE TO VIEW</div>
-    </div>
-    <div id="cal-panel-events">
-      <div class="pan-placeholder" id="pan-placeholder">CLICK ANY DATE<br>TO SEE EVENTS</div>
-      <div id="pan-ev-list"></div>
-    </div>
-    <div id="cal-panel-footer">
-      <button id="btn-add-note">+ ADD NOTE</button>
-    </div>
+  <div id="estimated-inspection-panel">
+    <div class="section-label" style="margin-top:0;">Estimated Inspection Dates</div>
+    <div id="estimated-inspection-list"></div>
   </div>
 </div>
-
-<div id="note-modal">
-  <div id="note-modal-box" onclick="event.stopPropagation()">
-    <div style="font-size:10px;color:#29b6f6;letter-spacing:2px;margin-bottom:4px;font-family:'Share Tech Mono',monospace;">NOTE</div>
-    <div id="nm-date-lbl" style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:18px;color:#e8edf2;letter-spacing:1px;margin-bottom:18px;"></div>
-    <label class="nm-label" for="nm-label-inp">LABEL <span style="color:#2a3240">(shows on calendar)</span></label>
-    <input id="nm-label-inp" type="text" maxlength="40" class="nm-input" placeholder="e.g. 50 HR INSP BOOKED">
-    <label class="nm-label" for="nm-text-inp">NOTES</label>
-    <textarea id="nm-text-inp" rows="3" maxlength="400" class="nm-textarea" placeholder="Additional details..."></textarea>
-    <div class="nm-row">
-      <button class="nm-btn nm-clear"  id="nm-btn-clear">CLEAR</button>
-      <button class="nm-btn nm-cancel" id="nm-btn-cancel">CANCEL</button>
-      <button class="nm-btn nm-save"   id="nm-btn-save">SAVE</button>
-    </div>
-  </div>
-</div>
-
 <script>
 (function () {{
-  var NOTES_KEY = 'ihc_cal_notes_v5';
-  var activeDate = null;
-  var cal;
-
-  var INTERVAL_COLORS = {interval_colors};
-
-  var URGENCY_COLORS = {{
-    overdue: '#c0392b', urgent: '#e67e22', soon: '#f39c12', ok: '#2980b9'
-  }};
-
-  function loadNotes() {{
-    try {{ return JSON.parse(localStorage.getItem(NOTES_KEY) || '{{}}'); }}
-    catch (e) {{ return {{}}; }}
-  }}
-  function saveNotes(n) {{ localStorage.setItem(NOTES_KEY, JSON.stringify(n)); }}
-
   var MAINT = {events_json};
+  var calEl = document.getElementById('maint-calendar');
+  var listEl = document.getElementById('estimated-inspection-list');
+  var hoverEl = null;
 
-  function allNoteEvents() {{
-    return Object.entries(loadNotes()).map(function([dk, n]) {{
-      return {{
-        id: 'note_' + dk, title: 'NOTE: ' + (n.label || 'Note'),
-        start: dk, allDay: true, classNames: ['note-ev'],
-        extendedProps: {{ type: 'note', dateKey: dk, label: n.label||'', text: n.text||'' }},
-      }};
-    }});
+  function clamp(num, min, max) {{
+    return Math.max(min, Math.min(max, num));
   }}
 
-  var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  var DAYS   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-  function fmtDate(ds) {{
-    var d = new Date(ds + 'T00:00:00');
-    return DAYS[d.getDay()] + ', ' + MONTHS[d.getMonth()] + ' ' + d.getDate();
+  function getChartPct(remLabel) {{
+    var match = /(~?)(\d+(?:\.\d+)?)\s*days remaining/i.exec(remLabel || '');
+    if (!match) return 100;
+    var days = Number(match[2]);
+    if (!isFinite(days)) return 100;
+    return clamp((days / 30) * 100, 4, 100);
   }}
 
-  var panDateMain = document.getElementById('cal-panel-date-main');
-  var panDateSub  = document.getElementById('cal-panel-date-sub');
-  var panEvList   = document.getElementById('pan-ev-list');
-  var panPholder  = document.getElementById('pan-placeholder');
+  function fmtDate(dateStr) {{
+    var d = new Date(dateStr + 'T00:00:00');
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString('en-US', {{ weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }});
+  }}
 
-  function renderPanel(dateStr) {{
-    activeDate = dateStr;
-    panDateMain.textContent = fmtDate(dateStr);
-    panDateSub.textContent  = dateStr;
-    panPholder.style.display = 'none';
-
-    var dDate = new Date(dateStr + 'T00:00:00');
-    var evs = [];
-
-    MAINT.forEach(function(ev) {{
-      var s = new Date(ev.start + 'T00:00:00');
-      var e = new Date(ev.end   + 'T00:00:00');
-      if (dDate >= s && dDate < e) evs.push(ev);
-    }});
-
-    var notes = loadNotes();
-    if (notes[dateStr]) {{
-      var n = notes[dateStr];
-      evs.push({{
-        title: 'NOTE: ' + (n.label || 'Note'),
-        backgroundColor: 'rgba(255,171,0,0.3)',
-        extendedProps: {{ type:'note', text: n.text||'', label: n.label||'' }},
-      }});
-    }}
-
-    if (!evs.length) {{
-      panEvList.innerHTML =
-        '<div style="font-family:&quot;Share Tech Mono&quot;,monospace;font-size:10px;color:#2a3240;padding:20px 16px;letter-spacing:1px;">NO EVENTS</div>';
-      document.getElementById('btn-add-note').textContent = '+ ADD NOTE';
+  function renderInspectionList() {{
+    if (!listEl) return;
+    if (!Array.isArray(MAINT) || !MAINT.length) {{
+      listEl.innerHTML = '<div class="cal-date-sub">No estimated inspection dates available.</div>';
       return;
     }}
 
-    panEvList.innerHTML = evs.map(function(ev) {{
-      var ep    = ev.extendedProps || {{}};
-      var color = ev.backgroundColor || '#4a5568';
-      var title = ev.title || '';
-      var sub   = '';
-      var urgencyHtml = '';
+    MAINT.sort(function(a,b) {{
+      if (a.dueDate === b.dueDate) return String(a.tail).localeCompare(String(b.tail));
+      return String(a.dueDate).localeCompare(String(b.dueDate));
+    }});
 
-      if (ep.type === 'maintenance') {{
-        var uc = URGENCY_COLORS[ep.urgency] || '#4a5568';
-        sub = ep.remLabel || '';
-        urgencyHtml =
-          '<div class="pan-ev-urgency" style="background:' + uc + '22;' +
-          'color:' + uc + ';border:1px solid ' + uc + '44;">' +
-          ep.urgencyLabel + '</div>';
-      }} else {{
-        sub = ep.text || '';
-      }}
+    var byDate = MAINT.reduce(function(acc, ev) {{
+      var key = ev.dueDate || 'Unknown';
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(ev);
+      return acc;
+    }}, {{}});
 
-      return '<div class="pan-ev-item">' +
-        '<div class="pan-ev-row">' +
-          '<div class="pan-ev-bar" style="background:' + color + '"></div>' +
-          '<div>' +
-            '<div class="pan-ev-title">' + title + '</div>' +
-            (sub ? '<div class="pan-ev-sub">' + sub + '</div>' : '') +
-            urgencyHtml +
-          '</div>' +
-        '</div>' +
+    listEl.innerHTML = Object.keys(byDate).map(function(dateKey) {{
+      var evs = byDate[dateKey];
+      return '<div class="cal-date-group">' +
+        '<div class="cal-date-title">' + fmtDate(dateKey) + '</div>' +
+        '<div class="cal-date-sub">' + evs.length + ' projected event' + (evs.length === 1 ? '' : 's') + '</div>' +
+        evs.map(function(ev) {{
+          return '<div class="cal-ev" style="border-left-color:' + (ev.color || '#4a5568') + '">' +
+            '<div class="cal-ev-title">' + ev.tail + ' · ' + ev.intervalLabel + '</div>' +
+            '<div class="cal-ev-sub">' + (ev.remLabel || '') + '</div>' +
+          '</div>';
+        }}).join('') +
       '</div>';
     }}).join('');
-
-    document.getElementById('btn-add-note').textContent =
-      notes[dateStr] ? 'EDIT NOTE' : '+ ADD NOTE';
   }}
 
-  /* ── Modal ────────────────────────────────────────────────────────────── */
-  var noteModal  = document.getElementById('note-modal');
-  var nmDateLbl  = document.getElementById('nm-date-lbl');
-  var nmLabelInp = document.getElementById('nm-label-inp');
-  var nmTextInp  = document.getElementById('nm-text-inp');
-
-  function openModal(dk) {{
-    var n = loadNotes()[dk] || {{}};
-    nmDateLbl.textContent = fmtDate(dk) + ' — ' + dk;
-    nmLabelInp.value = n.label || '';
-    nmTextInp.value  = n.text  || '';
-    noteModal.style.display = 'flex';
-    setTimeout(function() {{ nmLabelInp.focus(); }}, 50);
-  }}
-  function closeModal() {{ noteModal.style.display = 'none'; }}
-
-  function saveModal() {{
-    var dk = activeDate;
-    var label = nmLabelInp.value.trim();
-    var text  = nmTextInp.value.trim();
-    var notes = loadNotes();
-    if (label || text) {{ notes[dk] = {{ label: label, text: text }}; }}
-    else {{ delete notes[dk]; }}
-    saveNotes(notes);
-    refreshNoteEvents();
-    if (activeDate) renderPanel(activeDate);
-    closeModal();
+  function removeHover() {{
+    if (hoverEl && hoverEl.parentNode) hoverEl.parentNode.removeChild(hoverEl);
+    hoverEl = null;
   }}
 
-  function clearNote() {{
-    if (!activeDate) return;
-    var notes = loadNotes();
-    delete notes[activeDate];
-    saveNotes(notes);
-    refreshNoteEvents();
-    renderPanel(activeDate);
-    closeModal();
+  function showHover(ev, e) {{
+    removeHover();
+    var pct = getChartPct(ev.remLabel);
+    hoverEl = document.createElement('div');
+    hoverEl.className = 'fc-maint-hover';
+    hoverEl.innerHTML =
+      '<div class="fc-hover-title">' + ev.tail + ' · ' + ev.intervalLabel + '</div>' +
+      '<div class="fc-hover-sub">' + (ev.remLabel || 'Projected maintenance event') + '</div>' +
+      '<div class="fc-hover-chart"><span style="width:' + pct + '%;background:' + (ev.color || '#4a5568') + ';"></span></div>';
+    document.body.appendChild(hoverEl);
+    moveHover(e);
   }}
 
-  document.getElementById('nm-btn-save').addEventListener('click', saveModal);
-  document.getElementById('nm-btn-cancel').addEventListener('click', closeModal);
-  document.getElementById('nm-btn-clear').addEventListener('click', clearNote);
-  document.getElementById('btn-add-note').addEventListener('click', function() {{
-    if (activeDate) openModal(activeDate);
-  }});
-  noteModal.addEventListener('click', function(e) {{ if (e.target===noteModal) closeModal(); }});
-  noteModal.addEventListener('keydown', function(e) {{
-    if (e.key==='Escape') {{ e.preventDefault(); closeModal(); }}
-    if ((e.ctrlKey||e.metaKey) && e.key==='Enter') {{ e.preventDefault(); saveModal(); }}
-  }});
-  nmLabelInp.addEventListener('keydown', function(e) {{
-    if (e.key==='Enter') {{ e.preventDefault(); nmTextInp.focus(); }}
-  }});
+  function moveHover(e) {{
+    if (!hoverEl || !e) return;
+    var x = e.clientX + 14;
+    var y = e.clientY + 14;
+    hoverEl.style.left = x + 'px';
+    hoverEl.style.top = y + 'px';
+  }}
 
-  function refreshNoteEvents() {{
-    if (!cal) return;
-    cal.getEvents().forEach(function(e) {{
-      if (e.id && e.id.startsWith('note_')) e.remove();
+  var NOTE_STORE = 'fleet-cal-notes';
+
+  function saveNotes(cal) {{
+    var notes = cal.getEvents()
+      .filter(function(e) {{ return (e.extendedProps || {{}}).type === 'note'; }})
+      .map(function(e) {{
+        return {{ id: e.id, title: e.title, start: e.startStr, noteText: (e.extendedProps || {{}}).noteText || '' }};
+      }});
+    try {{ localStorage.setItem(NOTE_STORE, JSON.stringify(notes)); }} catch(ex) {{}}
+  }}
+
+  function loadNoteEvents() {{
+    try {{
+      var stored = localStorage.getItem(NOTE_STORE);
+      if (!stored) return [];
+      return JSON.parse(stored).map(function(n) {{
+        return {{
+          id: n.id,
+          title: n.title,
+          start: n.start,
+          allDay: true,
+          backgroundColor: '#1e3a4a',
+          borderColor: '#4a9eca',
+          extendedProps: {{ type: 'note', noteText: n.noteText }}
+        }};
+      }});
+    }} catch(ex) {{ return []; }}
+  }}
+
+  function renderCalendar() {{
+    if (!calEl || !window.FullCalendar) return;
+    var maintEvents = MAINT.map(function(ev, idx) {{
+      var durationDays = Math.max(1, Number(ev.durationDays) || 1);
+      var endDate = null;
+      if (durationDays > 1) {{
+        var dueDate = new Date(ev.dueDate + 'T00:00:00');
+        if (!isNaN(dueDate.getTime())) {{
+          dueDate.setDate(dueDate.getDate() + durationDays);
+          endDate = dueDate.toISOString().slice(0, 10);
+        }}
+      }}
+      return {{
+        id: String(idx + 1),
+        title: ev.tail + ' ' + ev.intervalLabel,
+        start: ev.dueDate,
+        end: endDate,
+        allDay: true,
+        backgroundColor: ev.color,
+        borderColor: ev.color,
+        extendedProps: ev
+      }};
     }});
-    allNoteEvents().forEach(function(ev) {{ cal.addEvent(ev); }});
-  }}
-
-  /* ── FullCalendar ─────────────────────────────────────────────────────── */
-  function initCalendar() {{
-    if (typeof FullCalendar === 'undefined') {{ setTimeout(initCalendar, 150); return; }}
-
-    cal = new FullCalendar.Calendar(document.getElementById('fc-calendar'), {{
-      initialView:    'dayGridMonth',
-      initialDate:    '{today_str}',
-      height:         '100%',
-      firstDay:       0,
-      fixedWeekCount: false,
-      dayMaxEvents:   5,
-      moreLinkClick:  'popover',
-      headerToolbar: {{
-        left:   'prev,next today',
-        center: 'title',
-        right:  '',
+    var events = maintEvents.concat(loadNoteEvents());
+    
+    var calendar = new FullCalendar.Calendar(calEl, {{
+      initialView: 'dayGridMonth',
+      height: 680,
+      editable: true,
+      eventStartEditable: true,
+      dayMaxEvents: 4,
+      headerToolbar: {{ left: 'prev,next today', center: 'title', right: 'dayGridMonth,listMonth' }},
+      events: events,
+      eventContent: function(arg) {{
+        var ev = arg.event.extendedProps || {{}};
+        var node = document.createElement('div');
+        if (ev.type === 'note') {{
+          node.className = 'fc-note-pill';
+          node.title = ev.noteText || '';
+          node.innerHTML = '&#9998; <span>' + (ev.noteText || 'Note') + '</span>';
+        }} else {{
+          node.className = 'fc-maint-pill';
+          node.innerHTML = '<strong>' + (ev.tail || '') + '</strong><span>' + (ev.intervalLabel || '') + '</span>';
+        }}
+        return {{ domNodes: [node] }};
       }},
-      buttonText: {{ today: 'TODAY' }},
-      events: MAINT.concat(allNoteEvents()),
-
       dateClick: function(info) {{
-        document.querySelectorAll('.fc-day-selected').forEach(function(el) {{
-          el.classList.remove('fc-day-selected');
-        }});
-        var cell = document.querySelector(
-          '.fc-daygrid-day[data-date="' + info.dateStr + '"]'
-        );
-        if (cell) cell.classList.add('fc-day-selected');
-        renderPanel(info.dateStr);
+        var text = prompt('Add note for ' + info.dateStr + ':');
+        if (text && text.trim()) {{
+          var noteId = 'note-' + Date.now();
+          calendar.addEvent({{
+            id: noteId,
+            title: text.trim(),
+            start: info.dateStr,
+            allDay: true,
+            backgroundColor: '#1e3a4a',
+            borderColor: '#4a9eca',
+            extendedProps: {{ type: 'note', noteText: text.trim() }}
+          }});
+          saveNotes(calendar);
+        }}
       }},
-
       eventClick: function(info) {{
-        info.jsEvent.stopPropagation();
-        var ds     = info.event.startStr;
-        var today  = new Date('{today_str}' + 'T00:00:00');
-        var startD = new Date(ds + 'T00:00:00');
-        renderPanel(startD < today ? '{today_str}' : ds);
+        var ev = info.event.extendedProps || {{}};
+        if (ev.type !== 'note') return;
+        var action = prompt('Note: "' + (ev.noteText || '') + '"\\n\\nEnter new text to edit, or type DELETE to remove:');
+        if (action === null) return;
+        if (action.trim().toUpperCase() === 'DELETE') {{
+          info.event.remove();
+          saveNotes(calendar);
+        }} else if (action.trim()) {{
+          info.event.setExtendedProp('noteText', action.trim());
+          info.event.setProp('title', action.trim());
+          saveNotes(calendar);
+        }}
       }},
+      eventMouseEnter: function(info) {{
+        if ((info.event.extendedProps || {{}}).type === 'note') return;
+        showHover(info.event.extendedProps || {{}}, info.jsEvent);
+      }},
+      eventMouseLeave: function() {{ removeHover(); }},
+      eventDragStart: function() {{ removeHover(); }},
+      eventDrop: function(info) {{
+        var props = info.event.extendedProps || {{}};
+        if (props.type === 'note') {{
+          saveNotes(calendar);
+        }} else {{
+          props.dueDate = info.event.startStr;
+          renderInspectionList();
+        }}
+      }}
     }});
 
-    cal.render();
-
-    window.addEventListener('fleet:calendar:shown', function() {{
-      if (!cal) return;
-      cal.updateSize();
-      cal.render();
-    }});
+    calendar.render();
+    window.addEventListener('fleet:calendar:shown', function() {{ calendar.updateSize(); }});
+    document.addEventListener('mousemove', moveHover);
   }}
 
-  document.readyState === 'loading'
-    ? document.addEventListener('DOMContentLoaded', initCalendar)
-    : initCalendar();
+  renderInspectionList();
+  renderCalendar();
 }})();
 </script>
 """
-
-
-
-
 
 
 # -- AIRCRAFT LOCATION TAB -----------------------------------------------------
