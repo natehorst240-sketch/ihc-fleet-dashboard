@@ -1268,7 +1268,7 @@ def _build_location_tab(aircraft_list, positions, maps_api_key=''):
       + 'white-space:nowrap;text-shadow:0 0 3px #fff,0 0 3px #fff;margin-bottom:2px;">' + esc(tail) + '</div>'
       + '<img src="data:image/svg+xml;base64,' + HELI_B64 + '" width="40" height="40" '
       + 'style="display:block;transform:rotate(' + (heading || 0) + 'deg);'
-      + 'filter:drop-shadow(0 1px 3px rgba(0,0,0,0.5));">'
+      + 'box-shadow:0 1px 3px rgba(0,0,0,0.5);">'
       + '</div>';
     return L.divIcon({ html: html, className: '', iconSize: [60, 56], iconAnchor: [30, 56] });
   }
