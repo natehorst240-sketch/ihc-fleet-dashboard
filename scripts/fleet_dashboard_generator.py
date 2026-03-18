@@ -1248,7 +1248,7 @@ def _build_location_tab(aircraft_list, positions, maps_api_key=''):
   function ageFmt(utcStr) { if (!utcStr) return ''; var dt=new Date(utcStr),now=new Date(); var m=Math.round((now-dt)/60000); if (isNaN(m)||m<0) return ''; return m<60 ? m+'m ago' : (m/60).toFixed(1)+'h ago'; }
   function toNum(v) { var n = Number(v); return isFinite(n) ? n : null; }
 
-  var _map = null, _markers = [], _pendingPoints = null;
+  var _map = null, _markers = [], _pendingPoints = null, _resizeScheduled = false;
 
   // Helicopter SVG path (svgrepo) baked into base64 data URI — always red
   var HELI_PATH = 'M60.64,28.1a1.24,1.24,0,0,0-1.27-1.22l-14.89-.33c.61-.91,1.51-2.05,2.78-3.57,'
@@ -1273,8 +1273,19 @@ def _build_location_tab(aircraft_list, positions, maps_api_key=''):
     return L.divIcon({ html: html, className: '', iconSize: [60, 56], iconAnchor: [30, 56] });
   }
 
+  function scheduleMapResize() {
+    if (!_map || _resizeScheduled) return;
+    _resizeScheduled = true;
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() {
+        _resizeScheduled = false;
+        _map.invalidateSize(false);
+      });
+    });
+  }
+
   function initMap() {
-    if (_map) return;
+    if (_map) { scheduleMapResize(); return; }
     // Fixed Utah view — sw/ne corners cover UT/ID/WY/NV/AZ corridor
     var utahBounds = L.latLngBounds([36.9, -114.2], [42.1, -109.0]);
     _map = L.map('location-map', {
@@ -1287,6 +1298,7 @@ def _build_location_tab(aircraft_list, positions, maps_api_key=''):
       maxZoom: 16
     }).addTo(_map);
     if (_pendingPoints) { updateMarkers(_pendingPoints); _pendingPoints = null; }
+    scheduleMapResize();
   }
 
   function updateMarkers(points) {
@@ -1384,6 +1396,12 @@ def _build_location_tab(aircraft_list, positions, maps_api_key=''):
       .then(function(rows) { render({aircraft_detail: buildAircraftDetail(rows||[])}); })
       .catch(function() { setLocationStatus('Could not refresh aircraft location feed.', true); render({aircraft_detail:{}}); });
   }
+
+  window.addEventListener('fleet:location:shown', function() {
+    if (window.L) initMap();
+    scheduleMapResize();
+  });
+  window.addEventListener('resize', scheduleMapResize);
 
   loadLeaflet();
   setLocationStatus('Refreshing live positions...', false);
@@ -1911,6 +1929,9 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
     btn.classList.add('active');
     document.querySelectorAll('.tab-content').forEach(function(t){{ t.classList.remove('active'); }});
     document.getElementById('tab-' + tabName).classList.add('active');
+    if (tabName === 'location') {{
+      setTimeout(function(){{ window.dispatchEvent(new Event('fleet:location:shown')); }}, 0);
+    }}
     if (tabName === 'calendar') {{
       setTimeout(function(){{ window.dispatchEvent(new Event('fleet:calendar:shown')); }}, 0);
     }}
