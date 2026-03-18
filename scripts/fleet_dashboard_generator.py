@@ -1234,7 +1234,7 @@ def _build_location_tab(aircraft_list, positions, maps_api_key=''):
 .location-wrap{display:flex;gap:12px;margin-top:10px;align-items:flex-start;}
 .location-map-col{flex:2;min-width:0;}
 .location-cards-col{flex:1;min-width:200px;max-height:520px;overflow-y:auto;}
-#location-map{width:100%;height:520px;border-radius:6px;border:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;}
+#location-map{width:100%;height:520px;border-radius:6px;border:1px solid var(--border);background:var(--surface);display:block;}
 .location-map-note{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:4px;opacity:.7;display:flex;align-items:center;gap:10px;}
 .location-map-note a{color:var(--muted);text-decoration:underline;cursor:pointer;}
 .location-grid{display:grid;grid-template-columns:1fr;gap:8px;}
@@ -1276,19 +1276,21 @@ def _build_location_tab(aircraft_list, positions, maps_api_key=''):
 
   var _map = null, _markers = [], _infoWindow = null, _pendingPoints = null;
 
-  // Helicopter top-view SVG (nose = UP = north when heading=0)
-  var HELI_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="-16 -16 32 32">'
-    + '<rect x="-14" y="-1.3" width="28" height="2.6" rx="1.3" fill="currentColor" opacity="0.75"/>'
-    + '<ellipse cx="0" cy="4" rx="4.5" ry="7.5" fill="currentColor"/>'
-    + '<rect x="-1" y="-14" width="2" height="9" rx="1" fill="currentColor"/>'
-    + '<rect x="-5.5" y="-15" width="11" height="2" rx="1" fill="currentColor" opacity="0.75"/>'
+  // Helicopter top-view SVG — 48px, nose points UP (north when heading=0)
+  // White stroke outline keeps icon readable over any map tile colour
+  var HELI_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="-24 -24 48 48">'
+    + '<rect x="-21" y="-8" width="42" height="4.5" rx="2.25" fill="currentColor" opacity="0.82" stroke="white" stroke-width="0.9"/>'
+    + '<ellipse cx="0" cy="-6" rx="6" ry="11" fill="currentColor" stroke="white" stroke-width="1.5"/>'
+    + '<rect x="-2" y="5" width="4" height="12" rx="2" fill="currentColor" stroke="white" stroke-width="1"/>'
+    + '<rect x="-10" y="15" width="20" height="4" rx="2" fill="currentColor" opacity="0.82" stroke="white" stroke-width="0.9"/>'
+    + '<ellipse cx="0" cy="-13" rx="3" ry="3.5" fill="white" opacity="0.5"/>'
     + '</svg>';
 
   window.initLocationMap = function() {
     var mapEl = document.getElementById('location-map');
     if (!mapEl) return;
     mapEl.innerHTML = '';
-    mapEl.style.display = '';
+    mapEl.style.cssText = ''; // clear prompt's inline flex, fall back to CSS display:block
     _map = new google.maps.Map(mapEl, {
       zoom: 7, center: {lat: 39.3, lng: -111.9}, mapId: 'DEMO_MAP_ID',
       mapTypeId: 'terrain', streetViewControl: false, fullscreenControl: true
@@ -1306,9 +1308,10 @@ def _build_location_tab(aircraft_list, positions, maps_api_key=''):
     points.forEach(function(p) {
       var el = document.createElement('div');
       el.innerHTML = HELI_SVG;
-      el.style.color = p.state === 'AIRBORNE' ? '#4ade80' : '#60a5fa';
+      el.style.color = p.state === 'AIRBORNE' ? '#dc2626' : '#94a3b8';
       el.style.transform = 'rotate(' + (p.heading || 0) + 'deg)';
       el.style.cursor = 'pointer';
+      el.style.filter = 'drop-shadow(0 1px 3px rgba(0,0,0,0.55))';
       var marker = new google.maps.marker.AdvancedMarkerElement({
         map: _map, position: {lat: p.position.lat, lng: p.position.lng}, content: el, title: p.tail
       });
@@ -1338,7 +1341,7 @@ def _build_location_tab(aircraft_list, positions, maps_api_key=''):
 
   function loadMapsScript(key) {
     var mapEl = document.getElementById('location-map');
-    if (mapEl) { mapEl.innerHTML = ''; mapEl.style.display = ''; }
+    if (mapEl) { mapEl.innerHTML = ''; mapEl.style.cssText = ''; }
     window.__gmapsReady = function() { window.initLocationMap(); };
     var s = document.createElement('script');
     s.async = true;
@@ -1351,6 +1354,7 @@ def _build_location_tab(aircraft_list, positions, maps_api_key=''):
   function showKeyPrompt(errMsg) {
     var mapEl = document.getElementById('location-map');
     if (!mapEl) return;
+    mapEl.style.cssText = 'display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;';
     mapEl.innerHTML =
       '<div style="font-family:var(--mono);font-size:13px;color:var(--heading);margin-bottom:2px;">&#x1F5FA; Google Maps API Key</div>'
       + '<div style="font-family:var(--mono);font-size:10px;color:var(--muted);max-width:340px;text-align:center;line-height:1.5;">'
@@ -1395,7 +1399,7 @@ def _build_location_tab(aircraft_list, positions, maps_api_key=''):
     points.sort(function(a,b){ return a.tail.localeCompare(b.tail); });
     wrap.innerHTML = points.map(function(p) {
       var dot = '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:'
-        + (p.state === 'AIRBORNE' ? '#4ade80' : '#60a5fa') + ';margin-right:4px;vertical-align:middle;"></span>';
+        + (p.state === 'AIRBORNE' ? '#dc2626' : '#94a3b8') + ';margin-right:4px;vertical-align:middle;"></span>';
       return '<div class="location-card"><div class="location-card-head"><div class="location-card-tail">'+dot+esc(p.tail)+
         '</div><div class="location-card-state">'+esc(p.state || 'UNKNOWN')+
         '</div></div><div class="location-card-row">'+esc((p.position.lat||0).toFixed(4))+', '+esc((p.position.lng||0).toFixed(4))+
@@ -1461,7 +1465,7 @@ def _build_location_tab(aircraft_list, positions, maps_api_key=''):
 <div class="location-wrap">
   <div class="location-map-col">
     <div id="location-map"></div>
-    <div class="location-map-note">&#x1F7E2; airborne (&gt;40 kts) &middot; &#x1F535; stationary &middot; icon rotates to heading{key_link}</div>
+    <div class="location-map-note">&#x1F534; airborne (&gt;40 kts) &middot; &#x26AA; stationary &middot; icon rotates to heading{key_link}</div>
   </div>
   <div class="location-cards-col">
     <div id="location-grid" class="location-grid"></div>
