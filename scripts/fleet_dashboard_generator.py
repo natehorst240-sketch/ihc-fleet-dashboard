@@ -1273,12 +1273,19 @@ def _build_location_tab(aircraft_list, positions, maps_api_key=''):
     return L.divIcon({ html: html, className: '', iconSize: [60, 56], iconAnchor: [30, 56] });
   }
 
+  // Fixed Utah view — sw/ne corners cover UT/ID/WY/NV/AZ corridor
+  var UTAH_BOUNDS = L.latLngBounds([36.9, -114.2], [42.1, -109.0]);
+
   function initMap() {
     if (_map) return;
-    _map = L.map('location-map', { center: [39.3, -111.9], zoom: 7, zoomControl: true });
+    _map = L.map('location-map', {
+      center: [39.5, -111.5], zoom: 7,
+      minZoom: 6, maxZoom: 16,
+      maxBounds: UTAH_BOUNDS.pad(0.3)
+    });
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-      maxZoom: 18
+      maxZoom: 16
     }).addTo(_map);
     if (_pendingPoints) { updateMarkers(_pendingPoints); _pendingPoints = null; }
   }
@@ -1287,11 +1294,11 @@ def _build_location_tab(aircraft_list, positions, maps_api_key=''):
     if (!_map) { _pendingPoints = points; return; }
     _markers.forEach(function(m) { _map.removeLayer(m); });
     _markers = [];
-    if (!points.length) return;
-    var latLngs = [];
     points.forEach(function(p) {
+      var lat = p.position.lat, lng = p.position.lng;
+      if (!isFinite(lat) || !isFinite(lng)) return;
       var icon = makeLeafletIcon(p.tail, p.heading || 0);
-      var marker = L.marker([p.position.lat, p.position.lng], { icon: icon });
+      var marker = L.marker([lat, lng], { icon: icon });
       marker.bindPopup(
         '<div style="font-family:monospace;font-size:12px;line-height:1.7;color:#000;">'
         + '<b style="font-size:14px;">' + esc(p.tail) + '</b><br>'
@@ -1302,10 +1309,7 @@ def _build_location_tab(aircraft_list, positions, maps_api_key=''):
       );
       marker.addTo(_map);
       _markers.push(marker);
-      latLngs.push([p.position.lat, p.position.lng]);
     });
-    if (latLngs.length === 1) { _map.setView(latLngs[0], 10); }
-    else { _map.fitBounds(L.latLngBounds(latLngs), { padding: [40, 40] }); }
   }
 
   function loadLeaflet() {
