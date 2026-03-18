@@ -64428,9 +64428,19 @@ RII</td>
     var lats = [], lngs = [];
     points.forEach(function(p) {
       var el = document.createElement('div');
-      el.innerHTML = makeHeliSvg('#ef4444');
-      el.style.transform = 'rotate(' + (p.heading || 0) + 'deg)';
+      el.style.display = 'flex';
+      el.style.flexDirection = 'column';
+      el.style.alignItems = 'center';
       el.style.cursor = 'pointer';
+      var svgWrap = document.createElement('div');
+      svgWrap.innerHTML = makeHeliSvg('#ef4444');
+      svgWrap.style.transform = 'rotate(' + (p.heading || 0) + 'deg)';
+      var label = document.createElement('div');
+      label.textContent = p.tail || '';
+      label.style.cssText = 'margin-top:3px;font-family:monospace;font-size:10px;font-weight:700;'
+        + 'color:#fff;background:rgba(0,0,0,0.65);padding:1px 5px;border-radius:3px;white-space:nowrap;';
+      el.appendChild(svgWrap);
+      el.appendChild(label);
       var marker = new google.maps.marker.AdvancedMarkerElement({
         map: _map, position: {lat: p.position.lat, lng: p.position.lng}, content: el, title: p.tail
       });
