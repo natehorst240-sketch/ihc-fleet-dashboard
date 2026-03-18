@@ -232,7 +232,12 @@ function AOGTracker() {
 
   const availableWeeks = Object.keys(weekEventsByKey).sort((a, b) => new Date(b) - new Date(a));
   const effectiveWeekKey = selectedWeek === "current" ? currentWeekKey : selectedWeek;
-  const weekEvents = weekEventsByKey[effectiveWeekKey] || [];
+  const baseWeekEvents = weekEventsByKey[effectiveWeekKey] || [];
+  // For the current week, also include active events that started in prior weeks
+  // (still ongoing = no end date, so they affect this week regardless of start)
+  const weekEvents = effectiveWeekKey === currentWeekKey
+    ? [...baseWeekEvents, ...active.filter(e => e && e.start && weekKey(e.start) !== currentWeekKey)]
+    : baseWeekEvents;
 
   const byTail = FLEET.map((tail) => {
     const events = weekEvents.filter((event) => event.tail === tail);
