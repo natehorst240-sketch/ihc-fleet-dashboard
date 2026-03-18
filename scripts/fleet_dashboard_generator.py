@@ -1797,10 +1797,6 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
   .change-total-table{{min-width:420px;}}
   footer{{margin-top:48px;padding:16px 32px;border-top:1px solid var(--border);font-family:var(--mono);font-size:10px;color:var(--muted);display:flex;justify-content:space-between;letter-spacing:1px;}}
 </style>
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
-<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body>
 <header>
@@ -1904,8 +1900,6 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
   <span>SOURCE: VERYON MAINTENANCE TRACKING &nbsp;|&nbsp; {source_filename}</span>
   <span>IHC HEALTH SERVICES - AVIATION MAINTENANCE</span>
 </footer>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 <script>
   const DASHBOARD_VERSION = "{version}";
 
@@ -1924,6 +1918,63 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
       .catch(function(){{}});
   }})();
 
+  var _assetPromises = {{}};
+
+  function loadScriptOnce(src) {{
+    if (_assetPromises[src]) return _assetPromises[src];
+    _assetPromises[src] = new Promise(function(resolve, reject) {{
+      var existing = document.querySelector('script[src="' + src + '"]');
+      if (existing) {{
+        if (existing.dataset.loaded === 'true') return resolve();
+        existing.addEventListener('load', function() {{ resolve(); }}, {{ once: true }});
+        existing.addEventListener('error', reject, {{ once: true }});
+        return;
+      }}
+      var s = document.createElement('script');
+      s.src = src;
+      s.async = true;
+      s.addEventListener('load', function() {{ s.dataset.loaded = 'true'; resolve(); }}, {{ once: true }});
+      s.addEventListener('error', reject, {{ once: true }});
+      document.head.appendChild(s);
+    }});
+    return _assetPromises[src];
+  }}
+
+  function initCharts() {{
+    if (window.__fleetChartsReady) return Promise.resolve();
+    return Promise.all([
+      loadScriptOnce('https://cdn.jsdelivr.net/npm/chart.js'),
+      loadScriptOnce('https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2')
+    ]).then(function() {{
+      if (window.__fleetChartsReady) return;
+      window.__fleetChartsReady = true;
+      initBarChart();
+      initUtilizationChart();
+    }});
+  }}
+
+  function initCalendarAssets() {{
+    if (window.__fleetCalendarReady) return Promise.resolve();
+    return loadScriptOnce('https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js').then(function() {{
+      if (window.__fleetCalendarReady) return;
+      window.__fleetCalendarReady = true;
+      window.dispatchEvent(new Event('fleet:calendar:shown'));
+    }});
+  }}
+
+  function initAogAssets() {{
+    if (window.__fleetAogReady) return Promise.resolve();
+    return Promise.all([
+      loadScriptOnce('https://unpkg.com/react@18/umd/react.production.min.js'),
+      loadScriptOnce('https://unpkg.com/react-dom@18/umd/react-dom.production.min.js'),
+      loadScriptOnce('https://unpkg.com/@babel/standalone/babel.min.js')
+    ]).then(function() {{
+      return loadScriptOnce('./AOGTracker.jsx');
+    }}).then(function() {{
+      window.__fleetAogReady = true;
+    }});
+  }}
+
   function switchTab(tabName, btn) {{
     document.querySelectorAll('.tab-btn').forEach(function(b){{ b.classList.remove('active'); }});
     btn.classList.add('active');
@@ -1933,7 +1984,10 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
       setTimeout(function(){{ window.dispatchEvent(new Event('fleet:location:shown')); }}, 0);
     }}
     if (tabName === 'calendar') {{
-      setTimeout(function(){{ window.dispatchEvent(new Event('fleet:calendar:shown')); }}, 0);
+      initCalendarAssets().catch(function(){{}});
+    }}
+    if (tabName === 'aog') {{
+      initAogAssets().catch(function(){{}});
     }}
   }}
 
@@ -1956,13 +2010,16 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
     }});
   }}
 
-  // 200hr bar chart
-  var labels200 = {labels_js};
-  var values200 = {values_js};
-  if (labels200.length === 0) {{
-    document.getElementById('bar200').parentElement.innerHTML =
-      "<div style='font-family:var(--mono);font-size:12px;color:var(--muted);padding:10px;'>No numeric 200-hr data found.</div>";
-  }} else {{
+  function initBarChart() {{
+    if (window.__fleetBarChartInit) return;
+    window.__fleetBarChartInit = true;
+    var labels200 = {labels_js};
+    var values200 = {values_js};
+    if (labels200.length === 0) {{
+      document.getElementById('bar200').parentElement.innerHTML =
+        "<div style='font-family:var(--mono);font-size:12px;color:var(--muted);padding:10px;'>No numeric 200-hr data found.</div>";
+      return;
+    }}
     new Chart(document.getElementById('bar200'), {{
       type: 'bar',
       data: {{ labels: labels200, datasets: [{{ label: 'Hours remaining to 200 Hr', data: values200, backgroundColor: '#29b6f6' }}] }},
@@ -1985,8 +2042,9 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
     }});
   }}
 
-  // Utilization chart
-  (function() {{
+  function initUtilizationChart() {{
+    if (window.__fleetUtilChartInit) return;
+    window.__fleetUtilChartInit = true;
     var ctx = document.getElementById('utilChart');
     if (!ctx) return;
     new Chart(ctx, {{
@@ -2016,9 +2074,10 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
       }},
       plugins: [ChartDataLabels]
     }});
-  }})();
+  }}
+
+  initCharts().catch(function(){{}});
 </script>
-<script type="text/babel" src="./AOGTracker.jsx"></script>
 </body>
 </html>"""
 
