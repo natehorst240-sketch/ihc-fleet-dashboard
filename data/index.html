@@ -64397,12 +64397,15 @@ RII</td>
   var _map = null, _markers = [], _infoWindow = null, _pendingPoints = null;
 
   // Helicopter top-view SVG (nose = UP = north when heading=0)
-  var HELI_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="-16 -16 32 32">'
-    + '<rect x="-14" y="-1.3" width="28" height="2.6" rx="1.3" fill="currentColor" opacity="0.75"/>'
-    + '<ellipse cx="0" cy="4" rx="4.5" ry="7.5" fill="currentColor"/>'
-    + '<rect x="-1" y="-14" width="2" height="9" rx="1" fill="currentColor"/>'
-    + '<rect x="-5.5" y="-15" width="11" height="2" rx="1" fill="currentColor" opacity="0.75"/>'
-    + '</svg>';
+  // Color is embedded directly in SVG (not via CSS currentColor) so Google Maps AdvancedMarkerElement renders it correctly
+  function makeHeliSvg(color) {
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="-16 -16 32 32">'
+      + '<rect x="-14" y="-1.3" width="28" height="2.6" rx="1.3" fill="' + color + '" opacity="0.85"/>'
+      + '<ellipse cx="0" cy="4" rx="4.5" ry="7.5" fill="' + color + '"/>'
+      + '<rect x="-1" y="-14" width="2" height="9" rx="1" fill="' + color + '"/>'
+      + '<rect x="-5.5" y="-15" width="11" height="2" rx="1" fill="' + color + '" opacity="0.85"/>'
+      + '</svg>';
+  }
 
   window.initLocationMap = function() {
     var mapEl = document.getElementById('location-map');
@@ -64425,8 +64428,7 @@ RII</td>
     var lats = [], lngs = [];
     points.forEach(function(p) {
       var el = document.createElement('div');
-      el.innerHTML = HELI_SVG;
-      el.style.color = p.state === 'AIRBORNE' ? '#4ade80' : '#60a5fa';
+      el.innerHTML = makeHeliSvg('#ef4444');
       el.style.transform = 'rotate(' + (p.heading || 0) + 'deg)';
       el.style.cursor = 'pointer';
       var marker = new google.maps.marker.AdvancedMarkerElement({
@@ -64435,8 +64437,8 @@ RII</td>
       (function(mk, pt) {
         mk.addListener('click', function() {
           _infoWindow.setContent(
-            '<div style="font-family:monospace;font-size:12px;line-height:1.6;">'
-            + '<b style="font-size:14px;">' + esc(pt.tail) + '</b><br>'
+            '<div style="font-family:monospace;font-size:12px;line-height:1.6;color:#000000;">'
+            + '<b style="font-size:14px;color:#000000;">' + esc(pt.tail) + '</b><br>'
             + 'State: ' + esc(pt.state || 'UNKNOWN') + '<br>'
             + 'Speed: ' + esc(String(pt.speed_kts || 0)) + ' kts<br>'
             + 'Heading: ' + esc(String(pt.heading || 0)) + '&deg;<br>'
