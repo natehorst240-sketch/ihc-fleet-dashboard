@@ -4,55 +4,49 @@
  *
  * SETUP
  * ─────
- * 1. In the Apps Script editor open Extensions → Apps Script (or script.google.com)
- * 2. Paste this file as Code.gs
- * 3. Project Settings → Script Properties → Add:
- *      GITHUB_PAT       – GitHub Personal Access Token (repo scope)
- *      ANTHROPIC_API_KEY – Claude API key (used to parse email bodies)
- * 4. Run syncAOG() once manually to grant Gmail permission
- * 5. Triggers → Add Trigger → syncAOG → Time-driven → Hour timer → Every hour
+ * 1. Go to script.google.com → New project → paste this file as Code.gs
+ * 2. Project Settings → Script Properties → Add:
+ *      GITHUB_PAT  – GitHub Personal Access Token (repo scope)
+ * 3. Run syncAOG() once manually to grant Gmail permission
+ * 4. Triggers → Add Trigger → syncAOG → Time-driven → Hour timer → Every hour
  *
- * The script will update data/aog_status.json in the repo automatically.
+ * The script updates data/aog_status.json in the repo automatically.
  * No secrets ever touch the browser.
  */
 
-// ── Config ──────────────────────────────────────────────────────────────────
+// ── Config ───────────────────────────────────────────────────────────────────
 const REPO      = "natehorst240-sketch/ihc-fleet-dashboard";
 const FILE_PATH = "data/aog_status.json";
 const BRANCH    = "main";
 
-// How far back to search Gmail on each run (overlap prevents gaps).
+// Overlap window prevents gaps between hourly runs.
 const LOOK_BACK_HOURS = 25;
 
-// ── Entry point ─────────────────────────────────────────────────────────────
+// ── Entry point ──────────────────────────────────────────────────────────────
 function syncAOG() {
-  const props       = PropertiesService.getScriptProperties();
-  const githubPat   = props.getProperty("GITHUB_PAT");
-  const anthropicKey = props.getProperty("ANTHROPIC_API_KEY");
+  const pat = PropertiesService.getScriptProperties().getProperty("GITHUB_PAT");
+  if (!pat) throw new Error("GITHUB_PAT not set in Script Properties.");
 
-  if (!githubPat)    throw new Error("GITHUB_PAT not set in Script Properties.");
-  if (!anthropicKey) throw new Error("ANTHROPIC_API_KEY not set in Script Properties.");
-
-  // 1. Fetch emails.
+  // 1. Search Gmail for Veryon AOG notifications.
   const emails = fetchAOGEmails_();
   Logger.log(`Found ${emails.length} candidate email(s).`);
   if (!emails.length) return;
 
-  // 2. Parse with Claude.
-  const parsed = parseEmailsWithClaude_(emails, anthropicKey);
-  Logger.log(`Claude returned ${parsed.length} AOG event(s).`);
+  // 2. Parse each email directly — no external API needed.
+  const parsed = emails.map(parseVeryonEmail_).filter(Boolean);
+  Logger.log(`Parsed ${parsed.length} grounded-aircraft event(s).`);
   if (!parsed.length) return;
 
   // 3. Load current JSON from GitHub.
-  const { data: current, sha } = loadFromGitHub_(githubPat);
+  const { data: current, sha } = loadFromGitHub_(pat);
 
-  // 4. Merge (skip duplicates by discId).
+  // 4. Merge, skipping events already tracked by discId.
   const { active, added } = mergeActive_(current.active || [], parsed);
-  Logger.log(`${added} new event(s) added.`);
+  Logger.log(`${added} new event(s) to add.`);
   if (!added) return;
 
   // 5. Push updated JSON back to GitHub.
-  pushToGitHub_(githubPat, sha, {
+  pushToGitHub_(pat, sha, {
     active,
     history:     current.history || [],
     lastUpdated: new Date().toISOString(),
@@ -63,12 +57,12 @@ function syncAOG() {
 
 // ── Gmail ────────────────────────────────────────────────────────────────────
 function fetchAOGEmails_() {
-  const since = new Date(Date.now() - LOOK_BACK_HOURS * 3600 * 1000);
+  const since   = new Date(Date.now() - LOOK_BACK_HOURS * 3600 * 1000);
   const dateStr = Utilities.formatDate(since, "UTC", "yyyy/MM/dd");
-  const query = `from:veryon subject:"New AOG Discrepancy Reported" after:${dateStr}`;
+  const query   = `from:veryon subject:"New AOG Discrepancy Reported" after:${dateStr}`;
 
   const threads = GmailApp.search(query, 0, 50);
-  const emails = [];
+  const emails  = [];
   for (const thread of threads) {
     for (const msg of thread.getMessages()) {
       if (msg.getDate() < since) continue;
@@ -82,78 +76,70 @@ function fetchAOGEmails_() {
   return emails;
 }
 
-// ── Claude parsing ───────────────────────────────────────────────────────────
-function parseEmailsWithClaude_(emails, apiKey) {
-  const emailsText = emails.map((e, i) =>
-    `--- EMAIL ${i + 1} ---\nSubject: ${e.subject}\nReceived: ${e.received}\n\n${e.body}`
-  ).join("\n\n");
+// ── Email parser (Veryon plain-text format) ──────────────────────────────────
+/**
+ * Veryon "New AOG Discrepancy Reported" emails look roughly like:
+ *
+ *   Aircraft:           N531HC
+ *   Discrepancy ID:     20260312121446
+ *   Aircraft Grounded:  Yes
+ *   Description:        #1 Engine Chip Detector magnetic prong broken off...
+ *   Aircraft TT:        3326.10
+ *   Aircraft Landings:  11088
+ *
+ * Field names and spacing vary slightly — the regexes are intentionally loose.
+ */
+function parseVeryonEmail_(email) {
+  const body = email.body;
 
-  const systemPrompt = `You parse Veryon Tracking Notification emails about aircraft discrepancies.
-For each email where "Aircraft Grounded" is Yes, extract:
-  - tail:             Aircraft tail number (format like N251HC)
-  - desc:             Discrepancy description (first sentence or up to 80 chars)
-  - discId:           Discrepancy ID (14-digit number like 20260312121446)
-  - start:            ISO 8601 date/time the email was received
-  - reportedHours:    Aircraft total time as a string (e.g. "3326.10"), or null
-  - reportedLandings: Aircraft total landings as a string (e.g. "11088"), or null
+  // Must be grounded — skip if not.
+  if (!/Aircraft\s+Grounded[^:]*:\s*Yes/i.test(body)) return null;
 
-Respond ONLY with a valid JSON array. If no grounded aircraft, respond with [].
-Do not include markdown fences or any explanation.`;
+  // Tail number  e.g. N251HC, N1234AB
+  const tailMatch = body.match(/\b(N\d{3,4}[A-Z]{2})\b/);
+  if (!tailMatch) return null;
+  const tail = tailMatch[1];
 
-  const body = JSON.stringify({
-    model:      "claude-sonnet-4-6",
-    max_tokens: 2048,
-    system:     systemPrompt,
-    messages:   [{ role: "user", content: emailsText }],
-  });
+  // Discrepancy ID — 14-digit timestamp number Veryon uses as a unique ID.
+  const discIdMatch = body.match(/Discrepancy(?:\s+ID)?[^:]*:\s*(\d{12,16})/i)
+                   || body.match(/\b(\d{14})\b/);
+  const discId = discIdMatch ? discIdMatch[1] : generateFallbackId_(email.received);
 
-  const res = UrlFetchApp.fetch("https://api.anthropic.com/v1/messages", {
-    method:  "post",
-    headers: {
-      "Content-Type":      "application/json",
-      "x-api-key":         apiKey,
-      "anthropic-version": "2023-06-01",
-    },
-    payload:            body,
-    muteHttpExceptions: true,
-  });
+  // Description — grab the line after "Description:" (strip trailing whitespace).
+  const descMatch = body.match(/Description[^:]*:\s*(.+)/i);
+  const desc = descMatch ? descMatch[1].trim().substring(0, 120) : email.subject;
 
-  if (res.getResponseCode() !== 200) {
-    throw new Error(`Claude API error ${res.getResponseCode()}: ${res.getContentText()}`);
-  }
+  // Aircraft total time (hours).
+  const hoursMatch = body.match(/(?:Aircraft\s+)?(?:Total\s+)?(?:TT|Time)[^:]*:\s*([\d,]+\.?\d*)/i);
+  const reportedHours = hoursMatch ? hoursMatch[1].replace(/,/g, "") : null;
 
-  const text = JSON.parse(res.getContentText())
-    .content.filter(b => b.type === "text")
-    .map(b => b.text)
-    .join("");
+  // Aircraft total landings.
+  const landMatch = body.match(/(?:Aircraft\s+)?(?:Total\s+)?Landings?[^:]*:\s*([\d,]+)/i);
+  const reportedLandings = landMatch ? landMatch[1].replace(/,/g, "") : null;
 
-  let parsed;
-  try {
-    parsed = JSON.parse(text.replace(/```json|```/g, "").trim());
-  } catch (e) {
-    Logger.log("Claude response could not be parsed as JSON:\n" + text);
-    return [];
-  }
-
-  // Normalise into the shape aog_status.json expects.
-  return (Array.isArray(parsed) ? parsed : []).map(e => ({
-    id:               `email-${e.discId || Date.now()}`,
-    tail:             e.tail,
-    desc:             e.desc,
-    discId:           String(e.discId || ""),
-    start:            e.start,
-    reportedHours:    e.reportedHours   || null,
-    reportedLandings: e.reportedLandings || null,
+  return {
+    id:               `email-${discId}`,
+    tail,
+    desc,
+    discId,
+    start:            email.received,
+    reportedHours,
+    reportedLandings,
     source:           "email",
     end:              null,
     duration:         null,
-  }));
+  };
+}
+
+function generateFallbackId_(isoDate) {
+  // Build a 14-digit ID from the received timestamp as a last resort.
+  return isoDate.replace(/\D/g, "").substring(0, 14);
 }
 
 // ── Merge ────────────────────────────────────────────────────────────────────
 function mergeActive_(existing, incoming) {
   const seen = new Set(existing.map(e => e.discId));
-  let added = 0;
+  let added  = 0;
   const merged = [...existing];
   for (const event of incoming) {
     if (!seen.has(event.discId)) {
@@ -198,7 +184,7 @@ function pushToGitHub_(pat, sha, payload) {
   const body = {
     message: `ci: sync aog_status.json from Gmail [${new Date().toISOString()}]`,
     content,
-    branch: BRANCH,
+    branch:  BRANCH,
   };
   if (sha) body.sha = sha;
 
