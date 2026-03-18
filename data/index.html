@@ -131,7 +131,7 @@
   </div>
   <div class="header-meta">
     <div class="date">REPORT DATE: 18 MAR 2026</div>
-    <div>FLEET: 9 AIRCRAFT &nbsp;|&nbsp; 1 AIRBORNE &nbsp;|&nbsp; 4 AT BASE &nbsp;|&nbsp; GENERATED: 18 MAR 2026 17:08</div>
+    <div>FLEET: 9 AIRCRAFT &nbsp;|&nbsp; 1 AIRBORNE &nbsp;|&nbsp; 4 AT BASE &nbsp;|&nbsp; GENERATED: 18 MAR 2026 17:13</div>
   </div>
 </header>
 <div class="legend">
@@ -64411,15 +64411,14 @@ RII</td>
     return L.divIcon({ html: html, className: '', iconSize: [60, 56], iconAnchor: [30, 56] });
   }
 
-  // Fixed Utah view — sw/ne corners cover UT/ID/WY/NV/AZ corridor
-  var UTAH_BOUNDS = L.latLngBounds([36.9, -114.2], [42.1, -109.0]);
-
   function initMap() {
     if (_map) return;
+    // Fixed Utah view — sw/ne corners cover UT/ID/WY/NV/AZ corridor
+    var utahBounds = L.latLngBounds([36.9, -114.2], [42.1, -109.0]);
     _map = L.map('location-map', {
       center: [39.5, -111.5], zoom: 7,
       minZoom: 6, maxZoom: 16,
-      maxBounds: UTAH_BOUNDS.pad(0.3)
+      maxBounds: utahBounds.pad(0.3)
     });
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
@@ -64542,7 +64541,7 @@ RII</td>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 <script>
-  const DASHBOARD_VERSION = "20260318170837";
+  const DASHBOARD_VERSION = "20260318171328";
 
   // Auto-reload when a newer build is deployed
   (function() {
