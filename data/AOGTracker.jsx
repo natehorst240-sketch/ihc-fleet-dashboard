@@ -99,6 +99,7 @@ function AOGTracker() {
   const [lastSync, setLastSync] = useState(null);
   const [syncing, setSyncing]   = useState(false);
   const [locallyClearedIds, setLocallyClearedIds] = useState({});
+  const [selectedWeek, setSelectedWeek] = useState("");
 
   // Load persisted local overrides (cleared events not yet in JSON)
   useEffect(() => {
@@ -250,6 +251,20 @@ function AOGTracker() {
     })
     .filter((entry) => entry.count > 0);
 
+  useEffect(() => {
+    if (!weeksByTail.length) {
+      if (selectedWeek) setSelectedWeek("");
+      return;
+    }
+
+    if (selectedWeek && weeksByTail.some((entry) => entry.week === selectedWeek)) return;
+
+    const preferredWeek = weeksByTail.find((entry) => entry.week === currentWeekKey)?.week || weeksByTail[0].week;
+    if (preferredWeek !== selectedWeek) setSelectedWeek(preferredWeek);
+  }, [weeksByTail, selectedWeek, currentWeekKey]);
+
+  const selectedWeekEntry = weeksByTail.find((entry) => entry.week === selectedWeek) || null;
+
   const sortedActive = FLEET.flatMap((tail) => active
     .filter((event) => event.tail === tail)
     .sort((a, b) => new Date(b.start) - new Date(a.start))
@@ -345,18 +360,49 @@ function AOGTracker() {
         {tab === "weekly" && (
           <div>
             <div style={{ fontSize: 9, letterSpacing: 4, color: "#ffffff", marginBottom: 14 }}>
-              AOG EVENTS SORTED BY CALENDAR WEEK AND HELICOPTER
+              SELECT A WEEK TO REVIEW ALL AOG EVENTS FOR THAT PERIOD
             </div>
 
             {!weeksByTail.length && <div style={{ textAlign: "center", padding: "60px 0", color: "#ffffff", fontSize: 11, letterSpacing: 4 }}>NO AOG EVENTS AVAILABLE</div>}
 
-            {weeksByTail.map(({ week, tails, count }) => (
-              <div key={week} style={{ marginBottom: 18 }}>
+            {!!weeksByTail.length && (
+              <div style={{ marginBottom: 18, display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
+                <label htmlFor="aog-week-select" style={{ fontSize: 10, color: "#8d8da3", letterSpacing: 2 }}>
+                  WEEK
+                </label>
+                <select
+                  id="aog-week-select"
+                  value={selectedWeek}
+                  onChange={(e) => setSelectedWeek(e.target.value)}
+                  style={{
+                    background: "#090912",
+                    border: "1px solid #1a1a33",
+                    color: "#ffffff",
+                    padding: "8px 12px",
+                    borderRadius: 2,
+                    fontFamily: "'Courier New',monospace",
+                    fontSize: 10,
+                    letterSpacing: 1.5,
+                    minWidth: 280,
+                    cursor: "pointer",
+                  }}
+                >
+                  {weeksByTail.map(({ week, count }) => (
+                    <option key={week} value={week}>
+                      {weekRangeLabel(week)} · {count} EVENT{count !== 1 ? "S" : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {selectedWeekEntry && (
+              <div key={selectedWeekEntry.week} style={{ marginBottom: 18 }}>
                 <div style={{ fontSize: 12, color: "#4dc07f", letterSpacing: 2, marginBottom: 10 }}>
-                  WEEK OF {weekRangeLabel(week).toUpperCase()} · {count} EVENT{count !== 1 ? "S" : ""}
+                  WEEK OF {weekRangeLabel(selectedWeekEntry.week).toUpperCase()} · {selectedWeekEntry.count} EVENT{selectedWeekEntry.count !== 1 ? "S" : ""}
                 </div>
-                {tails.map(x => (
-                  <div key={`${week}-${x.tail}`} style={{ background: "#090912", border: "1px solid #111122", borderRadius: 2, padding: "12px 14px", marginBottom: 8 }}>
+                {selectedWeekEntry.tails.map(x => (
+                  <div key={`${selectedWeekEntry.week}-${x.tail}`} style={{ background: "#090912", border: "1px solid #111122", borderRadius: 2, padding: "12px 14px", marginBottom: 8 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
                       <span style={{ fontSize: 17, fontWeight: "bold", color: "#ffffff", letterSpacing: 2 }}>{x.tail}</span>
                       <span style={{ fontSize: 9, color: "#ffffff", letterSpacing: 2 }}>{x.count} EVENT{x.count !== 1 ? "S" : ""}</span>
@@ -370,7 +416,7 @@ function AOGTracker() {
                   </div>
                 ))}
               </div>
-            ))}
+            )}
           </div>
         )}
       </div>
