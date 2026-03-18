@@ -251,19 +251,52 @@ function AOGTracker() {
     })
     .filter((entry) => entry.count > 0);
 
+  const ALL_EVENTS_KEY = "all";
+
+  const allEventsEntry = useMemo(() => {
+    const tails = FLEET.map((tail) => {
+      const events = allEvents
+        .filter((event) => event.tail === tail)
+        .sort((a, b) => new Date(b.start) - new Date(a.start));
+      return { tail, events, count: events.length };
+    }).filter((entry) => entry.count > 0);
+
+    return {
+      week: ALL_EVENTS_KEY,
+      label: "ALL AOG EVENTS",
+      tails,
+      count: tails.reduce((sum, entry) => sum + entry.count, 0),
+    };
+  }, [allEvents]);
+
+  const weeklySelections = useMemo(() => {
+    const entries = [];
+    if (allEventsEntry.count > 0) entries.push(allEventsEntry);
+
+    const currentWeekEntry = weeksByTail.find((entry) => entry.week === currentWeekKey);
+    if (currentWeekEntry) entries.push(currentWeekEntry);
+
+    weeksByTail.forEach((entry) => {
+      if (entry.week === currentWeekKey) return;
+      entries.push(entry);
+    });
+
+    return entries;
+  }, [allEventsEntry, weeksByTail, currentWeekKey]);
+
   useEffect(() => {
-    if (!weeksByTail.length) {
+    if (!weeklySelections.length) {
       if (selectedWeek) setSelectedWeek("");
       return;
     }
 
-    if (selectedWeek && weeksByTail.some((entry) => entry.week === selectedWeek)) return;
+    if (selectedWeek && weeklySelections.some((entry) => entry.week === selectedWeek)) return;
 
-    const preferredWeek = weeksByTail.find((entry) => entry.week === currentWeekKey)?.week || weeksByTail[0].week;
+    const preferredWeek = weeklySelections[0].week;
     if (preferredWeek !== selectedWeek) setSelectedWeek(preferredWeek);
-  }, [weeksByTail, selectedWeek, currentWeekKey]);
+  }, [weeklySelections, selectedWeek]);
 
-  const selectedWeekEntry = weeksByTail.find((entry) => entry.week === selectedWeek) || null;
+  const selectedWeekEntry = weeklySelections.find((entry) => entry.week === selectedWeek) || null;
 
   const sortedActive = FLEET.flatMap((tail) => active
     .filter((event) => event.tail === tail)
@@ -363,9 +396,9 @@ function AOGTracker() {
               SELECT A WEEK TO REVIEW ALL AOG EVENTS FOR THAT PERIOD
             </div>
 
-            {!weeksByTail.length && <div style={{ textAlign: "center", padding: "60px 0", color: "#ffffff", fontSize: 11, letterSpacing: 4 }}>NO AOG EVENTS AVAILABLE</div>}
+            {!weeklySelections.length && <div style={{ textAlign: "center", padding: "60px 0", color: "#ffffff", fontSize: 11, letterSpacing: 4 }}>NO AOG EVENTS AVAILABLE</div>}
 
-            {!!weeksByTail.length && (
+            {!!weeklySelections.length && (
               <div style={{ marginBottom: 18, display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
                 <label htmlFor="aog-week-select" style={{ fontSize: 10, color: "#8d8da3", letterSpacing: 2 }}>
                   WEEK
@@ -387,9 +420,9 @@ function AOGTracker() {
                     cursor: "pointer",
                   }}
                 >
-                  {weeksByTail.map(({ week, count }) => (
+                  {weeklySelections.map(({ week, count, label }) => (
                     <option key={week} value={week}>
-                      {weekRangeLabel(week)} · {count} EVENT{count !== 1 ? "S" : ""}
+                      {label || weekRangeLabel(week)} · {count} EVENT{count !== 1 ? "S" : ""}
                     </option>
                   ))}
                 </select>
@@ -399,7 +432,9 @@ function AOGTracker() {
             {selectedWeekEntry && (
               <div key={selectedWeekEntry.week} style={{ marginBottom: 18 }}>
                 <div style={{ fontSize: 12, color: "#4dc07f", letterSpacing: 2, marginBottom: 10 }}>
-                  WEEK OF {weekRangeLabel(selectedWeekEntry.week).toUpperCase()} · {selectedWeekEntry.count} EVENT{selectedWeekEntry.count !== 1 ? "S" : ""}
+                  {selectedWeekEntry.week === ALL_EVENTS_KEY
+                    ? `ALL AOG EVENTS · ${selectedWeekEntry.count} EVENT${selectedWeekEntry.count !== 1 ? "S" : ""}`
+                    : `WEEK OF ${weekRangeLabel(selectedWeekEntry.week).toUpperCase()} · ${selectedWeekEntry.count} EVENT${selectedWeekEntry.count !== 1 ? "S" : ""}`}
                 </div>
                 {selectedWeekEntry.tails.map(x => (
                   <div key={`${selectedWeekEntry.week}-${x.tail}`} style={{ background: "#090912", border: "1px solid #111122", borderRadius: 2, padding: "12px 14px", marginBottom: 8 }}>
