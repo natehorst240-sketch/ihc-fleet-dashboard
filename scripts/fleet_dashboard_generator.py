@@ -1273,15 +1273,14 @@ def _build_location_tab(aircraft_list, positions, maps_api_key=''):
     return L.divIcon({ html: html, className: '', iconSize: [60, 56], iconAnchor: [30, 56] });
   }
 
-  // Fixed Utah view — sw/ne corners cover UT/ID/WY/NV/AZ corridor
-  var UTAH_BOUNDS = L.latLngBounds([36.9, -114.2], [42.1, -109.0]);
-
   function initMap() {
     if (_map) return;
+    // Fixed Utah view — sw/ne corners cover UT/ID/WY/NV/AZ corridor
+    var utahBounds = L.latLngBounds([36.9, -114.2], [42.1, -109.0]);
     _map = L.map('location-map', {
       center: [39.5, -111.5], zoom: 7,
       minZoom: 6, maxZoom: 16,
-      maxBounds: UTAH_BOUNDS.pad(0.3)
+      maxBounds: utahBounds.pad(0.3)
     });
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
