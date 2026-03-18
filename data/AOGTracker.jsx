@@ -98,7 +98,6 @@ function AOGTracker() {
   const [loaded, setLoaded]     = useState(false);
   const [lastSync, setLastSync] = useState(null);
   const [syncing, setSyncing]   = useState(false);
-  const [selectedWeek, setSelectedWeek] = useState("current");
   const [locallyClearedIds, setLocallyClearedIds] = useState({});
 
   // Load persisted local overrides (cleared events not yet in JSON)
@@ -230,26 +229,33 @@ function AOGTracker() {
     return acc;
   }, {});
 
-  const availableWeeks = Object.keys(weekEventsByKey).sort((a, b) => new Date(b) - new Date(a));
-  const effectiveWeekKey = selectedWeek === "current" ? currentWeekKey : selectedWeek;
-  const baseWeekEvents = weekEventsByKey[effectiveWeekKey] || [];
-  // For the current week, also include active events that started in prior weeks
-  // (still ongoing = no end date, so they affect this week regardless of start)
-  const weekEvents = effectiveWeekKey === currentWeekKey
-    ? [...baseWeekEvents, ...active.filter(e => e && e.start && weekKey(e.start) !== currentWeekKey)]
-    : baseWeekEvents;
+  if (currentWeekKey && active.some((event) => event && event.start && weekKey(event.start) !== currentWeekKey)) {
+    weekEventsByKey[currentWeekKey] = [
+      ...(weekEventsByKey[currentWeekKey] || []),
+      ...active.filter((event) => event && event.start && weekKey(event.start) !== currentWeekKey),
+    ];
+  }
 
-  const byTail = FLEET.map((tail) => {
-    const events = weekEvents.filter((event) => event.tail === tail);
-    return { tail, events, count: events.length };
-  }).filter((entry) => entry.count > 0);
+  const weeksByTail = Object.keys(weekEventsByKey)
+    .sort((a, b) => new Date(b) - new Date(a))
+    .map((week) => {
+      const tails = FLEET.map((tail) => {
+        const events = weekEventsByKey[week]
+          .filter((event) => event.tail === tail)
+          .sort((a, b) => new Date(b.start) - new Date(a.start));
+        return { tail, events, count: events.length };
+      }).filter((entry) => entry.count > 0);
+
+      return { week, tails, count: tails.reduce((sum, entry) => sum + entry.count, 0) };
+    })
+    .filter((entry) => entry.count > 0);
+
+  const sortedActive = FLEET.flatMap((tail) => active
+    .filter((event) => event.tail === tail)
+    .sort((a, b) => new Date(b.start) - new Date(a.start))
+  );
 
   // ── STYLES ────────────────────────────────────────────────────────────────
-  const inp = {
-    background: "#050509", border: "1px solid #1a1a2e", color: "#c8c8d8",
-    padding: "9px 12px", borderRadius: 2, fontFamily: "'Courier New',monospace",
-    fontSize: 12, width: "100%", boxSizing: "border-box", outline: "none",
-  };
   const btn = (col, bg) => ({
     background: bg || "transparent", border: `1px solid ${col}`, color: col,
     padding: "7px 14px", borderRadius: 2, cursor: "pointer",
@@ -285,32 +291,6 @@ function AOGTracker() {
         </div>
       </div>
 
-      {/* ── ACTIVE AOG BANNERS ── */}
-      {active.length > 0 && (
-        <div style={{ padding: "14px 20px 0" }}>
-          {active.map(a => (
-            <div key={a.id} style={{ background: "linear-gradient(135deg,#120000,#0a0005)", border: "1px solid #3d0000", borderLeft: "3px solid #ff2222", borderRadius: 2, padding: "12px 14px", marginBottom: 8 }}>
-              <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                <div style={{ minWidth: 90 }}>
-                  <div style={{ fontSize: 22, fontWeight: "bold", color: "#ff3333", letterSpacing: 3, lineHeight: 1 }}>{a.tail}</div>
-                  <div style={{ fontSize: 8, color: "#660000", letterSpacing: 3, marginTop: 3 }}>AOG</div>
-                  <div style={{ fontSize: 8, color: "#ffffff", marginTop: 2 }}>{a.source === "email" ? "📧 via email" : "✎ manual"}</div>
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 12, color: "#ffbbbb", marginBottom: 5 }}>{a.desc}</div>
-                  {a.discId && <div style={{ fontSize: 9, color: "#442222", letterSpacing: 1 }}>DISCREPANCY {a.discId}</div>}
-                  {a.reportedHours && <div style={{ fontSize: 9, color: "#332222", marginTop: 2 }}>AIRFRAME HRS: {a.reportedHours} · LANDINGS: {a.reportedLandings}</div>}
-                </div>
-                <div style={{ textAlign: "right", minWidth: 130 }}>
-                  <div style={{ fontSize: 8, color: "#442222", letterSpacing: 2, marginBottom: 3 }}>DISCOVERED</div>
-                  <div style={{ fontSize: 10, color: "#aa4444" }}>{ts(a.start)}</div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
       {/* ── TABS ── */}
       <div style={{ padding: "14px 20px 0", display: "flex", gap: 2, borderBottom: "1px solid #0e0e1e" }}>
         {[ ["live", `LIVE (${active.length})`], ["weekly", "AOG EVENTS BY WEEK"] ].map(([k, label]) => (
@@ -334,33 +314,59 @@ function AOGTracker() {
           </div>
         )}
 
+        {tab === "live" && active.length > 0 && (
+          <div>
+            <div style={{ fontSize: 9, letterSpacing: 4, color: "#ffffff", marginBottom: 14 }}>
+              ACTIVE AOG EVENTS · SORTED BY HELICOPTER
+            </div>
+            {sortedActive.map(a => (
+              <div key={a.id} style={{ background: "#090912", border: "1px solid #111122", borderRadius: 2, padding: "12px 14px", marginBottom: 8 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                  <div>
+                    <div style={{ fontSize: 17, fontWeight: "bold", color: "#ffffff", letterSpacing: 2 }}>{a.tail}</div>
+                    <div style={{ fontSize: 9, color: "#ff8888", marginTop: 3 }}>Discovered: {ts(a.start)}</div>
+                  </div>
+                  <div style={{ fontSize: 8, color: "#ffffff" }}>{a.source === "email" ? "📧 via email" : "✎ manual"}</div>
+                </div>
+                {a.desc && <div style={{ fontSize: 10, color: "#ffffff", marginTop: 8, fontStyle: "italic" }}>{a.desc}</div>}
+                {(a.discId || a.reportedHours) && (
+                  <div style={{ fontSize: 9, color: "#8d8da3", marginTop: 6 }}>
+                    {a.discId ? `Discrepancy ${a.discId}` : ""}
+                    {a.discId && a.reportedHours ? " · " : ""}
+                    {a.reportedHours ? `Airframe hrs: ${a.reportedHours}${a.reportedLandings ? ` · Landings: ${a.reportedLandings}` : ""}` : ""}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Weekly event list tab */}
         {tab === "weekly" && (
           <div>
             <div style={{ fontSize: 9, letterSpacing: 4, color: "#ffffff", marginBottom: 14 }}>
-              AOG EVENTS DISCOVERED BY WEEK · {weekRangeLabel(effectiveWeekKey)}
-            </div>
-            <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 12, flexWrap: "wrap" }}>
-              <select value={selectedWeek} onChange={e => setSelectedWeek(e.target.value)} style={{ ...inp, maxWidth: 320 }}>
-                <option value="current">Current week ({weekRangeLabel(currentWeekKey)})</option>
-                {availableWeeks.map(w => (
-                  <option key={w} value={w}>{weekRangeLabel(w)}</option>
-                ))}
-              </select>
+              AOG EVENTS SORTED BY CALENDAR WEEK AND HELICOPTER
             </div>
 
-            {!byTail.length && <div style={{ textAlign: "center", padding: "60px 0", color: "#ffffff", fontSize: 11, letterSpacing: 4 }}>NO AOG EVENTS DISCOVERED THIS WEEK</div>}
+            {!weeksByTail.length && <div style={{ textAlign: "center", padding: "60px 0", color: "#ffffff", fontSize: 11, letterSpacing: 4 }}>NO AOG EVENTS AVAILABLE</div>}
 
-            {byTail.map(x => (
-              <div key={x.tail} style={{ background: "#090912", border: "1px solid #111122", borderRadius: 2, padding: "12px 14px", marginBottom: 8 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                  <span style={{ fontSize: 17, fontWeight: "bold", color: "#ffffff", letterSpacing: 2 }}>{x.tail}</span>
-                  <span style={{ fontSize: 9, color: "#ffffff", letterSpacing: 2 }}>{x.count} EVENT{x.count !== 1 ? "S" : ""}</span>
+            {weeksByTail.map(({ week, tails, count }) => (
+              <div key={week} style={{ marginBottom: 18 }}>
+                <div style={{ fontSize: 12, color: "#4dc07f", letterSpacing: 2, marginBottom: 10 }}>
+                  WEEK OF {weekRangeLabel(week).toUpperCase()} · {count} EVENT{count !== 1 ? "S" : ""}
                 </div>
-                {x.events.map(e => (
-                  <div key={e.id} style={{ fontSize: 10, color: "#ffffff", borderTop: "1px solid #0e0e1e", padding: "6px 0" }}>
-                    <div style={{ fontSize: 9, color: "#4dc07f", marginTop: 2 }}>Discovered: {ts(e.start)}</div>
-                    {e.desc && <div style={{ fontSize: 10, color: "#ffffff", marginTop: 3, fontStyle: "italic" }}>{e.desc}</div>}
+                {tails.map(x => (
+                  <div key={`${week}-${x.tail}`} style={{ background: "#090912", border: "1px solid #111122", borderRadius: 2, padding: "12px 14px", marginBottom: 8 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                      <span style={{ fontSize: 17, fontWeight: "bold", color: "#ffffff", letterSpacing: 2 }}>{x.tail}</span>
+                      <span style={{ fontSize: 9, color: "#ffffff", letterSpacing: 2 }}>{x.count} EVENT{x.count !== 1 ? "S" : ""}</span>
+                    </div>
+                    {x.events.map(e => (
+                      <div key={e.id} style={{ fontSize: 10, color: "#ffffff", borderTop: "1px solid #0e0e1e", padding: "6px 0" }}>
+                        <div style={{ fontSize: 9, color: "#4dc07f", marginTop: 2 }}>Discovered: {ts(e.start)}</div>
+                        {e.desc && <div style={{ fontSize: 10, color: "#ffffff", marginTop: 3, fontStyle: "italic" }}>{e.desc}</div>}
+                      </div>
+                    ))}
                   </div>
                 ))}
               </div>
