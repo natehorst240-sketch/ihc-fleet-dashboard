@@ -2,6 +2,9 @@
 export_log.txt
 scripts/export_log.txt
 
+# Google Maps API key (never commit — Google will revoke it)
+data/maps_key.json
+
 # runtime outputs (temporary)
 data/runtime/
 
