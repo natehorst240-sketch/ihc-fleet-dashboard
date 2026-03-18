@@ -1429,8 +1429,13 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
 
 # -- AIRCRAFT LOCATION TAB -----------------------------------------------------
 
-def _build_location_tab(aircraft_list, positions):
-    """Aircraft location tab: Google Maps panel (left) + registry cards (right)."""
+def _build_location_tab(aircraft_list, positions, maps_api_key=''):
+    """Aircraft location tab: Google Maps panel (left) + registry cards (right).
+
+    maps_api_key: injected at build time from GOOGLE_MAPS_API_KEY env var when present
+    (e.g. in deploy-pages CI step). When absent, falls back to a localStorage prompt
+    so local dev still works without any file storing the key.
+    """
 
     ac_hrs = {ac['tail']: ac['airframe_hrs'] for ac in aircraft_list}
     ac_hrs_js = json.dumps({t: (f"{h:,.1f}" if h else 'N/A') for t, h in ac_hrs.items()})
@@ -1441,31 +1446,49 @@ def _build_location_tab(aircraft_list, positions):
 .location-wrap{display:flex;gap:12px;margin-top:10px;align-items:flex-start;}
 .location-map-col{flex:2;min-width:0;}
 .location-cards-col{flex:1;min-width:200px;max-height:520px;overflow-y:auto;}
-#location-map{width:100%;height:520px;border-radius:6px;border:1px solid var(--border);background:var(--surface);}
-.location-map-note{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:4px;opacity:.7;}
+#location-map{width:100%;height:520px;border-radius:6px;border:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;}
+.location-map-note{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:4px;opacity:.7;display:flex;align-items:center;gap:10px;}
+.location-map-note a{color:var(--muted);text-decoration:underline;cursor:pointer;}
 .location-grid{display:grid;grid-template-columns:1fr;gap:8px;}
 .location-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px;}
 .location-card-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:8px;}
 .location-card-tail{font-family:var(--sans);font-size:16px;font-weight:800;letter-spacing:1px;color:var(--heading);}
 .location-card-state{font-family:var(--mono);font-size:10px;color:var(--blue);letter-spacing:.8px;text-transform:uppercase;}
 .location-card-row{font-family:var(--mono);font-size:10px;color:var(--muted);line-height:1.5;}
+#gmaps-key-input{width:280px;padding:7px 10px;font-family:var(--mono);font-size:12px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--heading);outline:none;}
+#gmaps-key-input:focus{border-color:var(--blue);}
+#gmaps-key-save{padding:7px 14px;font-family:var(--mono);font-size:12px;background:var(--blue);color:#fff;border:none;border-radius:4px;cursor:pointer;}
 </style>'''
+
+    # Whether the key was injected at build time (CI) or needs localStorage fallback
+    has_build_key = bool(maps_api_key)
+
+    # Script tag emitted only when key is baked in at build time (deploy-pages CI step)
+    if has_build_key:
+        maps_script_tag = (
+            '<script>window.__gmapsReady=function(){window.initLocationMap();};</script>\n'
+            '<script async src="https://maps.googleapis.com/maps/api/js'
+            f'?key={maps_api_key}&callback=__gmapsReady&loading=async&libraries=marker"></script>'
+        )
+    else:
+        maps_script_tag = ''  # loaded dynamically via localStorage path
 
     refresh_js = """
 (function() {
   var AC_HRS = __AC_HRS_JSON__;
   var TRACKED_TAILS = new Set(__TRACKED_TAILS_JSON__);
+  var HAS_BUILD_KEY = __HAS_BUILD_KEY__;
+  var GMAPS_LS_KEY = 'ihc_gmaps_key';
+
   function esc(t) { return String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
   function ageFmt(utcStr) { if (!utcStr) return ''; var dt=new Date(utcStr),now=new Date(); var m=Math.round((now-dt)/60000); if (isNaN(m)||m<0) return ''; return m<60 ? m+'m ago' : (m/60).toFixed(1)+'h ago'; }
   function toNum(v) { var n = Number(v); return isFinite(n) ? n : null; }
+  function lsGet() { try { return localStorage.getItem(GMAPS_LS_KEY) || ''; } catch(e) { return ''; } }
+  function lsSet(k) { try { if (k) localStorage.setItem(GMAPS_LS_KEY, k); else localStorage.removeItem(GMAPS_LS_KEY); } catch(e) {} }
 
-  // ---- Map state ----
-  var _map = null;
-  var _markers = [];
-  var _infoWindow = null;
-  var _pendingPoints = null;
+  var _map = null, _markers = [], _infoWindow = null, _pendingPoints = null;
 
-  // Helicopter top-view SVG (nose points UP = north when heading=0)
+  // Helicopter top-view SVG (nose = UP = north when heading=0)
   var HELI_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="-16 -16 32 32">'
     + '<rect x="-14" y="-1.3" width="28" height="2.6" rx="1.3" fill="currentColor" opacity="0.75"/>'
     + '<ellipse cx="0" cy="4" rx="4.5" ry="7.5" fill="currentColor"/>'
@@ -1473,20 +1496,18 @@ def _build_location_tab(aircraft_list, positions):
     + '<rect x="-5.5" y="-15" width="11" height="2" rx="1" fill="currentColor" opacity="0.75"/>'
     + '</svg>';
 
-  function initMap() {
+  window.initLocationMap = function() {
     var mapEl = document.getElementById('location-map');
     if (!mapEl) return;
+    mapEl.innerHTML = '';
+    mapEl.style.display = '';
     _map = new google.maps.Map(mapEl, {
-      zoom: 7,
-      center: {lat: 39.3, lng: -111.9},
-      mapId: 'DEMO_MAP_ID',
-      mapTypeId: 'terrain',
-      streetViewControl: false,
-      fullscreenControl: true
+      zoom: 7, center: {lat: 39.3, lng: -111.9}, mapId: 'DEMO_MAP_ID',
+      mapTypeId: 'terrain', streetViewControl: false, fullscreenControl: true
     });
     _infoWindow = new google.maps.InfoWindow();
     if (_pendingPoints) { updateMarkers(_pendingPoints); _pendingPoints = null; }
-  }
+  };
 
   function updateMarkers(points) {
     if (!_map) { _pendingPoints = points; return; }
@@ -1495,18 +1516,13 @@ def _build_location_tab(aircraft_list, positions):
     if (!points.length) return;
     var lats = [], lngs = [];
     points.forEach(function(p) {
-      var airborne = p.state === 'AIRBORNE';
       var el = document.createElement('div');
       el.innerHTML = HELI_SVG;
-      el.style.color = airborne ? '#4ade80' : '#60a5fa';
+      el.style.color = p.state === 'AIRBORNE' ? '#4ade80' : '#60a5fa';
       el.style.transform = 'rotate(' + (p.heading || 0) + 'deg)';
       el.style.cursor = 'pointer';
-      el.title = p.tail;
       var marker = new google.maps.marker.AdvancedMarkerElement({
-        map: _map,
-        position: {lat: p.position.lat, lng: p.position.lng},
-        content: el,
-        title: p.tail
+        map: _map, position: {lat: p.position.lat, lng: p.position.lng}, content: el, title: p.tail
       });
       (function(mk, pt) {
         mk.addListener('click', function() {
@@ -1516,15 +1532,13 @@ def _build_location_tab(aircraft_list, positions):
             + 'State: ' + esc(pt.state || 'UNKNOWN') + '<br>'
             + 'Speed: ' + esc(String(pt.speed_kts || 0)) + ' kts<br>'
             + 'Heading: ' + esc(String(pt.heading || 0)) + '&deg;<br>'
-            + 'Last ping: ' + esc(pt.lastPing || 'N/A') + ' ' + esc(ageFmt(pt.lastPing))
-            + '</div>'
+            + 'Last ping: ' + esc(pt.lastPing || 'N/A') + ' ' + esc(ageFmt(pt.lastPing)) + '</div>'
           );
           _infoWindow.open(_map, mk);
         });
       })(marker, p);
       _markers.push(marker);
-      lats.push(p.position.lat);
-      lngs.push(p.position.lng);
+      lats.push(p.position.lat); lngs.push(p.position.lng);
     });
     if (lats.length) {
       var bounds = new google.maps.LatLngBounds();
@@ -1534,24 +1548,46 @@ def _build_location_tab(aircraft_list, positions):
     }
   }
 
+  function loadMapsScript(key) {
+    var mapEl = document.getElementById('location-map');
+    if (mapEl) { mapEl.innerHTML = ''; mapEl.style.display = ''; }
+    window.__gmapsReady = function() { window.initLocationMap(); };
+    var s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(key)
+           + '&callback=__gmapsReady&loading=async&libraries=marker';
+    s.onerror = function() { lsSet(''); showKeyPrompt('Invalid or restricted key \u2014 please try again.'); };
+    document.head.appendChild(s);
+  }
+
+  function showKeyPrompt(errMsg) {
+    var mapEl = document.getElementById('location-map');
+    if (!mapEl) return;
+    mapEl.innerHTML =
+      '<div style="font-family:var(--mono);font-size:13px;color:var(--heading);margin-bottom:2px;">&#x1F5FA; Google Maps API Key</div>'
+      + '<div style="font-family:var(--mono);font-size:10px;color:var(--muted);max-width:340px;text-align:center;line-height:1.5;">'
+      + (errMsg ? '<span style="color:var(--amber);">' + esc(errMsg) + '</span><br>' : '')
+      + 'Stored in browser localStorage only \u2014 never written to disk or any file.</div>'
+      + '<div style="display:flex;gap:6px;margin-top:6px;">'
+      + '<input id="gmaps-key-input" type="password" placeholder="Paste your AIza\u2026 key" autocomplete="off">'
+      + '<button id="gmaps-key-save">Load Map</button></div>';
+    function submit() {
+      var val = (document.getElementById('gmaps-key-input') || {}).value || '';
+      val = val.trim(); if (!val) return;
+      lsSet(val); loadMapsScript(val);
+    }
+    var btn = document.getElementById('gmaps-key-save');
+    var inp = document.getElementById('gmaps-key-input');
+    if (btn) btn.addEventListener('click', submit);
+    if (inp) inp.addEventListener('keydown', function(e) { if (e.key === 'Enter') submit(); });
+  }
+
+  window._clearGmapsKey = function() { lsSet(''); showKeyPrompt(); };
+
   function loadMapsApi() {
-    fetch('maps_key.json?ts=' + Date.now(), {cache: 'no-store'})
-      .then(function(r) { return r.ok ? r.json() : null; })
-      .then(function(cfg) {
-        var key = cfg && cfg.google_maps_api_key;
-        if (!key) {
-          var note = document.querySelector('.location-map-note');
-          if (note) note.textContent = 'Map unavailable — add your key to data/maps_key.json (copy maps_key.example.json).';
-          return;
-        }
-        window.__gmapsReady = function() { initMap(); };
-        var s = document.createElement('script');
-        s.async = true;
-        s.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(key)
-               + '&callback=__gmapsReady&loading=async&libraries=marker';
-        document.head.appendChild(s);
-      })
-      .catch(function() {});
+    if (HAS_BUILD_KEY) return; // script tag already in HTML (deploy-pages CI)
+    var key = lsGet();
+    if (key) { loadMapsScript(key); } else { showKeyPrompt(); }
   }
 
   function setLocationStatus(msg, isError) {
@@ -1570,71 +1606,50 @@ def _build_location_tab(aircraft_list, positions):
     }
     points.sort(function(a,b){ return a.tail.localeCompare(b.tail); });
     wrap.innerHTML = points.map(function(p) {
-      var airborne = p.state === 'AIRBORNE';
       var dot = '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:'
-        + (airborne ? '#4ade80' : '#60a5fa') + ';margin-right:4px;vertical-align:middle;"></span>';
+        + (p.state === 'AIRBORNE' ? '#4ade80' : '#60a5fa') + ';margin-right:4px;vertical-align:middle;"></span>';
       return '<div class="location-card"><div class="location-card-head"><div class="location-card-tail">'+dot+esc(p.tail)+
         '</div><div class="location-card-state">'+esc(p.state || 'UNKNOWN')+
-        '</div></div><div class="location-card-row">'+esc((p.position.lat || 0).toFixed(4))+', '+esc((p.position.lng || 0).toFixed(4))+
-        '</div><div class="location-card-row">Speed: '+esc(String(p.speed_kts || 0))+' kts &middot; Hdg: '+esc(String(p.heading || 0))+'&deg;'+
-        '</div><div class="location-card-row">Last ping: '+esc(p.lastPing || 'No ping time')+' '+esc(ageFmt(p.lastPing))+
-        '</div><div class="location-card-row">Airframe: '+esc(AC_HRS[p.tail] || 'N/A')+' TT</div></div>';
+        '</div></div><div class="location-card-row">'+esc((p.position.lat||0).toFixed(4))+', '+esc((p.position.lng||0).toFixed(4))+
+        '</div><div class="location-card-row">Speed: '+esc(String(p.speed_kts||0))+' kts &middot; Hdg: '+esc(String(p.heading||0))+'&deg;'+
+        '</div><div class="location-card-row">Last ping: '+esc(p.lastPing||'No ping time')+' '+esc(ageFmt(p.lastPing))+
+        '</div><div class="location-card-row">Airframe: '+esc(AC_HRS[p.tail]||'N/A')+' TT</div></div>';
     }).join('');
   }
 
-  function deriveStatusFromRaw(rawState, speedKts) { var state = String(rawState || '').toUpperCase(); if (state.indexOf('AIRBORNE') >= 0 || state.indexOf('IN_FLIGHT') >= 0 || speedKts > 40) return 'AIRBORNE'; return 'AWAY'; }
+  function deriveStatusFromRaw(rawState, speedKts) { var s = String(rawState||'').toUpperCase(); return (s.indexOf('AIRBORNE')>=0||s.indexOf('IN_FLIGHT')>=0||speedKts>40) ? 'AIRBORNE' : 'AWAY'; }
   function buildAircraftDetail(rows) {
     var detail = {};
     (Array.isArray(rows) ? rows : []).forEach(function(row) {
-      var tail = String((row && (row.vin || row.tail || row.registration)) || '').toUpperCase();
+      var tail = String((row&&(row.vin||row.tail||row.registration))||'').toUpperCase();
       if (!tail || !TRACKED_TAILS.has(tail)) return;
-      var speed = toNum(row.speed_kts);
-      if (speed === null) speed = toNum(row.speed);
-      detail[tail] = {
-        lat: row.latitude,
-        lon: row.longitude,
-        heading: row.heading,
-        speed_kts: speed,
-        utc: row.last_ping || row.utc || '',
-        status: deriveStatusFromRaw(row.state || row.status, speed || 0)
-      };
+      var speed = toNum(row.speed_kts); if (speed===null) speed=toNum(row.speed);
+      detail[tail] = { lat: row.latitude, lon: row.longitude, heading: row.heading,
+        speed_kts: speed, utc: row.last_ping||row.utc||'',
+        status: deriveStatusFromRaw(row.state||row.status, speed||0) };
     });
     return detail;
   }
 
   function render(payload) {
     if (!payload) return;
-    var detail=payload.aircraft_detail||{};
+    var detail = payload.aircraft_detail || {};
     var points = Object.keys(detail).map(function(tail) {
-      var d = detail[tail] || {};
-      var lat = toNum(d.lat), lng = toNum(d.lon);
-      if (lat === null || lng === null) return null;
-      return {
-        tail: tail,
-        position: {lat: lat, lng: lng},
-        heading: toNum(d.heading),
-        speed_kts: toNum(d.speed_kts),
-        lastPing: d.utc || '',
-        state: d.status || 'UNKNOWN'
-      };
+      var d = detail[tail]||{}, lat=toNum(d.lat), lng=toNum(d.lon);
+      if (lat===null||lng===null) return null;
+      return { tail: tail, position: {lat:lat,lng:lng}, heading: toNum(d.heading),
+               speed_kts: toNum(d.speed_kts), lastPing: d.utc||'', state: d.status||'UNKNOWN' };
     }).filter(Boolean);
-
     renderRegistry(points);
     updateMarkers(points);
-    setLocationStatus(points.length ? ('Updated ' + new Date().toLocaleTimeString()) : 'No current positions to draw.', !points.length);
+    setLocationStatus(points.length ? ('Updated '+new Date().toLocaleTimeString()) : 'No current positions to draw.', !points.length);
   }
 
   function refresh() {
-    var ts = Date.now();
-    fetch('aircraft_locations.json?ts='+ts, {cache:'no-store'})
-      .then(function(r) { if (!r.ok) throw new Error('failed aircraft locations'); return r.json(); })
-      .then(function(locationRows) {
-        render({ aircraft_detail: buildAircraftDetail(locationRows || []) });
-      })
-      .catch(function() {
-        setLocationStatus('Could not refresh aircraft location feed.', true);
-        render({aircraft_detail:{}});
-      });
+    fetch('aircraft_locations.json?ts='+Date.now(), {cache:'no-store'})
+      .then(function(r) { if (!r.ok) throw new Error('failed'); return r.json(); })
+      .then(function(rows) { render({aircraft_detail: buildAircraftDetail(rows||[])}); })
+      .catch(function() { setLocationStatus('Could not refresh aircraft location feed.', true); render({aircraft_detail:{}}); });
   }
 
   loadMapsApi();
@@ -1645,6 +1660,9 @@ def _build_location_tab(aircraft_list, positions):
 """
     refresh_js = refresh_js.replace('__AC_HRS_JSON__', ac_hrs_js)
     refresh_js = refresh_js.replace('__TRACKED_TAILS_JSON__', TRACKED_AIRCRAFT_TAILS_JS)
+    refresh_js = refresh_js.replace('__HAS_BUILD_KEY__', 'true' if has_build_key else 'false')
+
+    key_link = '' if has_build_key else ' &middot; <a onclick="window._clearGmapsKey()">Change key</a>'
 
     return f'''{css}
 <div class="section-label">Aircraft Location</div>
@@ -1655,13 +1673,14 @@ def _build_location_tab(aircraft_list, positions):
 <div class="location-wrap">
   <div class="location-map-col">
     <div id="location-map"></div>
-    <div class="location-map-note">Green = airborne (&gt;40 kts) &middot; Blue = stationary &middot; Icon rotates to heading</div>
+    <div class="location-map-note">&#x1F7E2; airborne (&gt;40 kts) &middot; &#x1F535; stationary &middot; icon rotates to heading{key_link}</div>
   </div>
   <div class="location-cards-col">
     <div id="location-grid" class="location-grid"></div>
   </div>
 </div>
-<script>{refresh_js}</script>'''
+<script>{refresh_js}</script>
+{maps_script_tag}'''
 
 # -- BUILD HTML ----------------------------------------------------------------
 
@@ -1839,7 +1858,8 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
     values_js = "[" + ",".join([f"{v:.2f}" for _, v in chart_rows]) + "]"
 
     calendar_tab_html  = _build_calendar_tab(aircraft_list, flight_hours_stats, _interval_cfg)
-    location_tab_html  = _build_location_tab(aircraft_list, positions)
+    maps_api_key = os.environ.get('GOOGLE_MAPS_API_KEY', '')
+    location_tab_html  = _build_location_tab(aircraft_list, positions, maps_api_key)
 
     # Component change report tab (monthly groups)
     if component_changes:
