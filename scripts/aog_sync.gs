@@ -1,205 +1,130 @@
-/**
- * IHC Fleet – AOG Status Sync
- * Google Apps Script  (copy this entire file into a new Apps Script project)
- *
- * SETUP
- * ─────
- * 1. Go to script.google.com → New project → paste this file as Code.gs
- * 2. Project Settings → Script Properties → Add:
- *      GITHUB_PAT  – GitHub Personal Access Token (repo scope)
- * 3. Run syncAOG() once manually to grant Gmail permission
- * 4. Triggers → Add Trigger → syncAOG → Time-driven → Hour timer → Every hour
- *
- * The script updates data/aog_status.json in the repo automatically.
- * No secrets ever touch the browser.
- */
+// Google Apps Script — AOG Gmail Sync
+// Deploy from script.google.com under the Gmail account that receives Veryon emails.
+//
+// Script Properties required (Project Settings → Script Properties):
+//   GITHUB_TOKEN  — Fine-grained PAT with Contents: Read & Write on this repo only
+//   GITHUB_REPO   — e.g. "natehull/ihc-fleet-dashboard"
+//   GITHUB_BRANCH — e.g. "main"
+const GMAIL_QUERY = 'from:(veryon) subject:"New Discrepancy Reported" newer_than:60d';
+const CONTENTS_API = 'https://api.github.com/repos/{REPO}/contents/data/aog_status.json';
+const RAW_URL      = 'https://raw.githubusercontent.com/{REPO}/{BRANCH}/data/aog_status.json';
 
-// ── Config ───────────────────────────────────────────────────────────────────
-const REPO      = "natehorst240-sketch/ihc-fleet-dashboard";
-const FILE_PATH = "data/aog_status.json";
-const BRANCH    = "main";
+// ── Entry point (also the time-trigger target) ─────────────────────────────
+function syncAOGEmails() {
+  const props  = PropertiesService.getScriptProperties();
+  const token  = props.getProperty('GITHUB_TOKEN');
+  const repo   = props.getProperty('GITHUB_REPO');
+  const branch = props.getProperty('GITHUB_BRANCH') || 'main';
 
-// Overlap window prevents gaps between hourly runs.
-const LOOK_BACK_HOURS = 25;
+  if (!token || !repo) {
+    Logger.log('ERROR: GITHUB_TOKEN and GITHUB_REPO must be set in Script Properties.');
+    return;
+  }
 
-// ── Entry point ──────────────────────────────────────────────────────────────
-function syncAOG() {
-  const pat = PropertiesService.getScriptProperties().getProperty("GITHUB_PAT");
-  if (!pat) throw new Error("GITHUB_PAT not set in Script Properties.");
+  // 1. Fetch current aog_status.json from GitHub
+  const rawUrl  = RAW_URL.replace('{REPO}', repo).replace('{BRANCH}', branch);
+  const rawResp = UrlFetchApp.fetch(rawUrl, { muteHttpExceptions: true });
+  let state = { active: [], history: [], lastUpdated: null };
+  if (rawResp.getResponseCode() === 200) {
+    state = JSON.parse(rawResp.getContentText());
+  }
 
-  // 1. Search Gmail for Veryon AOG notifications.
-  const emails = fetchAOGEmails_();
-  Logger.log(`Found ${emails.length} candidate email(s).`);
-  if (!emails.length) return;
-
-  // 2. Parse each email directly — no external API needed.
-  const parsed = emails.map(parseVeryonEmail_).filter(Boolean);
-  Logger.log(`Parsed ${parsed.length} grounded-aircraft event(s).`);
-  if (!parsed.length) return;
-
-  // 3. Load current JSON from GitHub.
-  const { data: current, sha } = loadFromGitHub_(pat);
-
-  // 4. Merge, skipping events already tracked by discId.
-  const { active, added } = mergeActive_(current.active || [], parsed);
-  Logger.log(`${added} new event(s) to add.`);
-  if (!added) return;
-
-  // 5. Push updated JSON back to GitHub.
-  pushToGitHub_(pat, sha, {
-    active,
-    history:     current.history || [],
-    lastUpdated: new Date().toISOString(),
-  });
-
-  Logger.log("aog_status.json updated successfully.");
-}
-
-// ── Gmail ────────────────────────────────────────────────────────────────────
-function fetchAOGEmails_() {
-  const since   = new Date(Date.now() - LOOK_BACK_HOURS * 3600 * 1000);
-  const dateStr = Utilities.formatDate(since, "UTC", "yyyy/MM/dd");
-  const query   = `from:veryon subject:"New AOG Discrepancy Reported" after:${dateStr}`;
-
-  const threads = GmailApp.search(query, 0, 50);
-  const emails  = [];
+  // 2. Search Gmail for Veryon discrepancy emails
+  const threads = GmailApp.search(GMAIL_QUERY, 0, 200);
+  let added = 0;
   for (const thread of threads) {
     for (const msg of thread.getMessages()) {
-      if (msg.getDate() < since) continue;
-      emails.push({
-        subject:  msg.getSubject(),
-        body:     msg.getPlainBody(),
-        received: msg.getDate().toISOString(),
-      });
-    }
-  }
-  return emails;
-}
-
-// ── Email parser (Veryon plain-text format) ──────────────────────────────────
-/**
- * Veryon "New AOG Discrepancy Reported" emails look roughly like:
- *
- *   Aircraft:           N531HC
- *   Discrepancy ID:     20260312121446
- *   Aircraft Grounded:  Yes
- *   Description:        #1 Engine Chip Detector magnetic prong broken off...
- *   Aircraft TT:        3326.10
- *   Aircraft Landings:  11088
- *
- * Field names and spacing vary slightly — the regexes are intentionally loose.
- */
-function parseVeryonEmail_(email) {
-  const body = email.body;
-
-  // Must be grounded — skip if not.
-  if (!/Aircraft\s+Grounded[^:]*:\s*Yes/i.test(body)) return null;
-
-  // Tail number  e.g. N251HC, N1234AB
-  const tailMatch = body.match(/\b(N\d{3,4}[A-Z]{2})\b/);
-  if (!tailMatch) return null;
-  const tail = tailMatch[1];
-
-  // Discrepancy ID — 14-digit timestamp number Veryon uses as a unique ID.
-  const discIdMatch = body.match(/Discrepancy(?:\s+ID)?[^:]*:\s*(\d{12,16})/i)
-                   || body.match(/\b(\d{14})\b/);
-  const discId = discIdMatch ? discIdMatch[1] : generateFallbackId_(email.received);
-
-  // Description — grab the line after "Description:" (strip trailing whitespace).
-  const descMatch = body.match(/Description[^:]*:\s*(.+)/i);
-  const desc = descMatch ? descMatch[1].trim().substring(0, 120) : email.subject;
-
-  // Aircraft total time (hours).
-  const hoursMatch = body.match(/(?:Aircraft\s+)?(?:Total\s+)?(?:TT|Time)[^:]*:\s*([\d,]+\.?\d*)/i);
-  const reportedHours = hoursMatch ? hoursMatch[1].replace(/,/g, "") : null;
-
-  // Aircraft total landings.
-  const landMatch = body.match(/(?:Aircraft\s+)?(?:Total\s+)?Landings?[^:]*:\s*([\d,]+)/i);
-  const reportedLandings = landMatch ? landMatch[1].replace(/,/g, "") : null;
-
-  return {
-    id:               `email-${discId}`,
-    tail,
-    desc,
-    discId,
-    start:            email.received,
-    reportedHours,
-    reportedLandings,
-    source:           "email",
-    end:              null,
-    duration:         null,
-  };
-}
-
-function generateFallbackId_(isoDate) {
-  // Build a 14-digit ID from the received timestamp as a last resort.
-  return isoDate.replace(/\D/g, "").substring(0, 14);
-}
-
-// ── Merge ────────────────────────────────────────────────────────────────────
-function mergeActive_(existing, incoming) {
-  const seen = new Set(existing.map(e => e.discId));
-  let added  = 0;
-  const merged = [...existing];
-  for (const event of incoming) {
-    if (!seen.has(event.discId)) {
-      seen.add(event.discId);
-      merged.push(event);
+      const event = parseVeryonEmail(msg);
+      if (!event) continue;  // not grounded or parse failed
+      const inActive  = state.active.find(e => e.discId === event.discId);
+      const inHistory = state.history.find(e => e.discId === event.discId);
+      if (inActive || inHistory) continue;  // already known
+      state.active.push(event);
       added++;
     }
   }
-  return { active: merged, added };
-}
 
-// ── GitHub API ───────────────────────────────────────────────────────────────
-function loadFromGitHub_(pat) {
-  const url = `https://api.github.com/repos/${REPO}/contents/${FILE_PATH}?ref=${BRANCH}`;
-  const res = UrlFetchApp.fetch(url, {
-    headers:            { Authorization: `Bearer ${pat}`, Accept: "application/vnd.github+json" },
-    muteHttpExceptions: true,
-  });
+  Logger.log('New AOG events found: ' + added);
+  if (added === 0) return;
 
-  if (res.getResponseCode() === 404) {
-    return { data: { active: [], history: [] }, sha: null };
-  }
-  if (res.getResponseCode() !== 200) {
-    throw new Error(`GitHub load failed ${res.getResponseCode()}: ${res.getContentText()}`);
-  }
-
-  const json    = JSON.parse(res.getContentText());
-  const decoded = Utilities.newBlob(
-    Utilities.base64Decode(json.content.replace(/\n/g, ""))
-  ).getDataAsString();
-
-  return { data: JSON.parse(decoded), sha: json.sha };
-}
-
-function pushToGitHub_(pat, sha, payload) {
-  const url     = `https://api.github.com/repos/${REPO}/contents/${FILE_PATH}`;
+  // 3. Commit updated aog_status.json to GitHub
+  state.lastUpdated = new Date().toISOString();
   const content = Utilities.base64Encode(
-    JSON.stringify(payload, null, 2),
-    Utilities.Charset.UTF_8
+    Utilities.newBlob(JSON.stringify(state, null, 2)).getBytes()
   );
-
-  const body = {
-    message: `ci: sync aog_status.json from Gmail [${new Date().toISOString()}]`,
-    content,
-    branch:  BRANCH,
+  const apiUrl  = CONTENTS_API.replace('{REPO}', repo);
+  const headers = {
+    Authorization: 'token ' + token,
+    Accept: 'application/vnd.github+json',
+    'Content-Type': 'application/json'
   };
-  if (sha) body.sha = sha;
 
-  const res = UrlFetchApp.fetch(url, {
-    method:  "put",
-    headers: {
-      Authorization:  `Bearer ${pat}`,
-      Accept:         "application/vnd.github+json",
-      "Content-Type": "application/json",
-    },
-    payload:            JSON.stringify(body),
-    muteHttpExceptions: true,
+  // GitHub requires the current file SHA to update
+  const shaResp = UrlFetchApp.fetch(apiUrl + '?ref=' + branch, {
+    headers, muteHttpExceptions: true
+  });
+  const sha = shaResp.getResponseCode() === 200
+    ? JSON.parse(shaResp.getContentText()).sha
+    : null;
+
+  const payload = {
+    message: 'AOG update: ' + state.lastUpdated,
+    content,
+    branch
+  };
+  if (sha) payload.sha = sha;
+
+  const putResp = UrlFetchApp.fetch(apiUrl, {
+    method: 'put',
+    headers,
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
   });
 
-  if (res.getResponseCode() >= 300) {
-    throw new Error(`GitHub push failed ${res.getResponseCode()}: ${res.getContentText()}`);
-  }
+  Logger.log('GitHub response: ' + putResp.getResponseCode());
+  Logger.log('Committed ' + added + ' new AOG event(s).');
+}
+
+// ── Email parser ───────────────────────────────────────────────────────────
+function parseVeryonEmail(msg) {
+  // Strip HTML tags and entities to get clean plain text for reliable matching
+  const text = msg.getBody()
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ');
+
+  // Only process grounded aircraft
+  if (!/Aircraft Grounded\s+Yes/i.test(text)) return null;
+
+  // Tail number: "Aircraft N281HC" (won't match "Aircraft Grounded")
+  const tailMatch = text.match(/\bAircraft\s+(N\d{3}HC)\b/i);
+  if (!tailMatch) return null;
+
+  // Discrepancy ID: "Non-Routine Maintenance 20260317084159"
+  const discMatch = text.match(/Non-Routine Maintenance\s+(\d{14})/i);
+  if (!discMatch) return null;
+
+  // Description: text between "Description" and "Aircraft Grounded"
+  const descMatch = text.match(/Description\s+(.{5,400?}?)\s+Aircraft Grounded/i);
+  const desc = descMatch ? descMatch[1].trim() : '';
+
+  // Reported Hours / Landings
+  const hoursMatch = text.match(/Reported Hours\s+([\d.]+)/i);
+  const landMatch  = text.match(/Reported Landings\s+(\d+)/i);
+
+  return {
+    id:               'email-' + discMatch[1],
+    tail:             tailMatch[1],
+    desc,
+    discId:           discMatch[1],
+    start:            msg.getDate().toISOString(),
+    reportedHours:    hoursMatch ? hoursMatch[1] : null,
+    reportedLandings: landMatch  ? landMatch[1]  : null,
+    source:           'email',
+    end:              null,
+    duration:         null
+  };
 }
