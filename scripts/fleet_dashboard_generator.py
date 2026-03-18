@@ -1218,12 +1218,7 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
 # -- AIRCRAFT LOCATION TAB -----------------------------------------------------
 
 def _build_location_tab(aircraft_list, positions, maps_api_key=''):
-    """Aircraft location tab: Google Maps panel (left) + registry cards (right).
-
-    maps_api_key: injected at build time from GOOGLE_MAPS_API_KEY env var when present
-    (e.g. in deploy-pages CI step). When absent, falls back to a localStorage prompt
-    so local dev still works without any file storing the key.
-    """
+    """Aircraft location tab: Leaflet/OpenStreetMap panel (left) + registry cards (right)."""
 
     ac_hrs = {ac['tail']: ac['airframe_hrs'] for ac in aircraft_list}
     ac_hrs_js = json.dumps({t: (f"{h:,.1f}" if h else 'N/A') for t, h in ac_hrs.items()})
@@ -1235,151 +1230,94 @@ def _build_location_tab(aircraft_list, positions, maps_api_key=''):
 .location-map-col{flex:2;min-width:0;}
 .location-cards-col{flex:1;min-width:200px;max-height:520px;overflow-y:auto;}
 #location-map{width:100%;height:520px;border-radius:6px;border:1px solid var(--border);background:var(--surface);display:block;}
-.location-map-note{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:4px;opacity:.7;display:flex;align-items:center;gap:10px;}
-.location-map-note a{color:var(--muted);text-decoration:underline;cursor:pointer;}
+.location-map-note{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:4px;opacity:.7;}
 .location-grid{display:grid;grid-template-columns:1fr;gap:8px;}
 .location-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px;}
 .location-card-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:8px;}
 .location-card-tail{font-family:var(--sans);font-size:16px;font-weight:800;letter-spacing:1px;color:var(--heading);}
 .location-card-state{font-family:var(--mono);font-size:10px;color:var(--blue);letter-spacing:.8px;text-transform:uppercase;}
 .location-card-row{font-family:var(--mono);font-size:10px;color:var(--muted);line-height:1.5;}
-#gmaps-key-input{width:280px;padding:7px 10px;font-family:var(--mono);font-size:12px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--heading);outline:none;}
-#gmaps-key-input:focus{border-color:var(--blue);}
-#gmaps-key-save{padding:7px 14px;font-family:var(--mono);font-size:12px;background:var(--blue);color:#fff;border:none;border-radius:4px;cursor:pointer;}
 </style>'''
-
-    # Whether the key was injected at build time (CI) or needs localStorage fallback
-    has_build_key = bool(maps_api_key)
-
-    # Script tag emitted only when key is baked in at build time (deploy-pages CI step)
-    if has_build_key:
-        maps_script_tag = (
-            '<script>window.__gmapsReady=function(){window.initLocationMap();};</script>\n'
-            '<script async src="https://maps.googleapis.com/maps/api/js'
-            f'?key={maps_api_key}&callback=__gmapsReady&loading=async&libraries=marker"></script>'
-        )
-    else:
-        maps_script_tag = ''  # loaded dynamically via localStorage path
 
     refresh_js = """
 (function() {
   var AC_HRS = __AC_HRS_JSON__;
   var TRACKED_TAILS = new Set(__TRACKED_TAILS_JSON__);
-  var HAS_BUILD_KEY = __HAS_BUILD_KEY__;
-  var GMAPS_LS_KEY = 'ihc_gmaps_key';
 
   function esc(t) { return String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
   function ageFmt(utcStr) { if (!utcStr) return ''; var dt=new Date(utcStr),now=new Date(); var m=Math.round((now-dt)/60000); if (isNaN(m)||m<0) return ''; return m<60 ? m+'m ago' : (m/60).toFixed(1)+'h ago'; }
   function toNum(v) { var n = Number(v); return isFinite(n) ? n : null; }
-  function lsGet() { try { return localStorage.getItem(GMAPS_LS_KEY) || ''; } catch(e) { return ''; } }
-  function lsSet(k) { try { if (k) localStorage.setItem(GMAPS_LS_KEY, k); else localStorage.removeItem(GMAPS_LS_KEY); } catch(e) {} }
 
-  var _map = null, _markers = [], _infoWindow = null, _pendingPoints = null;
+  var _map = null, _markers = [], _pendingPoints = null;
 
-  // Helicopter top-view SVG — 48px, nose points UP (north when heading=0)
-  // White stroke outline keeps icon readable over any map tile colour
-  var HELI_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="-24 -24 48 48">'
-    + '<rect x="-21" y="-8" width="42" height="4.5" rx="2.25" fill="currentColor" opacity="0.82" stroke="white" stroke-width="0.9"/>'
-    + '<ellipse cx="0" cy="-6" rx="6" ry="11" fill="currentColor" stroke="white" stroke-width="1.5"/>'
-    + '<rect x="-2" y="5" width="4" height="12" rx="2" fill="currentColor" stroke="white" stroke-width="1"/>'
-    + '<rect x="-10" y="15" width="20" height="4" rx="2" fill="currentColor" opacity="0.82" stroke="white" stroke-width="0.9"/>'
-    + '<ellipse cx="0" cy="-13" rx="3" ry="3.5" fill="white" opacity="0.5"/>'
-    + '</svg>';
+  // Helicopter SVG path (svgrepo) baked into base64 data URI — always red
+  var HELI_PATH = 'M60.64,28.1a1.24,1.24,0,0,0-1.27-1.22l-14.89-.33c.61-.91,1.51-2.05,2.78-3.57,'
+    + '6.16-7.36,4.19-9.8,4.19-9.8s-2.28-2-9.91,3.84c-1.31,1-2.34,1.76-3.19,2.31l.3-14.09a1.19,'
+    + '1.19,0,1,0-2.38,0l-.34,15.33c-2,.44-3-1.25-7.33-3.31,0,0-2.34.91-2.86,2.77a39.41,39.41,'
+    + '0,0,1,3.39,6.24l-14.5-.31a1.2,1.2,0,1,0-.05,2.39l14.6.31a1.28,1.28,0,0,0,.35.59L19.84,'
+    + '41.61l-4.57-3.24.54-1.25S12,39.7,11.5,41.34l-.14,2,1.37-.48.41-1.31L16,45.91s-.79.9-.24,'
+    + '1.47,1.55-.1,1.55-.1l4.35,3.1-1.32.35-.54,1.35,2,0c1.65-.39,4.4-4.13,4.4-4.13l-1.28.49'
+    + '-3-4.71,12.81-9.15a1.31,1.31,0,0,0,1,.45l-.32,15a1.19,1.19,0,1,0,2.38,0L38,35.23a42.17,'
+    + '42.17,0,0,1,5.67,3.47c1.88-.44,2.87-2.75,2.87-2.75-1.71-4.1-3.24-5.34-3.09-7l15.87.34A1.25,'
+    + '1.25,0,0,0,60.64,28.1Z';
+  var HELI_B64 = btoa('<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 -8 72 72"><path fill="#dc2626" d="' + HELI_PATH + '"/></svg>');
 
-  window.initLocationMap = function() {
-    var mapEl = document.getElementById('location-map');
-    if (!mapEl) return;
-    mapEl.innerHTML = '';
-    mapEl.style.cssText = ''; // clear prompt's inline flex, fall back to CSS display:block
-    _map = new google.maps.Map(mapEl, {
-      zoom: 7, center: {lat: 39.3, lng: -111.9}, mapId: 'DEMO_MAP_ID',
-      mapTypeId: 'terrain', streetViewControl: false, fullscreenControl: true
-    });
-    _infoWindow = new google.maps.InfoWindow();
+  function makeLeafletIcon(tail, heading) {
+    var html = '<div style="text-align:center;line-height:1;pointer-events:auto;">'
+      + '<div style="font-family:monospace;font-size:10px;font-weight:bold;color:#000;'
+      + 'white-space:nowrap;text-shadow:0 0 3px #fff,0 0 3px #fff;margin-bottom:2px;">' + esc(tail) + '</div>'
+      + '<img src="data:image/svg+xml;base64,' + HELI_B64 + '" width="40" height="40" '
+      + 'style="display:block;transform:rotate(' + (heading || 0) + 'deg);'
+      + 'filter:drop-shadow(0 1px 3px rgba(0,0,0,0.5));">'
+      + '</div>';
+    return L.divIcon({ html: html, className: '', iconSize: [60, 56], iconAnchor: [30, 56] });
+  }
+
+  function initMap() {
+    if (_map) return;
+    _map = L.map('location-map', { center: [39.3, -111.9], zoom: 7, zoomControl: true });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 18
+    }).addTo(_map);
     if (_pendingPoints) { updateMarkers(_pendingPoints); _pendingPoints = null; }
-  };
+  }
 
   function updateMarkers(points) {
     if (!_map) { _pendingPoints = points; return; }
-    _markers.forEach(function(m) { m.map = null; });
+    _markers.forEach(function(m) { _map.removeLayer(m); });
     _markers = [];
     if (!points.length) return;
-    var lats = [], lngs = [];
+    var latLngs = [];
     points.forEach(function(p) {
-      var el = document.createElement('div');
-      el.innerHTML = HELI_SVG;
-      el.style.color = p.state === 'AIRBORNE' ? '#dc2626' : '#94a3b8';
-      el.style.transform = 'rotate(' + (p.heading || 0) + 'deg)';
-      el.style.cursor = 'pointer';
-      el.style.filter = 'drop-shadow(0 1px 3px rgba(0,0,0,0.55))';
-      var marker = new google.maps.marker.AdvancedMarkerElement({
-        map: _map, position: {lat: p.position.lat, lng: p.position.lng}, content: el, title: p.tail
-      });
-      (function(mk, pt) {
-        mk.addListener('click', function() {
-          _infoWindow.setContent(
-            '<div style="font-family:monospace;font-size:12px;line-height:1.6;">'
-            + '<b style="font-size:14px;">' + esc(pt.tail) + '</b><br>'
-            + 'State: ' + esc(pt.state || 'UNKNOWN') + '<br>'
-            + 'Speed: ' + esc(String(pt.speed_kts || 0)) + ' kts<br>'
-            + 'Heading: ' + esc(String(pt.heading || 0)) + '&deg;<br>'
-            + 'Last ping: ' + esc(pt.lastPing || 'N/A') + ' ' + esc(ageFmt(pt.lastPing)) + '</div>'
-          );
-          _infoWindow.open(_map, mk);
-        });
-      })(marker, p);
+      var icon = makeLeafletIcon(p.tail, p.heading || 0);
+      var marker = L.marker([p.position.lat, p.position.lng], { icon: icon });
+      marker.bindPopup(
+        '<div style="font-family:monospace;font-size:12px;line-height:1.7;color:#000;">'
+        + '<b style="font-size:14px;">' + esc(p.tail) + '</b><br>'
+        + 'State: ' + esc(p.state || 'UNKNOWN') + '<br>'
+        + 'Speed: ' + esc(String(p.speed_kts || 0)) + ' kts<br>'
+        + 'Heading: ' + esc(String(p.heading || 0)) + '&deg;<br>'
+        + 'Last ping: ' + esc(p.lastPing || 'N/A') + ' ' + esc(ageFmt(p.lastPing)) + '</div>'
+      );
+      marker.addTo(_map);
       _markers.push(marker);
-      lats.push(p.position.lat); lngs.push(p.position.lng);
+      latLngs.push([p.position.lat, p.position.lng]);
     });
-    if (lats.length) {
-      var bounds = new google.maps.LatLngBounds();
-      for (var i = 0; i < lats.length; i++) bounds.extend({lat: lats[i], lng: lngs[i]});
-      if (lats.length === 1) { _map.setCenter({lat: lats[0], lng: lngs[0]}); _map.setZoom(10); }
-      else _map.fitBounds(bounds, 40);
-    }
+    if (latLngs.length === 1) { _map.setView(latLngs[0], 10); }
+    else { _map.fitBounds(L.latLngBounds(latLngs), { padding: [40, 40] }); }
   }
 
-  function loadMapsScript(key) {
-    var mapEl = document.getElementById('location-map');
-    if (mapEl) { mapEl.innerHTML = ''; mapEl.style.cssText = ''; }
-    window.__gmapsReady = function() { window.initLocationMap(); };
+  function loadLeaflet() {
+    if (window.L) { initMap(); return; }
+    var link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+    document.head.appendChild(link);
     var s = document.createElement('script');
-    s.async = true;
-    s.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(key)
-           + '&callback=__gmapsReady&loading=async&libraries=marker';
-    s.onerror = function() { lsSet(''); showKeyPrompt('Invalid or restricted key \u2014 please try again.'); };
+    s.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    s.onload = function() { initMap(); };
     document.head.appendChild(s);
-  }
-
-  function showKeyPrompt(errMsg) {
-    var mapEl = document.getElementById('location-map');
-    if (!mapEl) return;
-    mapEl.style.cssText = 'display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;';
-    mapEl.innerHTML =
-      '<div style="font-family:var(--mono);font-size:13px;color:var(--heading);margin-bottom:2px;">&#x1F5FA; Google Maps API Key</div>'
-      + '<div style="font-family:var(--mono);font-size:10px;color:var(--muted);max-width:340px;text-align:center;line-height:1.5;">'
-      + (errMsg ? '<span style="color:var(--amber);">' + esc(errMsg) + '</span><br>' : '')
-      + 'Stored in browser localStorage only \u2014 never written to disk or any file.</div>'
-      + '<div style="display:flex;gap:6px;margin-top:6px;">'
-      + '<input id="gmaps-key-input" type="password" placeholder="Paste your AIza\u2026 key" autocomplete="off">'
-      + '<button id="gmaps-key-save">Load Map</button></div>';
-    function submit() {
-      var val = (document.getElementById('gmaps-key-input') || {}).value || '';
-      val = val.trim(); if (!val) return;
-      lsSet(val); loadMapsScript(val);
-    }
-    var btn = document.getElementById('gmaps-key-save');
-    var inp = document.getElementById('gmaps-key-input');
-    if (btn) btn.addEventListener('click', submit);
-    if (inp) inp.addEventListener('keydown', function(e) { if (e.key === 'Enter') submit(); });
-  }
-
-  window._clearGmapsKey = function() { lsSet(''); showKeyPrompt(); };
-
-  function loadMapsApi() {
-    if (HAS_BUILD_KEY) return; // script tag already in HTML (deploy-pages CI)
-    var key = lsGet();
-    if (key) { loadMapsScript(key); } else { showKeyPrompt(); }
   }
 
   function setLocationStatus(msg, isError) {
@@ -1444,7 +1382,7 @@ def _build_location_tab(aircraft_list, positions, maps_api_key=''):
       .catch(function() { setLocationStatus('Could not refresh aircraft location feed.', true); render({aircraft_detail:{}}); });
   }
 
-  loadMapsApi();
+  loadLeaflet();
   setLocationStatus('Refreshing live positions...', false);
   refresh();
   setInterval(refresh, 60000);
@@ -1452,9 +1390,6 @@ def _build_location_tab(aircraft_list, positions, maps_api_key=''):
 """
     refresh_js = refresh_js.replace('__AC_HRS_JSON__', ac_hrs_js)
     refresh_js = refresh_js.replace('__TRACKED_TAILS_JSON__', TRACKED_AIRCRAFT_TAILS_JS)
-    refresh_js = refresh_js.replace('__HAS_BUILD_KEY__', 'true' if has_build_key else 'false')
-
-    key_link = '' if has_build_key else ' &middot; <a onclick="window._clearGmapsKey()">Change key</a>'
 
     return f'''{css}
 <div class="section-label">Aircraft Location</div>
@@ -1465,14 +1400,13 @@ def _build_location_tab(aircraft_list, positions, maps_api_key=''):
 <div class="location-wrap">
   <div class="location-map-col">
     <div id="location-map"></div>
-    <div class="location-map-note">&#x1F534; airborne (&gt;40 kts) &middot; &#x26AA; stationary &middot; icon rotates to heading{key_link}</div>
+    <div class="location-map-note">&#x1F534; airborne &middot; icon rotates to heading &middot; OpenStreetMap</div>
   </div>
   <div class="location-cards-col">
     <div id="location-grid" class="location-grid"></div>
   </div>
 </div>
-<script>{refresh_js}</script>
-{maps_script_tag}'''
+<script>{refresh_js}</script>'''
 
 # -- BUILD HTML ----------------------------------------------------------------
 
