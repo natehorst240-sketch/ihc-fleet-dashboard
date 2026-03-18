@@ -85,6 +85,33 @@ function syncAOGEmails() {
   Logger.log('Committed ' + added + ' new AOG event(s).');
 }
 
+// ── Debug helper — run this once to diagnose a "0 events" result ──────────
+function debugAOG() {
+  const threads = GmailApp.search(GMAIL_QUERY, 0, 5);
+  Logger.log('Threads found: ' + threads.length);
+  if (!threads.length) {
+    Logger.log('Try a broader query — check sender address and subject line in Gmail.');
+    return;
+  }
+  const msg  = threads[0].getMessages()[0];
+  const text = msg.getBody()
+    .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+
+  Logger.log('Subject: ' + msg.getSubject());
+  Logger.log('From: ' + msg.getFrom());
+  Logger.log('--- Stripped body (first 1000 chars) ---');
+  Logger.log(text.substring(0, 1000));
+  Logger.log('--- Regex checks ---');
+  Logger.log('Grounded:    ' + /Aircraft Grounded\s+Yes/i.test(text));
+  Logger.log('Tail:        ' + JSON.stringify(text.match(/\bAircraft\s+(N\d{3}HC)\b/i)));
+  Logger.log('DiscId:      ' + JSON.stringify(text.match(/Non-Routine Maintenance\s+(\d{14})/i)));
+  Logger.log('Description: ' + JSON.stringify(text.match(/Description\s+(.{5,100}?)\s+Aircraft Grounded/i)));
+  Logger.log('Hours:       ' + JSON.stringify(text.match(/Reported Hours\s+([\d.]+)/i)));
+  Logger.log('Landings:    ' + JSON.stringify(text.match(/Reported Landings\s+(\d+)/i)));
+}
+
 // ── Email parser ───────────────────────────────────────────────────────────
 function parseVeryonEmail(msg) {
   // Strip HTML tags and entities to get clean plain text for reliable matching
