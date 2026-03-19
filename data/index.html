@@ -131,7 +131,7 @@
   </div>
   <div class="header-meta">
     <div class="date">REPORT DATE: 20 FEB 2026</div>
-    <div>FLEET: 9 AIRCRAFT &nbsp;|&nbsp; 0 AIRBORNE &nbsp;|&nbsp; 5 AT BASE &nbsp;|&nbsp; GENERATED: 19 MAR 2026 21:02</div>
+    <div>FLEET: 9 AIRCRAFT &nbsp;|&nbsp; 0 AIRBORNE &nbsp;|&nbsp; 5 AT BASE &nbsp;|&nbsp; GENERATED: 19 MAR 2026 21:05</div>
   </div>
 </header>
 <div class="legend">
@@ -145,7 +145,6 @@
   <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('maintenance',this)">Maintenance Due List</button>
     <button class="tab-btn" onclick="switchTab('location',this)">Aircraft Location</button>
-    <button class="tab-btn" onclick="switchTab('aog',this)">AOG Tracker</button>
     <button class="tab-btn" onclick="switchTab('flight-hours',this)">Flight Hours Tracking</button>
     <button class="tab-btn" onclick="switchTab('component-changes',this)">Component Changes</button>
     <button class="tab-btn" onclick="switchTab('calendar',this)">Calendar</button>
@@ -64795,9 +64794,6 @@ RII</td>
 })();
 </script>
   </div>
-  <div id="tab-aog" class="tab-content">
-    <div id="aog-root"></div>
-  </div>
 </main>
 <footer>
   <span>SOURCE: VERYON MAINTENANCE TRACKING &nbsp;|&nbsp; Due-List_BIG_WEEKLY_aw109sp.csv</span>
@@ -64806,7 +64802,7 @@ RII</td>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 <script>
-  const DASHBOARD_VERSION = "20260319210235";
+  const DASHBOARD_VERSION = "20260319210518";
 
   // Auto-reload when a newer build is deployed
   (function() {
@@ -64917,6 +64913,5 @@ RII</td>
     });
   })();
 </script>
-<script type="text/babel" src="./AOGTracker.jsx"></script>
 </body>
 </html>
