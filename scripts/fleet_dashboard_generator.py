@@ -334,19 +334,6 @@ def calculate_flight_hours_stats(history_data, aircraft_list):
         }
     return stats
 
-# -- AOG Tracking Delete if this fucks the code---------------------------------------------
-
-import os
-os.makedirs("data", exist_ok=True)
-
-# Write an empty seed file if it doesn't exist yet
-aog_path = "data/aog_status.json"
-if not os.path.exists(aog_path):
-    import json
-    with open(aog_path, "w") as f:
-        json.dump({"active": [], "history": [], "lastUpdated": None}, f)
-
-
 # -- POSITIONS -----------------------------------------------------------------
 
 def load_positions(positions_path):
@@ -1827,7 +1814,6 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
   <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('maintenance',this)">Maintenance Due List</button>
     <button class="tab-btn" onclick="switchTab('location',this)">Aircraft Location</button>
-    <button class="tab-btn" onclick="switchTab('aog',this)">AOG Tracker</button>
     <button class="tab-btn" onclick="switchTab('flight-hours',this)">Flight Hours Tracking</button>
     <button class="tab-btn" onclick="switchTab('component-changes',this)">Component Changes</button>
     <button class="tab-btn" onclick="switchTab('calendar',this)">Calendar</button>
@@ -1895,9 +1881,6 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
   <!-- AIRCRAFT LOCATION TAB -->
   <div id="tab-location" class="tab-content">
 {location_tab_html}
-  </div>
-  <div id="tab-aog" class="tab-content">
-    <div id="aog-root"></div>
   </div>
 </main>
 <footer>
@@ -2018,7 +2001,6 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
     }});
   }})();
 </script>
-<script type="text/babel" src="./AOGTracker.jsx"></script>
 </body>
 </html>"""
 

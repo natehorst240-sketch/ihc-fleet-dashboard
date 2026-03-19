@@ -97,23 +97,6 @@ python scripts/trootrax.py
 Optional: set `TROOTRAX_CUSTOMER_ID` if you need a customer ID other than `312`.
 
 
-## AOG Tracker (Manual clear + weekly OOS report)
-
-A standalone AOG tracker is available at `data/aog.html`.
-
-- Add a grounded aircraft manually.
-- Clear AOG events manually when the aircraft returns to service.
-- View 7-day out-of-service totals by tail in the **Weekly Report** tab.
-- Data persists in browser storage (`localStorage` fallback).
-
-Open it locally with:
-
-```bash
-open data/aog.html
-```
-
-For an implementation blueprint to automate email-to-AOG flags on the main dashboard, see [AOG_AUTOMATION_PLAN.md](AOG_AUTOMATION_PLAN.md).
-
 ## Quick Start
 
 ```bash
@@ -144,11 +127,6 @@ the Actions pipeline rebuilds and redeploys automatically.
 `Due-List_BIG_WEEKLY_aw109sp.csv` in the repo. If your export bot commits that file to
 `main`, the push trigger will also rebuild immediately.
 
-Both scheduled workflows now also refresh `data/aog_status.json` before rebuilding.
-Set these repository secrets to enable the AOG sync:
-
-- `AOG_STATUS_URL`: HTTPS endpoint returning active/history AOG JSON.
-- `AOG_STATUS_TOKEN` (optional): Bearer token for authenticated endpoints.
 
 Or via the command line:
 
