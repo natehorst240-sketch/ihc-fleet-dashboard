@@ -757,6 +757,40 @@ def parse_component_change_report(filepath):
     return monthly_groups
 
 
+def build_component_change_payload(component_changes):
+    payload = []
+    for month in component_changes:
+        aircraft_changes = []
+        for reg, rows in month['aircraft_changes'].items():
+            aircraft_changes.append({
+                'registration': reg,
+                'change_count': len(rows),
+                'rows': [
+                    {
+                        'compliance_date': item['compliance_date'].strftime('%Y-%m-%d'),
+                        'task_description': item['task_description'] or '-',
+                        'part_number_removed': item['part_number_removed'] or '-',
+                        'serial_number_removed': item['serial_number_removed'] or '-',
+                        'part_number_installed': item['part_number_installed'] or '-',
+                        'serial_number_installed': item['serial_number_installed'] or '-',
+                    }
+                    for item in rows
+                ],
+            })
+
+        payload.append({
+            'month_key': month['month_key'],
+            'month_label': month['month_label'],
+            'total_changes': month['total_changes'],
+            'aircraft_changes': aircraft_changes,
+            'part_totals': [
+                {'part_number': part_num, 'count': count}
+                for part_num, count in month['part_totals']
+            ],
+        })
+    return payload
+
+
 # -- CALENDAR TAB --------------------------------------------------------------
 
 import json
@@ -1595,60 +1629,20 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
     maps_api_key = os.environ.get('GOOGLE_MAPS_API_KEY', '')
     location_tab_html  = _build_location_tab(aircraft_list, positions, maps_api_key)
 
-    # Component change report tab (monthly groups)
+    # Component change report tab: keep the full dataset in JS but only render one month at a time.
+    component_change_payload_js = '[]'
     if component_changes:
-        month_sections = ''
-        for month in component_changes:
-            aircraft_cards = ''
-            for reg, rows in month['aircraft_changes'].items():
-                row_html = ''
-                for item in rows:
-                    comp_dt = item['compliance_date'].strftime('%Y-%m-%d')
-                    row_html += f'''<tr>
-  <td>{comp_dt}</td>
-  <td>{item['task_description'] or '-'}</td>
-  <td>{item['part_number_removed'] or '-'}</td>
-  <td>{item['serial_number_removed'] or '-'}</td>
-  <td>{item['part_number_installed'] or '-'}</td>
-  <td>{item['serial_number_installed'] or '-'}</td>
-</tr>'''
-                aircraft_cards += f'''<div class="change-aircraft-card">
-  <div class="change-aircraft-head">{reg} <span>{len(rows)} changes</span></div>
-  <div class="change-table-wrap">
-    <table class="change-table">
-      <thead>
-        <tr>
-          <th>Date</th><th>Task Description</th><th>Part # Removed</th><th>Serial # Removed</th><th>Part # Installed</th><th>Serial # Installed</th>
-        </tr>
-      </thead>
-      <tbody>
-        {row_html}
-      </tbody>
-    </table>
-  </div>
-</div>'''
-
-            totals_rows = ''
-            for part_num, count in month['part_totals']:
-                totals_rows += f'<tr><td>{part_num}</td><td>{count}</td></tr>'
-            if not totals_rows:
-                totals_rows = '<tr><td colspan="2">No part numbers recorded for this month.</td></tr>'
-
-            month_sections += f'''<div class="change-month-section">
-  <div class="change-month-header">
-    <div class="change-month-title">{month['month_label']}</div>
-    <div class="change-month-total">{month['total_changes']} total changes</div>
-  </div>
-  <div class="change-aircraft-grid">{aircraft_cards}</div>
-  <div class="change-total-card">
-    <div class="change-total-title">Monthly Part Number Totals</div>
-    <table class="change-total-table">
-      <thead><tr><th>Part Number</th><th>Qty Changed</th></tr></thead>
-      <tbody>{totals_rows}</tbody>
-    </table>
-  </div>
-</div>'''
-        component_change_tab_html = f'<div class="section-label">Component Changes by Month</div>{month_sections}'
+        component_change_payload_js = json.dumps(
+            build_component_change_payload(component_changes),
+            separators=(',', ':')
+        )
+        component_change_tab_html = '''<div class="section-label">Component Changes by Month</div>
+<div class="change-controls">
+  <label class="change-select-label" for="change-month-select">Month</label>
+  <select id="change-month-select" class="change-month-select"></select>
+  <div id="change-month-meta" class="change-month-meta"></div>
+</div>
+<div id="component-change-content"></div>'''
     else:
         _cc_filename = (gcfg or {}).get('COMPONENT_CHANGE_FILENAME', COMPONENT_CHANGE_FILENAME)
         component_change_tab_html = f'<div style="font-family:var(--mono);font-size:12px;color:var(--muted);padding:16px;">No component change report data found. Add data/{_cc_filename} to populate this tab.</div>'
@@ -1773,6 +1767,10 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
   .change-month-header{{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;}}
   .change-month-title{{font-family:var(--sans);font-size:20px;font-weight:900;letter-spacing:1px;color:var(--blue);}}
   .change-month-total{{font-family:var(--mono);font-size:11px;color:var(--muted);}}
+  .change-controls{{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:18px;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:14px;}}
+  .change-select-label{{font-family:var(--mono);font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);}}
+  .change-month-select{{background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;padding:10px 12px;font-family:var(--mono);font-size:12px;min-width:240px;}}
+  .change-month-meta{{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.6px;}}
   .change-aircraft-grid{{display:grid;grid-template-columns:1fr;gap:12px;}}
   .change-aircraft-card{{background:var(--surface2);border:1px solid var(--border);border-radius:4px;overflow:hidden;}}
   .change-aircraft-head{{padding:10px 12px;font-family:var(--sans);font-size:16px;font-weight:800;display:flex;justify-content:space-between;}}
@@ -1785,9 +1783,6 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
   footer{{margin-top:48px;padding:16px 32px;border-top:1px solid var(--border);font-family:var(--mono);font-size:10px;color:var(--muted);display:flex;justify-content:space-between;letter-spacing:1px;}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
-<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body>
 <header>
@@ -1999,6 +1994,90 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
       }},
       plugins: [ChartDataLabels]
     }});
+  }})();
+
+  // Component changes: render only the selected month so the page doesn't create
+  // thousands of table rows on first load.
+  (function() {{
+    var months = {component_change_payload_js};
+    var select = document.getElementById('change-month-select');
+    var meta = document.getElementById('change-month-meta');
+    var mount = document.getElementById('component-change-content');
+    if (!select || !meta || !mount || !months.length) return;
+
+    function esc(value) {{
+      return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }}
+
+    function renderMonth(index) {{
+      var month = months[index];
+      if (!month) {{
+        mount.innerHTML = '';
+        meta.textContent = '';
+        return;
+      }}
+
+      meta.textContent = month.total_changes + ' total changes across ' + month.aircraft_changes.length + ' aircraft';
+
+      var aircraftCards = month.aircraft_changes.map(function(aircraft) {{
+        var rows = aircraft.rows.map(function(item) {{
+          return '<tr>'
+            + '<td>' + esc(item.compliance_date) + '</td>'
+            + '<td>' + esc(item.task_description) + '</td>'
+            + '<td>' + esc(item.part_number_removed) + '</td>'
+            + '<td>' + esc(item.serial_number_removed) + '</td>'
+            + '<td>' + esc(item.part_number_installed) + '</td>'
+            + '<td>' + esc(item.serial_number_installed) + '</td>'
+            + '</tr>';
+        }}).join('');
+
+        return '<div class="change-aircraft-card">'
+          + '<div class="change-aircraft-head">' + esc(aircraft.registration) + ' <span>' + aircraft.change_count + ' changes</span></div>'
+          + '<div class="change-table-wrap">'
+          + '<table class="change-table">'
+          + '<thead><tr><th>Date</th><th>Task Description</th><th>Part # Removed</th><th>Serial # Removed</th><th>Part # Installed</th><th>Serial # Installed</th></tr></thead>'
+          + '<tbody>' + rows + '</tbody>'
+          + '</table>'
+          + '</div>'
+          + '</div>';
+      }}).join('');
+
+      var totalsRows = month.part_totals.length
+        ? month.part_totals.map(function(item) {{
+            return '<tr><td>' + esc(item.part_number) + '</td><td>' + item.count + '</td></tr>';
+          }}).join('')
+        : '<tr><td colspan="2">No part numbers recorded for this month.</td></tr>';
+
+      mount.innerHTML = '<div class="change-month-section">'
+        + '<div class="change-month-header">'
+        + '<div class="change-month-title">' + esc(month.month_label) + '</div>'
+        + '<div class="change-month-total">' + month.total_changes + ' total changes</div>'
+        + '</div>'
+        + '<div class="change-aircraft-grid">' + aircraftCards + '</div>'
+        + '<div class="change-total-card">'
+        + '<div class="change-total-title">Monthly Part Number Totals</div>'
+        + '<table class="change-total-table"><thead><tr><th>Part Number</th><th>Qty Changed</th></tr></thead><tbody>' + totalsRows + '</tbody></table>'
+        + '</div>'
+        + '</div>';
+    }}
+
+    months.forEach(function(month, index) {{
+      var option = document.createElement('option');
+      option.value = String(index);
+      option.textContent = month.month_label;
+      select.appendChild(option);
+    }});
+
+    select.addEventListener('change', function() {{
+      renderMonth(Number(select.value) || 0);
+    }});
+
+    renderMonth(0);
   }})();
 </script>
 </body>
