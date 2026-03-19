@@ -1449,8 +1449,21 @@
       "source": "email",
       "end": null,
       "duration": null
+    },
+    {
+      "id": "email-20260319144955",
+      "tail": "N291HC",
+      "desc": "LH service step cable assembly fraying at ball swedge.",
+      "discId": "20260319144955",
+      "isGrounded": false,
+      "start": "2026-03-19T20:50:46.000Z",
+      "reportedHours": "5905.70",
+      "reportedLandings": "20685",
+      "source": "email",
+      "end": null,
+      "duration": null
     }
   ],
   "history": [],
-  "lastUpdated": "2026-03-18T12:21:36.728Z"
+  "lastUpdated": "2026-03-19T20:57:26.508Z"
 }
