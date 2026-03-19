@@ -1110,8 +1110,24 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
     }} catch(ex) {{ return []; }}
   }}
 
+  var calendarRendered = false;
+  var fullCalendarLoadPromise = null;
+
+  function loadFullCalendar() {{
+    if (window.FullCalendar) return Promise.resolve(window.FullCalendar);
+    if (fullCalendarLoadPromise) return fullCalendarLoadPromise;
+    fullCalendarLoadPromise = new Promise(function(resolve, reject) {{
+      var s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js';
+      s.onload = function() {{ resolve(window.FullCalendar); }};
+      s.onerror = reject;
+      document.head.appendChild(s);
+    }});
+    return fullCalendarLoadPromise;
+  }}
+
   function renderCalendar() {{
-    if (!calEl || !window.FullCalendar) return;
+    if (!calEl || !window.FullCalendar || calendarRendered) return;
     var maintEvents = MAINT.map(function(ev, idx) {{
       var durationDays = Math.max(1, Number(ev.durationDays) || 1);
       var endDate = null;
@@ -1204,12 +1220,21 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
     }});
 
     calendar.render();
+    calendarRendered = true;
     window.addEventListener('fleet:calendar:shown', function() {{ calendar.updateSize(); }});
     document.addEventListener('mousemove', moveHover);
   }}
 
   renderInspectionList();
-  renderCalendar();
+  window.addEventListener('fleet:calendar:shown', function() {{
+    loadFullCalendar().then(function() {{
+      renderCalendar();
+    }}).catch(function() {{
+      if (calEl && !calendarRendered) {{
+        calEl.innerHTML = '<div style="padding:16px;font-family:var(--mono);font-size:12px;color:var(--muted);">Calendar failed to load.</div>';
+      }}
+    }});
+  }});
 }})();
 </script>
 """
@@ -1797,10 +1822,6 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
   .change-total-table{{min-width:420px;}}
   footer{{margin-top:48px;padding:16px 32px;border-top:1px solid var(--border);font-family:var(--mono);font-size:10px;color:var(--muted);display:flex;justify-content:space-between;letter-spacing:1px;}}
 </style>
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
-<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body>
 <header>
@@ -1904,8 +1925,6 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
   <span>SOURCE: VERYON MAINTENANCE TRACKING &nbsp;|&nbsp; {source_filename}</span>
   <span>IHC HEALTH SERVICES - AVIATION MAINTENANCE</span>
 </footer>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 <script>
   const DASHBOARD_VERSION = "{version}";
 
@@ -1924,6 +1943,62 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
       .catch(function(){{}});
   }})();
 
+  var chartLoadPromise = null;
+  var chartsRendered = false;
+  var aogLoadPromise = null;
+
+  function loadScript(src) {{
+    return new Promise(function(resolve, reject) {{
+      var existing = document.querySelector('script[data-src="' + src + '"]');
+      if (existing) {{
+        existing.addEventListener('load', function() {{ resolve(); }}, {{ once: true }});
+        existing.addEventListener('error', reject, {{ once: true }});
+        if (existing.dataset.loaded === 'true') resolve();
+        return;
+      }}
+      var script = document.createElement('script');
+      script.src = src;
+      script.async = true;
+      script.dataset.src = src;
+      script.onload = function() {{ script.dataset.loaded = 'true'; resolve(); }};
+      script.onerror = reject;
+      document.head.appendChild(script);
+    }});
+  }}
+
+  function ensureCharts() {{
+    if (chartsRendered) return Promise.resolve();
+    if (!chartLoadPromise) {{
+      chartLoadPromise = Promise.all([
+        loadScript('https://cdn.jsdelivr.net/npm/chart.js'),
+        loadScript('https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2')
+      ]).then(function() {{
+        chartsRendered = true;
+      }});
+    }}
+    return chartLoadPromise;
+  }}
+
+  function ensureAogTracker() {{
+    if (document.querySelector('script[data-src="./AOGTracker.jsx"]')) return aogLoadPromise || Promise.resolve();
+    aogLoadPromise = Promise.all([
+      loadScript('https://unpkg.com/react@18/umd/react.production.min.js'),
+      loadScript('https://unpkg.com/react-dom@18/umd/react-dom.production.min.js'),
+      loadScript('https://unpkg.com/@babel/standalone/babel.min.js')
+    ]).then(function() {{
+      return new Promise(function(resolve, reject) {{
+        var script = document.createElement('script');
+        script.type = 'text/babel';
+        script.src = './AOGTracker.jsx';
+        script.dataset.src = './AOGTracker.jsx';
+        script.onload = resolve;
+        script.onerror = reject;
+        document.body.appendChild(script);
+      }});
+    }});
+    return aogLoadPromise;
+  }}
+
   function switchTab(tabName, btn) {{
     document.querySelectorAll('.tab-btn').forEach(function(b){{ b.classList.remove('active'); }});
     btn.classList.add('active');
@@ -1934,6 +2009,15 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
     }}
     if (tabName === 'calendar') {{
       setTimeout(function(){{ window.dispatchEvent(new Event('fleet:calendar:shown')); }}, 0);
+    }}
+    if (tabName === 'aog') {{
+      ensureAogTracker().catch(function() {{
+        var root = document.getElementById('aog-root');
+        if (root) root.innerHTML = '<div style="padding:16px;font-family:var(--mono);font-size:12px;color:var(--muted);">AOG tracker failed to load.</div>';
+      }});
+    }}
+    if (tabName === 'maintenance' || tabName === 'flight-hours') {{
+      ensureCharts().then(renderCharts).catch(function() {{}});
     }}
   }}
 
@@ -1956,69 +2040,77 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
     }});
   }}
 
-  // 200hr bar chart
-  var labels200 = {labels_js};
-  var values200 = {values_js};
-  if (labels200.length === 0) {{
-    document.getElementById('bar200').parentElement.innerHTML =
-      "<div style='font-family:var(--mono);font-size:12px;color:var(--muted);padding:10px;'>No numeric 200-hr data found.</div>";
-  }} else {{
-    new Chart(document.getElementById('bar200'), {{
-      type: 'bar',
-      data: {{ labels: labels200, datasets: [{{ label: 'Hours remaining to 200 Hr', data: values200, backgroundColor: '#29b6f6' }}] }},
-      options: {{
-        responsive: true, maintainAspectRatio: false,
-        plugins: {{
-          legend: {{ display: true }},
-          datalabels: {{
-            anchor: 'end', align: 'top', color: '#cdd6e0',
-            font: {{ family: 'Share Tech Mono', size: 11 }},
-            formatter: function(v) {{ return v.toFixed(1); }}
-          }}
-        }},
-        scales: {{
-          y: {{ beginAtZero: true, title: {{ display: true, text: 'Hours Remaining' }} }},
-          x: {{ title: {{ display: true, text: 'Aircraft (closest first)' }} }}
-        }}
-      }},
-      plugins: [ChartDataLabels]
-    }});
+  function renderCharts() {{
+    if (!window.Chart || !window.ChartDataLabels) return;
+
+    if (!renderCharts.barDone) {{
+      var labels200 = {labels_js};
+      var values200 = {values_js};
+      if (labels200.length === 0) {{
+        document.getElementById('bar200').parentElement.innerHTML =
+          "<div style='font-family:var(--mono);font-size:12px;color:var(--muted);padding:10px;'>No numeric 200-hr data found.</div>";
+      }} else {{
+        new Chart(document.getElementById('bar200'), {{
+          type: 'bar',
+          data: {{ labels: labels200, datasets: [{{ label: 'Hours remaining to 200 Hr', data: values200, backgroundColor: '#29b6f6' }}] }},
+          options: {{
+            responsive: true, maintainAspectRatio: false,
+            plugins: {{
+              legend: {{ display: true }},
+              datalabels: {{
+                anchor: 'end', align: 'top', color: '#cdd6e0',
+                font: {{ family: 'Share Tech Mono', size: 11 }},
+                formatter: function(v) {{ return v.toFixed(1); }}
+              }}
+            }},
+            scales: {{
+              y: {{ beginAtZero: true, title: {{ display: true, text: 'Hours Remaining' }} }},
+              x: {{ title: {{ display: true, text: 'Aircraft (closest first)' }} }}
+            }}
+          }},
+          plugins: [ChartDataLabels]
+        }});
+      }}
+      renderCharts.barDone = true;
+    }}
+
+    if (!renderCharts.utilDone) {{
+      var ctx = document.getElementById('utilChart');
+      if (ctx) {{
+        new Chart(ctx, {{
+          type: 'bar',
+          data: {{
+            labels: {tails_js},
+            datasets: [
+              {{ label: 'Avg Daily (hrs)', data: {daily_js}, backgroundColor: 'rgba(41,182,246,0.8)', borderColor: '#29b6f6', borderWidth: 1, yAxisID: 'yDaily' }},
+              {{ label: 'Avg Weekly (hrs)', data: {weekly_js}, backgroundColor: 'rgba(246,173,85,0.8)', borderColor: '#f6ad55', borderWidth: 1, yAxisID: 'yWeekly' }}
+            ]
+          }},
+          options: {{
+            responsive: true, maintainAspectRatio: false,
+            plugins: {{
+              legend: {{ labels: {{ color: '#a0aec0', font: {{ family: 'monospace', size: 11 }} }} }},
+              datalabels: {{
+                anchor: 'end', align: 'top', color: '#a0aec0',
+                font: {{ size: 9, family: 'monospace' }},
+                formatter: function(v) {{ return v > 0 ? v.toFixed(2) : ''; }}
+              }}
+            }},
+            scales: {{
+              yDaily:  {{ type: 'linear', position: 'left', beginAtZero: true, title: {{ display: true, text: 'Daily Avg (hrs)', color: '#29b6f6', font: {{ size: 10 }} }}, ticks: {{ color: '#4a5568', font: {{ size: 10 }} }}, grid: {{ color: 'rgba(30,37,48,0.8)' }} }},
+              yWeekly: {{ type: 'linear', position: 'right', beginAtZero: true, title: {{ display: true, text: 'Weekly Avg (hrs)', color: '#f6ad55', font: {{ size: 10 }} }}, ticks: {{ color: '#4a5568', font: {{ size: 10 }} }}, grid: {{ drawOnChartArea: false }} }},
+              x: {{ ticks: {{ color: '#a0aec0', font: {{ size: 10, family: 'monospace' }} }}, grid: {{ display: false }} }}
+            }}
+          }},
+          plugins: [ChartDataLabels]
+        }});
+      }}
+      renderCharts.utilDone = true;
+    }}
   }}
 
-  // Utilization chart
-  (function() {{
-    var ctx = document.getElementById('utilChart');
-    if (!ctx) return;
-    new Chart(ctx, {{
-      type: 'bar',
-      data: {{
-        labels: {tails_js},
-        datasets: [
-          {{ label: 'Avg Daily (hrs)', data: {daily_js}, backgroundColor: 'rgba(41,182,246,0.8)', borderColor: '#29b6f6', borderWidth: 1, yAxisID: 'yDaily' }},
-          {{ label: 'Avg Weekly (hrs)', data: {weekly_js}, backgroundColor: 'rgba(246,173,85,0.8)', borderColor: '#f6ad55', borderWidth: 1, yAxisID: 'yWeekly' }}
-        ]
-      }},
-      options: {{
-        responsive: true, maintainAspectRatio: false,
-        plugins: {{
-          legend: {{ labels: {{ color: '#a0aec0', font: {{ family: 'monospace', size: 11 }} }} }},
-          datalabels: {{
-            anchor: 'end', align: 'top', color: '#a0aec0',
-            font: {{ size: 9, family: 'monospace' }},
-            formatter: function(v) {{ return v > 0 ? v.toFixed(2) : ''; }}
-          }}
-        }},
-        scales: {{
-          yDaily:  {{ type: 'linear', position: 'left', beginAtZero: true, title: {{ display: true, text: 'Daily Avg (hrs)', color: '#29b6f6', font: {{ size: 10 }} }}, ticks: {{ color: '#4a5568', font: {{ size: 10 }} }}, grid: {{ color: 'rgba(30,37,48,0.8)' }} }},
-          yWeekly: {{ type: 'linear', position: 'right', beginAtZero: true, title: {{ display: true, text: 'Weekly Avg (hrs)', color: '#f6ad55', font: {{ size: 10 }} }}, ticks: {{ color: '#4a5568', font: {{ size: 10 }} }}, grid: {{ drawOnChartArea: false }} }},
-          x: {{ ticks: {{ color: '#a0aec0', font: {{ size: 10, family: 'monospace' }} }}, grid: {{ display: false }} }}
-        }}
-      }},
-      plugins: [ChartDataLabels]
-    }});
-  }})();
+  ensureCharts().then(renderCharts).catch(function() {{}});
 </script>
-<script type="text/babel" src="./AOGTracker.jsx"></script>
 </body>
 </html>"""
 
