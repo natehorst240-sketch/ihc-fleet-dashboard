@@ -810,16 +810,40 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
             if rem_hrs is None and rem_days is None:
                 continue
 
-            if rem_hrs is not None and rem_hrs < 0:
-                due = today
-                rem_label = f'{abs(rem_hrs):.1f} hrs PAST LIMIT'
-            elif rem_days is not None:
-                due = today + timedelta(days=int(rem_days))
-                rem_label = (f'{abs(rem_days):.0f} days PAST LIMIT' if rem_days < 0 else f'~{rem_days:.0f} days remaining')
+            due_candidates = []
+            due_reasons = []
+
+            if rem_hrs is not None:
+                if rem_hrs < 0:
+                    due_candidates.append(today)
+                    due_reasons.append(('hours_past_due', rem_hrs, 0.0))
+                else:
+                    days_away = rem_hrs / avg_daily
+                    due_candidates.append(today + timedelta(days=days_away))
+                    due_reasons.append(('hours_remaining', rem_hrs, days_away))
+
+            if rem_days is not None:
+                due_candidates.append(today + timedelta(days=rem_days))
+                due_reasons.append(('days_remaining', rem_days, rem_days))
+
+            due_idx = min(range(len(due_candidates)), key=lambda idx: due_candidates[idx])
+            due = due_candidates[due_idx].date() if isinstance(due_candidates[due_idx], datetime) else due_candidates[due_idx]
+            reason_kind, reason_value, reason_days = due_reasons[due_idx]
+
+            if reason_kind == 'hours_past_due':
+                rem_label = f'{abs(reason_value):.1f} hrs PAST LIMIT'
+            elif reason_kind == 'days_remaining':
+                rem_label = (
+                    f'{abs(reason_value):.0f} days PAST LIMIT'
+                    if reason_value < 0 else
+                    f'~{reason_value:.0f} days remaining'
+                )
+                if rem_hrs is not None and rem_hrs >= 0:
+                    rem_label += f' · {rem_hrs:.1f} hrs remaining'
             else:
-                days_away = rem_hrs / avg_daily
-                due = today + timedelta(days=int(days_away))
-                rem_label = f'{rem_hrs:.1f} hrs remaining (~{int(days_away)} days)'
+                rem_label = f'{reason_value:.1f} hrs remaining (~{reason_days:.1f} days)'
+                if rem_days is not None and rem_days >= 0:
+                    rem_label += f' · earlier than {rem_days:.0f}-day calendar limit'
 
             maint_events.append({
                 'tail': tail,
