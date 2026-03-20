@@ -285,7 +285,14 @@ def run_wizard():
     print(dim("  PAT requires 'repo' (write) scope. Input is hidden."))
 
     target_repo = ask("Target repo (org/repo)", "myorg/fleet-dashboard")
-    pat         = ask_secret("GitHub Personal Access Token (hidden)")
+
+    # Allow PAT to be pre-loaded via environment variable to avoid typing it
+    _env_pat = os.environ.get("FLEET_BUILDER_PAT", "").strip()
+    if _env_pat:
+        print(f"  {green('✓')} PAT loaded from $FLEET_BUILDER_PAT environment variable.")
+        pat = _env_pat
+    else:
+        pat = ask_secret("GitHub Personal Access Token (hidden)")
 
     return {
         "org":            org,
