@@ -15,8 +15,6 @@ jobs:
       TROOTRAX_USER: ${{ secrets.TROOTRAX_USER }}
       TROOTRAX_PASS: ${{ secrets.TROOTRAX_PASS }}
       TROOTRAX_CUSTOMER_ID: ${{ secrets.TROOTRAX_CUSTOMER_ID }}
-      AOG_STATUS_URL: ${{ secrets.AOG_STATUS_URL }}
-      AOG_STATUS_TOKEN: ${{ secrets.AOG_STATUS_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
@@ -31,8 +29,6 @@ jobs:
       - name: Pull latest Trootrax feed
         run: python scripts/trootrax.py
 
-      - name: Refresh AOG status feed
-        run: python scripts/update_aog_status.py
 
       - name: Rebuild dashboard with refreshed locations
         run: python scripts/fleet_dashboard_generator.py
@@ -44,6 +40,5 @@ jobs:
           git add data/aircraft_locations.json
           git add data/index.html data/flight_hours_history.json data/dashboard_version.json
           [ -f data/base_assignments.json ] && git add data/base_assignments.json
-          [ -f data/aog_status.json ] && git add data/aog_status.json
           git diff --staged --quiet || git commit -m "ci: refresh aircraft locations"
           git push
