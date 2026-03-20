@@ -127,6 +127,25 @@
   .change-total-title{font-family:var(--sans);font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;color:var(--heading);}
   .change-total-table{min-width:420px;}
   footer{margin-top:48px;padding:16px 32px;border-top:1px solid var(--border);font-family:var(--mono);font-size:10px;color:var(--muted);display:flex;justify-content:space-between;letter-spacing:1px;}
+
+@media (max-width: 640px) {
+  header{padding:12px 14px;flex-wrap:wrap;gap:8px;position:static;}
+  .header-photo{height:44px;margin-left:10px;}
+  .header-meta{font-size:10px;line-height:1.6;}
+  .logo{font-size:18px;letter-spacing:2px;}
+  .subtitle{font-size:9px;letter-spacing:1px;}
+  .legend{padding:8px 14px;gap:10px;}
+  main{padding:14px 12px;}
+
+  /* Tabs: scrollable row, no overflow */
+  .tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;margin-bottom:16px;border-bottom:2px solid var(--border);}
+  .tab-btn{font-size:10px;letter-spacing:1px;padding:10px 12px;white-space:nowrap;flex-shrink:0;}
+
+  /* Location tab: stack vertically */
+  .location-wrap{flex-direction:column;}
+  .location-cards-col{min-width:0;max-height:none;width:100%;}
+  #location-map{height:320px;}
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
 </head>
@@ -888,6 +907,9 @@
 .location-card-tail{font-family:var(--sans);font-size:16px;font-weight:800;letter-spacing:1px;color:var(--heading);}
 .location-card-state{font-family:var(--mono);font-size:10px;color:var(--blue);letter-spacing:.8px;text-transform:uppercase;}
 .location-card-row{font-family:var(--mono);font-size:10px;color:var(--muted);line-height:1.5;}
+.loc-toggle-btn{display:none;width:100%;margin-top:8px;padding:9px 14px;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--blue);font-family:var(--mono);font-size:11px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;text-align:left;}
+@media(max-width:640px){.loc-toggle-btn{display:flex;justify-content:space-between;align-items:center;}}
+@media(max-width:640px){.location-cards-col.collapsed{display:none;}}
 </style>
 <div class="section-label">Aircraft Location</div>
 <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:4px;">
@@ -898,6 +920,10 @@
   <div class="location-map-col">
     <div id="location-map"></div>
     <div class="location-map-note">&#x1F534; airborne &middot; icon rotates to heading &middot; OpenStreetMap</div>
+    <button class="loc-toggle-btn" id="loc-toggle-btn" onclick="(function(){var c=document.querySelector('.location-cards-col');var btn=document.getElementById('loc-toggle-btn');var collapsed=c.classList.toggle('collapsed');btn.querySelector('.loc-toggle-arrow').textContent=collapsed?'▼':'▲';btn.querySelector('.loc-toggle-label').textContent=collapsed?'Show Aircraft List':'Hide Aircraft List';})()">
+      <span class="loc-toggle-label">Hide Aircraft List</span>
+      <span class="loc-toggle-arrow">▲</span>
+    </button>
   </div>
   <div class="location-cards-col">
     <div id="location-grid" class="location-grid"></div>
