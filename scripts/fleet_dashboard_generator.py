@@ -1694,7 +1694,16 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>{_org} - Fleet Due List</title>
-<link rel="icon" href="data:,">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="icon" href="icon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#29b6f6">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="IHC Fleet">
+<meta name="description" content="IHC Health Services – Helicopter Fleet Maintenance &amp; Status Dashboard">
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root {{
@@ -1820,6 +1829,9 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
   <div class="header-meta">
     <div class="date">REPORT DATE: {report_date}</div>
     <div>FLEET: {total_ac} AIRCRAFT &nbsp;|&nbsp; {airborne_count} AIRBORNE &nbsp;|&nbsp; {at_base_count} AT BASE &nbsp;|&nbsp; GENERATED: {gen_time}</div>
+    <button id="pwa-install-btn" style="display:none;margin-top:6px;font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;padding:5px 12px;background:transparent;border:1px solid var(--blue);color:var(--blue);border-radius:2px;cursor:pointer;align-items:center;gap:6px;" title="Install as app on your device">
+      &#x2B07; ADD TO HOME SCREEN
+    </button>
   </div>
 </header>
 <div class="legend">
@@ -2103,6 +2115,57 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
 
     renderMonth(0);
   }})();
+</script>
+<script>
+// ── PWA Service Worker Registration ─────────────────────────────────────────
+(function() {{
+  if (!('serviceWorker' in navigator)) return;
+  window.addEventListener('load', function() {{
+    navigator.serviceWorker.register('./sw.js', {{ scope: './' }})
+      .then(function(reg) {{
+        // Check for updates every time the dashboard loads
+        reg.update();
+        reg.addEventListener('updatefound', function() {{
+          var newWorker = reg.installing;
+          if (!newWorker) return;
+          newWorker.addEventListener('statechange', function() {{
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {{
+              // New version available – show subtle banner
+              var banner = document.createElement('div');
+              banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#29b6f6;' +
+                'color:#000;text-align:center;padding:10px;font-family:monospace;font-size:12px;' +
+                'letter-spacing:2px;z-index:9999;cursor:pointer;';
+              banner.textContent = 'DASHBOARD UPDATED — TAP TO REFRESH';
+              banner.addEventListener('click', function() {{ window.location.reload(); }});
+              document.body.appendChild(banner);
+            }}
+          }});
+        }});
+      }})
+      .catch(function(err) {{ console.warn('SW registration failed:', err); }});
+  }});
+
+  // ── Install-to-home-screen prompt ─────────────────────────────────────────
+  var deferredPrompt;
+  window.addEventListener('beforeinstallprompt', function(e) {{
+    e.preventDefault();
+    deferredPrompt = e;
+    var btn = document.getElementById('pwa-install-btn');
+    if (btn) {{
+      btn.style.display = 'inline-flex';
+      btn.addEventListener('click', function() {{
+        btn.style.display = 'none';
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(function() {{ deferredPrompt = null; }});
+      }});
+    }}
+  }});
+  window.addEventListener('appinstalled', function() {{
+    var btn = document.getElementById('pwa-install-btn');
+    if (btn) btn.style.display = 'none';
+    deferredPrompt = null;
+  }});
+}})();
 </script>
 </body>
 </html>"""

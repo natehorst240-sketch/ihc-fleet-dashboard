@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Background -->
+  <rect width="512" height="512" rx="80" fill="#111418"/>
+  <!-- Blue glow ring -->
+  <circle cx="256" cy="256" r="200" fill="none" stroke="#29b6f6" stroke-width="2" opacity="0.3"/>
+
+  <!-- Main rotor blade left -->
+  <ellipse cx="130" cy="195" rx="115" ry="12" rx="115" ry="12"
+    transform="rotate(-8 130 195)" fill="#29b6f6" opacity="0.9"/>
+  <!-- Main rotor blade right -->
+  <ellipse cx="385" cy="200" rx="115" ry="12"
+    transform="rotate(8 385 200)" fill="#29b6f6" opacity="0.9"/>
+  <!-- Rotor hub -->
+  <circle cx="258" cy="200" r="14" fill="#29b6f6"/>
+
+  <!-- Main body fuselage -->
+  <path d="M 160 220 Q 200 200 258 202 Q 340 202 380 230 Q 360 290 320 300 L 200 300 Q 165 290 155 260 Z"
+    fill="#1a2332" stroke="#29b6f6" stroke-width="2"/>
+
+  <!-- Cockpit bubble -->
+  <path d="M 200 220 Q 220 205 258 208 Q 300 208 320 225 Q 310 255 258 258 Q 210 258 200 240 Z"
+    fill="#0d1b2a" stroke="#29b6f6" stroke-width="1.5" opacity="0.95"/>
+  <!-- Cockpit glint -->
+  <path d="M 215 218 Q 230 210 258 212 Q 280 212 298 222"
+    fill="none" stroke="#29b6f6" stroke-width="1" opacity="0.4"/>
+
+  <!-- Tail boom -->
+  <path d="M 320 275 L 430 265 L 432 278 L 320 290 Z"
+    fill="#1a2332" stroke="#29b6f6" stroke-width="1.5"/>
+
+  <!-- Tail rotor -->
+  <ellipse cx="435" cy="248" rx="8" ry="32" fill="#29b6f6" opacity="0.8"/>
+  <ellipse cx="435" cy="248" rx="32" ry="8" fill="#29b6f6" opacity="0.8"/>
+  <circle cx="435" cy="248" r="6" fill="#29b6f6"/>
+
+  <!-- Skids -->
+  <line x1="185" y1="310" x2="185" y2="330" stroke="#4a5568" stroke-width="4"/>
+  <line x1="290" y1="308" x2="290" y2="330" stroke="#4a5568" stroke-width="4"/>
+  <line x1="160" y1="330" x2="310" y2="330" stroke="#4a5568" stroke-width="5" stroke-linecap="round"/>
+  <line x1="165" y1="318" x2="175" y2="310" stroke="#4a5568" stroke-width="3"/>
+  <line x1="295" y1="315" x2="285" y2="308" stroke="#4a5568" stroke-width="3"/>
+
+  <!-- Status dot (green = OK) -->
+  <circle cx="390" cy="340" r="18" fill="#00e676" opacity="0.15"/>
+  <circle cx="390" cy="340" r="10" fill="#00e676"/>
+
+  <!-- IHC text -->
+  <text x="258" y="390" text-anchor="middle"
+    font-family="'Barlow Condensed', Arial Narrow, sans-serif"
+    font-weight="900" font-size="42" letter-spacing="8"
+    fill="#e8edf2" opacity="0.9">IHC</text>
+  <text x="258" y="415" text-anchor="middle"
+    font-family="monospace" font-size="14" letter-spacing="4"
+    fill="#29b6f6" opacity="0.7">FLEET</text>
+</svg>
