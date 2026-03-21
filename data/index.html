@@ -871,32 +871,16 @@
 <style>
 .location-status{margin-top:8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-family:var(--mono);font-size:11px;color:var(--muted);}
 .location-status.error{color:var(--amber);}
-.location-wrap{display:flex;gap:12px;margin-top:10px;align-items:flex-start;}
-.location-map-col{flex:2;min-width:0;}
-.location-cards-col{flex:1;min-width:200px;max-height:520px;overflow-y:auto;}
-#location-map{width:100%;height:520px;border-radius:6px;border:1px solid var(--border);background:var(--surface);display:block;}
+#location-map{width:100%;height:600px;border-radius:6px;border:1px solid var(--border);background:var(--surface);display:block;margin-top:10px;}
 .location-map-note{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:4px;opacity:.7;}
-.location-grid{display:grid;grid-template-columns:1fr;gap:8px;}
-.location-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px;}
-.location-card-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:8px;}
-.location-card-tail{font-family:var(--sans);font-size:16px;font-weight:800;letter-spacing:1px;color:var(--heading);}
-.location-card-state{font-family:var(--mono);font-size:10px;color:var(--blue);letter-spacing:.8px;text-transform:uppercase;}
-.location-card-row{font-family:var(--mono);font-size:10px;color:var(--muted);line-height:1.5;}
 </style>
 <div class="section-label">Aircraft Location</div>
 <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:4px;">
   Live positions via SkyRouter GPS &middot; refreshes every 60 seconds
 </div>
 <div id="location-status" class="location-status">Loading locations...</div>
-<div class="location-wrap">
-  <div class="location-map-col">
-    <div id="location-map"></div>
-    <div class="location-map-note">&#x1F534; airborne &middot; icon rotates to heading &middot; OpenStreetMap</div>
-  </div>
-  <div class="location-cards-col">
-    <div id="location-grid" class="location-grid"></div>
-  </div>
-</div>
+<div id="location-map"></div>
+<div class="location-map-note">&#x1F534; airborne &middot; click aircraft for details &middot; OpenStreetMap</div>
 <script>
 (function() {
   var AC_HRS = {"N251HC": "6,078.6", "N261HC": "6,091.5", "N271HC": "6,979.8", "N281HC": "6,524.4", "N291HC": "5,907.2", "N431HC": "2,019.7", "N531HC": "3,343.0", "N631HC": "1,847.5", "N731HC": "20.6"};
@@ -974,7 +958,8 @@
         + 'State: ' + esc(p.state || 'UNKNOWN') + '<br>'
         + 'Speed: ' + esc(String(p.speed_kts || 0)) + ' kts<br>'
         + 'Heading: ' + esc(String(p.heading || 0)) + '&deg;<br>'
-        + 'Last ping: ' + esc(p.lastPing || 'N/A') + ' ' + esc(ageFmt(p.lastPing)) + '</div>'
+        + 'Last ping: ' + esc(p.lastPing || 'N/A') + ' ' + esc(ageFmt(p.lastPing)) + '<br>'
+        + 'Airframe: ' + esc(AC_HRS[p.tail] || 'N/A') + ' TT</div>'
       );
       marker.addTo(_map);
       _markers.push(marker);
@@ -1000,25 +985,6 @@
     el.classList.toggle('error', !!isError);
   }
 
-  function renderRegistry(points) {
-    var wrap = document.getElementById('location-grid');
-    if (!wrap) return;
-    if (!points.length) {
-      wrap.innerHTML = '<div class="location-card"><div class="location-card-row">No live aircraft position data found.</div></div>';
-      return;
-    }
-    points.sort(function(a,b){ return a.tail.localeCompare(b.tail); });
-    wrap.innerHTML = points.map(function(p) {
-      var dot = '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:'
-        + (p.state === 'AIRBORNE' ? '#dc2626' : '#94a3b8') + ';margin-right:4px;vertical-align:middle;"></span>';
-      return '<div class="location-card"><div class="location-card-head"><div class="location-card-tail">'+dot+esc(p.tail)+
-        '</div><div class="location-card-state">'+esc(p.state || 'UNKNOWN')+
-        '</div></div><div class="location-card-row">'+esc((p.position.lat||0).toFixed(4))+', '+esc((p.position.lng||0).toFixed(4))+
-        '</div><div class="location-card-row">Speed: '+esc(String(p.speed_kts||0))+' kts &middot; Hdg: '+esc(String(p.heading||0))+'&deg;'+
-        '</div><div class="location-card-row">Last ping: '+esc(p.lastPing||'No ping time')+' '+esc(ageFmt(p.lastPing))+
-        '</div><div class="location-card-row">Airframe: '+esc(AC_HRS[p.tail]||'N/A')+' TT</div></div>';
-    }).join('');
-  }
 
   function deriveStatusFromRaw(rawState, speedKts) { var s = String(rawState||'').toUpperCase(); return (s.indexOf('AIRBORNE')>=0||s.indexOf('IN_FLIGHT')>=0||speedKts>40) ? 'AIRBORNE' : 'AWAY'; }
   function buildAircraftDetail(rows) {
@@ -1043,7 +1009,6 @@
       return { tail: tail, position: {lat:lat,lng:lng}, heading: toNum(d.heading),
                speed_kts: toNum(d.speed_kts), lastPing: d.utc||'', state: d.status||'UNKNOWN' };
     }).filter(Boolean);
-    renderRegistry(points);
     updateMarkers(points);
     setLocationStatus(points.length ? ('Updated '+new Date().toLocaleTimeString()) : 'No current positions to draw.', !points.length);
   }
