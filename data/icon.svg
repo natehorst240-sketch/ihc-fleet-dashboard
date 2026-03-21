@@ -1,132 +1,30 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <!-- Background -->
-  <rect width="512" height="512" rx="80" fill="#111418"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-labelledby="title desc">
+  <title id="title">MX Dashboard icon</title>
+  <desc id="desc">A coral helicopter silhouette above the words MX Dashboard on a black background.</desc>
+  <rect width="512" height="512" rx="64" fill="#000000"/>
 
-  <!-- ── AW109SP SILHOUETTE (nose pointing right) ── -->
-
-  <!-- Main rotor: 4-blade shown as 2 crossed pairs -->
-  <g opacity="0.88">
-    <ellipse cx="232" cy="166" rx="185" ry="10" fill="#94a3b8" transform="rotate(-7 232 166)"/>
-    <ellipse cx="232" cy="166" rx="185" ry="10" fill="#94a3b8" transform="rotate(7 232 166)"/>
-    <!-- Rotor hub -->
-    <circle cx="232" cy="168" r="17" fill="#555f6d"/>
-    <circle cx="232" cy="168" r="8"  fill="#8b949e"/>
-    <!-- Mast -->
-    <rect x="226" y="168" width="12" height="28" rx="4" fill="#484f58"/>
+  <g fill="#ff6b6b" stroke="#ff8f8f" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M34 79C96 75 160 76 222 82L278 83C344 80 410 76 478 70C469 79 448 82 414 84L294 92L263 88L236 92L114 88C79 87 53 84 34 79Z" stroke-width="2"/>
+    <path d="M208 40L235 39L249 84L221 84Z" stroke-width="2"/>
+    <path d="M245 83L266 84L284 92L275 101L247 99L234 91Z" stroke-width="2"/>
+    <path d="M90 210L105 194L126 188L149 164L177 145L208 141L242 132L286 136L320 148L353 172L391 178L414 193L404 206L378 208L353 219L330 223L315 236L290 239L265 233L240 236L215 232L188 235L160 229L135 231L111 221Z" stroke-width="2.5"/>
+    <path d="M126 188L162 150L177 145L149 182Z" fill="#000000" opacity="0.18" stroke="none"/>
+    <path d="M173 154L187 153L180 171L164 180Z" fill="#000000" opacity="0.18" stroke="none"/>
+    <path d="M191 148L217 147L213 181L184 182Z" fill="#000000" opacity="0.18" stroke="none"/>
+    <path d="M220 145L246 145L246 182L217 182Z" fill="#000000" opacity="0.18" stroke="none"/>
+    <path d="M251 145L277 147L281 179L249 181Z" fill="#000000" opacity="0.18" stroke="none"/>
+    <path d="M369 171L397 130L419 137L404 181Z" stroke-width="2"/>
+    <path d="M404 181L416 181L420 222L411 224L405 205Z" stroke-width="2"/>
+    <path d="M420 198L430 200L429 257L420 259Z" stroke-width="2"/>
+    <path d="M404 230L416 229L430 252L418 257L404 244L391 228Z" fill="none" stroke-width="4"/>
+    <path d="M99 212L86 217L75 213L62 214L56 205L73 195L89 194Z" stroke-width="2"/>
+    <path d="M116 222L109 230L111 238L117 239L121 230Z" stroke-width="2"/>
+    <path d="M145 232L144 247" fill="none" stroke-width="4"/>
+    <path d="M294 235L294 246" fill="none" stroke-width="4"/>
+    <path d="M328 225L328 238" fill="none" stroke-width="4"/>
+    <path d="M163 114L163 120" fill="none" stroke-width="3"/>
+    <path d="M171 112L171 120" fill="none" stroke-width="3"/>
   </g>
 
-  <!-- Twin engine nacelles (AW109 signature twin-engine hump) -->
-  <ellipse cx="196" cy="208" rx="42" ry="14" fill="#4a5568"/>
-  <ellipse cx="258" cy="205" rx="36" ry="12" fill="#4a5568"/>
-  <!-- Engine intake lips -->
-  <ellipse cx="158" cy="210" rx="13" ry="11" fill="#2d3748"/>
-  <ellipse cx="224" cy="208" rx="11" ry="9"  fill="#2d3748"/>
-
-  <!-- ── Main fuselage body ── -->
-  <!-- AW109SP: streamlined, tapered nose, wide cabin, retractable gear -->
-  <path d="
-    M 102 236
-    C 80 236 66 250 73 266
-    C 78 278 98 286 120 286
-    L 312 286
-    C 344 286 372 271 378 252
-    C 383 237 370 220 348 214
-    C 322 207 285 202 250 202
-    L 210 203
-    C 174 205 138 215 118 228
-    Z
-  " fill="#cdd6e0"/>
-
-  <!-- ── Cockpit windows (large wraparound, AW109 style) ── -->
-  <!-- Left/nose pane -->
-  <path d="
-    M 107 240
-    C 90 242 80 254 87 268
-    C 92 278 110 284 122 284
-    L 160 284 L 160 234
-    C 140 234 122 236 107 240 Z
-  " fill="#1a3a5c" opacity="0.9"/>
-  <!-- Centre windshield pane -->
-  <path d="M 164 232 L 164 284 L 226 284 L 226 230 Z" fill="#1a3a5c" opacity="0.75"/>
-  <!-- Glint lines -->
-  <line x1="112" y1="240" x2="157" y2="235" stroke="#29b6f6" stroke-width="1.5" opacity="0.45"/>
-  <line x1="167" y1="233" x2="222" y2="231" stroke="#29b6f6" stroke-width="1.5" opacity="0.35"/>
-
-  <!-- Passenger cabin windows -->
-  <rect x="232" y="232" width="40" height="30" rx="5" fill="#1a3a5c" opacity="0.8"/>
-  <rect x="280" y="232" width="36" height="30" rx="5" fill="#1a3a5c" opacity="0.75"/>
-  <rect x="322" y="234" width="30" height="26" rx="5" fill="#1a3a5c" opacity="0.6"/>
-  <!-- Glints -->
-  <rect x="234" y="233" width="36" height="8" rx="3" fill="#29b6f6" opacity="0.13"/>
-  <rect x="282" y="233" width="32" height="8" rx="3" fill="#29b6f6" opacity="0.11"/>
-
-  <!-- ── Tail boom ── -->
-  <path d="
-    M 350 262
-    C 357 262 363 258 366 253
-    L 452 236 L 452 249
-    L 366 268
-    C 363 269 357 267 350 268 Z
-  " fill="#94a3b8"/>
-
-  <!-- ── Vertical tail fin ── -->
-  <path d="
-    M 440 186 C 439 178 446 173 454 175
-    L 458 176 L 456 252 L 441 252 Z
-  " fill="#adb8c4"/>
-  <!-- Fin leading-edge sweep -->
-  <path d="M 440 186 C 438 176 445 172 454 175 L 440 186 Z" fill="#c9d1d9"/>
-
-  <!-- Horizontal stabilisers -->
-  <path d="M 444 197 C 444 197 420 191 403 183 C 412 177 440 180 450 192 Z" fill="#8b949e"/>
-  <path d="M 453 198 C 453 198 476 191 490 183 C 481 177 458 181 449 193 Z" fill="#8b949e"/>
-
-  <!-- Tail rotor -->
-  <ellipse cx="458" cy="217" rx="8"  ry="30" fill="#6e7681" opacity="0.85"/>
-  <ellipse cx="458" cy="217" rx="30" ry="8"  fill="#6e7681" opacity="0.85"/>
-  <circle  cx="458" cy="217" r="7"          fill="#8b949e"/>
-
-  <!-- ── Retractable landing gear (AW109SP has wheels, not skids) ── -->
-  <!-- Nose gear -->
-  <line x1="155" y1="284" x2="148" y2="308" stroke="#555f6d" stroke-width="5" stroke-linecap="round"/>
-  <ellipse cx="150" cy="312" rx="14" ry="6" fill="#3d4451"/>
-  <!-- Main gear -->
-  <line x1="278" y1="284" x2="272" y2="308" stroke="#555f6d" stroke-width="5" stroke-linecap="round"/>
-  <ellipse cx="275" cy="312" rx="14" ry="6" fill="#3d4451"/>
-  <!-- Gear doors (flush with fuselage belly) -->
-  <path d="M 140 284 C 152 290 168 290 174 284" fill="none" stroke="#adb8c4" stroke-width="1.8" opacity="0.5"/>
-  <path d="M 262 284 C 274 290 290 290 296 284" fill="none" stroke="#adb8c4" stroke-width="1.8" opacity="0.5"/>
-
-  <!-- ── WRENCH (on top, amber/orange, diagonal) ── -->
-  <!-- Soft glow -->
-  <circle cx="256" cy="390" r="100" fill="#f59e0b" opacity="0.07"/>
-
-  <g transform="translate(256, 390) rotate(-42)" opacity="0.97">
-    <!-- Open-end jaw (top of wrench) -->
-    <path d="
-      M -26 -42
-      C -26 -64 -14 -76  0 -76
-      C  14 -76  26 -64  26 -42
-      L  26 -28 L  14 -28
-      L  14 -42
-      C  14 -54   7 -62   0 -62
-      C  -7 -62 -14 -54 -14 -42
-      L -14 -28 L -26 -28 Z
-    " fill="#f59e0b"/>
-
-    <!-- Handle -->
-    <rect x="-14" y="-28" width="28" height="126" rx="11" fill="#f59e0b"/>
-
-    <!-- Grip ridges -->
-    <rect x="-12" y="18"  width="24" height="4" rx="2" fill="#d97706" opacity="0.55"/>
-    <rect x="-12" y="32"  width="24" height="4" rx="2" fill="#d97706" opacity="0.55"/>
-    <rect x="-12" y="46"  width="24" height="4" rx="2" fill="#d97706" opacity="0.55"/>
-    <rect x="-12" y="60"  width="24" height="4" rx="2" fill="#d97706" opacity="0.55"/>
-
-    <!-- Box-end head (bottom) — hex socket -->
-    <circle cx="0" cy="112" r="26" fill="#f59e0b"/>
-    <!-- Hex cutout -->
-    <polygon points="0,-13 11,-6.5 11,6.5 0,13 -11,6.5 -11,-6.5"
-             transform="translate(0,112)" fill="#111418"/>
-  </g>
+  <text x="256" y="390" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="54" letter-spacing="-1" fill="#f2f2f2">MX DASHBOARD</text>
 </svg>
