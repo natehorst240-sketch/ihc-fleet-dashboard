@@ -1271,9 +1271,9 @@ def _build_location_tab(aircraft_list, positions, maps_api_key=''):
     css = '''<style>
 .location-status{margin-top:8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-family:var(--mono);font-size:11px;color:var(--muted);}
 .location-status.error{color:var(--amber);}
-.location-wrap{display:flex;gap:12px;margin-top:10px;align-items:flex-start;}
-.location-map-col{flex:2;min-width:0;}
-.location-cards-col{flex:1;min-width:200px;max-height:520px;overflow-y:auto;}
+.location-wrap{display:grid;grid-template-columns:minmax(0,2fr) minmax(280px,1fr);gap:12px;margin-top:10px;align-items:flex-start;}
+.location-map-col{min-width:0;}
+.location-cards-col{min-width:0;max-height:520px;overflow-y:auto;}
 #location-map{width:100%;height:520px;border-radius:6px;border:1px solid var(--border);background:var(--surface);display:block;}
 .location-map-note{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:4px;opacity:.7;}
 .location-grid{display:grid;grid-template-columns:1fr;gap:8px;}
@@ -1733,7 +1733,10 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
   .dot-red{{background:var(--red);box-shadow:0 0 6px var(--red);}}
   .dot-overdue{{background:var(--overdue);box-shadow:0 0 6px var(--overdue);}}
   main{{padding:24px 32px;max-width:1600px;margin:0 auto;}}
-  .tabs{{display:flex;gap:0;margin-bottom:24px;border-bottom:2px solid var(--border);}}
+  .tabs{{display:flex;gap:0;margin-bottom:24px;border-bottom:2px solid var(--border);flex-wrap:wrap;}}
+  .mobile-tab-select-wrap{{display:none;margin-bottom:24px;}}
+  .mobile-tab-label{{display:block;margin-bottom:8px;font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;}}
+  .mobile-tab-select{{width:100%;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:var(--sans);font-size:14px;font-weight:700;letter-spacing:1px;text-transform:uppercase;}}
   .tab-btn{{font-family:var(--sans);font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:12px 24px;background:transparent;border:none;color:var(--muted);cursor:pointer;transition:all 0.2s;border-bottom:3px solid transparent;}}
   .tab-btn:hover{{color:var(--text);background:rgba(255,255,255,0.02);}}
   .tab-btn.active{{color:var(--blue);border-bottom-color:var(--blue);}}
@@ -1814,6 +1817,25 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
   .change-total-title{{font-family:var(--sans);font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;color:var(--heading);}}
   .change-total-table{{min-width:420px;}}
   footer{{margin-top:48px;padding:16px 32px;border-top:1px solid var(--border);font-family:var(--mono);font-size:10px;color:var(--muted);display:flex;justify-content:space-between;letter-spacing:1px;}}
+  @media (max-width: 900px){{
+    header{{padding:16px 20px;align-items:flex-start;gap:16px;flex-wrap:wrap;}}
+    .header-left{{flex:1 1 100%;align-items:flex-start;gap:16px;}}
+    .header-photo{{width:min(100%,240px);height:auto;margin-left:0;}}
+    .header-meta{{width:100%;text-align:left;}}
+    main{{padding:20px 20px 28px;}}
+    .tabs{{display:none;}}
+    .mobile-tab-select-wrap{{display:block;}}
+    .location-wrap{{grid-template-columns:1fr;}}
+    .location-cards-col{{max-height:none;overflow:visible;}}
+  }}
+  @media (max-width: 640px){{
+    .logo{{font-size:18px;letter-spacing:2px;}}
+    .subtitle{{font-size:10px;letter-spacing:1.4px;}}
+    .legend{{padding:10px 20px;gap:12px;}}
+    .summary-stat{{flex:1 1 140px;min-width:0;}}
+    #location-map{{height:360px;}}
+    .location-card{{padding:9px;}}
+  }}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
 </head>
@@ -1842,12 +1864,22 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
   <div style="margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:1px;">- = Not due this cycle</div>
 </div>
 <main>
+  <div class="mobile-tab-select-wrap">
+    <label class="mobile-tab-label" for="mobile-tab-select">Section</label>
+    <select id="mobile-tab-select" class="mobile-tab-select" onchange="switchTab(this.value)">
+      <option value="maintenance" selected>Maintenance Due List</option>
+      <option value="location">Aircraft Location</option>
+      <option value="flight-hours">Flight Hours Tracking</option>
+      <option value="component-changes">Component Changes</option>
+      <option value="calendar">Calendar</option>
+    </select>
+  </div>
   <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab('maintenance',this)">Maintenance Due List</button>
-    <button class="tab-btn" onclick="switchTab('location',this)">Aircraft Location</button>
-    <button class="tab-btn" onclick="switchTab('flight-hours',this)">Flight Hours Tracking</button>
-    <button class="tab-btn" onclick="switchTab('component-changes',this)">Component Changes</button>
-    <button class="tab-btn" onclick="switchTab('calendar',this)">Calendar</button>
+    <button class="tab-btn active" data-tab="maintenance" onclick="switchTab('maintenance', this)">Maintenance Due List</button>
+    <button class="tab-btn" data-tab="location" onclick="switchTab('location', this)">Aircraft Location</button>
+    <button class="tab-btn" data-tab="flight-hours" onclick="switchTab('flight-hours', this)">Flight Hours Tracking</button>
+    <button class="tab-btn" data-tab="component-changes" onclick="switchTab('component-changes', this)">Component Changes</button>
+    <button class="tab-btn" data-tab="calendar" onclick="switchTab('calendar', this)">Calendar</button>
   </div>
 
   <!-- MAINTENANCE TAB -->
@@ -1939,10 +1971,13 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
   }})();
 
   function switchTab(tabName, btn) {{
+    var activeBtn = btn || document.querySelector('.tab-btn[data-tab="' + tabName + '"]');
     document.querySelectorAll('.tab-btn').forEach(function(b){{ b.classList.remove('active'); }});
-    btn.classList.add('active');
+    if (activeBtn) activeBtn.classList.add('active');
     document.querySelectorAll('.tab-content').forEach(function(t){{ t.classList.remove('active'); }});
     document.getElementById('tab-' + tabName).classList.add('active');
+    var mobileSelect = document.getElementById('mobile-tab-select');
+    if (mobileSelect && mobileSelect.value !== tabName) mobileSelect.value = tabName;
     if (tabName === 'location') {{
       setTimeout(function(){{ window.dispatchEvent(new Event('fleet:location:shown')); }}, 0);
     }}
