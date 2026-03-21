@@ -1271,17 +1271,10 @@ def _build_location_tab(aircraft_list, positions, maps_api_key=''):
     css = '''<style>
 .location-status{margin-top:8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-family:var(--mono);font-size:11px;color:var(--muted);}
 .location-status.error{color:var(--amber);}
-.location-wrap{display:grid;grid-template-columns:minmax(0,2fr) minmax(280px,1fr);gap:12px;margin-top:10px;align-items:flex-start;}
+.location-wrap{margin-top:10px;}
 .location-map-col{min-width:0;}
-.location-cards-col{min-width:0;max-height:520px;overflow-y:auto;}
 #location-map{width:100%;height:520px;border-radius:6px;border:1px solid var(--border);background:var(--surface);display:block;}
 .location-map-note{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:4px;opacity:.7;}
-.location-grid{display:grid;grid-template-columns:1fr;gap:8px;}
-.location-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px;}
-.location-card-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:8px;}
-.location-card-tail{font-family:var(--sans);font-size:16px;font-weight:800;letter-spacing:1px;color:var(--heading);}
-.location-card-state{font-family:var(--mono);font-size:10px;color:var(--blue);letter-spacing:.8px;text-transform:uppercase;}
-.location-card-row{font-family:var(--mono);font-size:10px;color:var(--muted);line-height:1.5;}
 </style>'''
 
     refresh_js = """
@@ -1466,10 +1459,8 @@ def _build_location_tab(aircraft_list, positions, maps_api_key=''):
 <div class="location-wrap">
   <div class="location-map-col">
     <div id="location-map"></div>
+    <div id="location-grid" class="location-grid" style="display:none;"></div>
     <div class="location-map-note">&#x1F534; airborne &middot; icon rotates to heading &middot; OpenStreetMap</div>
-  </div>
-  <div class="location-cards-col">
-    <div id="location-grid" class="location-grid"></div>
   </div>
 </div>
 <script>{refresh_js}</script>'''
@@ -1825,8 +1816,7 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
     main{{padding:20px 20px 28px;}}
     .tabs{{display:none;}}
     .mobile-tab-select-wrap{{display:block;}}
-    .location-wrap{{grid-template-columns:1fr;}}
-    .location-cards-col{{max-height:none;overflow:visible;}}
+    #location-map{{height:420px;}}
   }}
   @media (max-width: 640px){{
     .logo{{font-size:18px;letter-spacing:2px;}}
@@ -1834,7 +1824,6 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
     .legend{{padding:10px 20px;gap:12px;}}
     .summary-stat{{flex:1 1 140px;min-width:0;}}
     #location-map{{height:360px;}}
-    .location-card{{padding:9px;}}
   }}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
