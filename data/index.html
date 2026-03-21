@@ -46,7 +46,10 @@
   .dot-red{background:var(--red);box-shadow:0 0 6px var(--red);}
   .dot-overdue{background:var(--overdue);box-shadow:0 0 6px var(--overdue);}
   main{padding:24px 32px;max-width:1600px;margin:0 auto;}
-  .tabs{display:flex;gap:0;margin-bottom:24px;border-bottom:2px solid var(--border);}
+  .tabs{display:flex;gap:0;margin-bottom:24px;border-bottom:2px solid var(--border);flex-wrap:wrap;}
+  .mobile-tab-select-wrap{display:none;margin-bottom:24px;}
+  .mobile-tab-label{display:block;margin-bottom:8px;font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;}
+  .mobile-tab-select{width:100%;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:var(--sans);font-size:14px;font-weight:700;letter-spacing:1px;text-transform:uppercase;}
   .tab-btn{font-family:var(--sans);font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:12px 24px;background:transparent;border:none;color:var(--muted);cursor:pointer;transition:all 0.2s;border-bottom:3px solid transparent;}
   .tab-btn:hover{color:var(--text);background:rgba(255,255,255,0.02);}
   .tab-btn.active{color:var(--blue);border-bottom-color:var(--blue);}
@@ -127,6 +130,25 @@
   .change-total-title{font-family:var(--sans);font-size:13px;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;color:var(--heading);}
   .change-total-table{min-width:420px;}
   footer{margin-top:48px;padding:16px 32px;border-top:1px solid var(--border);font-family:var(--mono);font-size:10px;color:var(--muted);display:flex;justify-content:space-between;letter-spacing:1px;}
+  @media (max-width: 900px){
+    header{padding:16px 20px;align-items:flex-start;gap:16px;flex-wrap:wrap;}
+    .header-left{flex:1 1 100%;align-items:flex-start;gap:16px;}
+    .header-photo{width:min(100%,240px);height:auto;margin-left:0;}
+    .header-meta{width:100%;text-align:left;}
+    main{padding:20px 20px 28px;}
+    .tabs{display:none;}
+    .mobile-tab-select-wrap{display:block;}
+    .location-wrap{grid-template-columns:1fr;}
+    .location-cards-col{max-height:none;overflow:visible;}
+  }
+  @media (max-width: 640px){
+    .logo{font-size:18px;letter-spacing:2px;}
+    .subtitle{font-size:10px;letter-spacing:1.4px;}
+    .legend{padding:10px 20px;gap:12px;}
+    .summary-stat{flex:1 1 140px;min-width:0;}
+    #location-map{height:360px;}
+    .location-card{padding:9px;}
+  }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
 </head>
@@ -141,7 +163,7 @@
   </div>
   <div class="header-meta">
     <div class="date">REPORT DATE: 20 FEB 2026</div>
-    <div>FLEET: 9 AIRCRAFT &nbsp;|&nbsp; 0 AIRBORNE &nbsp;|&nbsp; 6 AT BASE &nbsp;|&nbsp; GENERATED: 21 MAR 2026 03:29</div>
+    <div>FLEET: 9 AIRCRAFT &nbsp;|&nbsp; 1 AIRBORNE &nbsp;|&nbsp; 5 AT BASE &nbsp;|&nbsp; GENERATED: 21 MAR 2026 04:52</div>
     <button id="pwa-install-btn" style="display:none;margin-top:6px;font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;padding:5px 12px;background:transparent;border:1px solid var(--blue);color:var(--blue);border-radius:2px;cursor:pointer;align-items:center;gap:6px;" title="Install as app on your device">
       &#x2B07; ADD TO HOME SCREEN
     </button>
@@ -155,20 +177,30 @@
   <div style="margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:1px;">- = Not due this cycle</div>
 </div>
 <main>
+  <div class="mobile-tab-select-wrap">
+    <label class="mobile-tab-label" for="mobile-tab-select">Section</label>
+    <select id="mobile-tab-select" class="mobile-tab-select" onchange="switchTab(this.value)">
+      <option value="maintenance" selected>Maintenance Due List</option>
+      <option value="location">Aircraft Location</option>
+      <option value="flight-hours">Flight Hours Tracking</option>
+      <option value="component-changes">Component Changes</option>
+      <option value="calendar">Calendar</option>
+    </select>
+  </div>
   <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab('maintenance',this)">Maintenance Due List</button>
-    <button class="tab-btn" onclick="switchTab('location',this)">Aircraft Location</button>
-    <button class="tab-btn" onclick="switchTab('flight-hours',this)">Flight Hours Tracking</button>
-    <button class="tab-btn" onclick="switchTab('component-changes',this)">Component Changes</button>
-    <button class="tab-btn" onclick="switchTab('calendar',this)">Calendar</button>
+    <button class="tab-btn active" data-tab="maintenance" onclick="switchTab('maintenance', this)">Maintenance Due List</button>
+    <button class="tab-btn" data-tab="location" onclick="switchTab('location', this)">Aircraft Location</button>
+    <button class="tab-btn" data-tab="flight-hours" onclick="switchTab('flight-hours', this)">Flight Hours Tracking</button>
+    <button class="tab-btn" data-tab="component-changes" onclick="switchTab('component-changes', this)">Component Changes</button>
+    <button class="tab-btn" data-tab="calendar" onclick="switchTab('calendar', this)">Calendar</button>
   </div>
 
   <!-- MAINTENANCE TAB -->
   <div id="tab-maintenance" class="tab-content active">
     <div class="summary-bar">
       <div class="summary-stat"><div class="stat-value" style="color:var(--blue)">9</div><div class="divider-line" style="background:var(--blue)"></div><div class="stat-label">Aircraft</div></div>
-      <div class="summary-stat"><div class="stat-value" style="color:var(--blue)">0</div><div class="divider-line" style="background:var(--blue)"></div><div class="stat-label">Airborne</div></div>
-      <div class="summary-stat"><div class="stat-value" style="color:var(--green)">6</div><div class="divider-line" style="background:var(--green)"></div><div class="stat-label">At Base</div></div>
+      <div class="summary-stat"><div class="stat-value" style="color:var(--blue)">1</div><div class="divider-line" style="background:var(--blue)"></div><div class="stat-label">Airborne</div></div>
+      <div class="summary-stat"><div class="stat-value" style="color:var(--green)">5</div><div class="divider-line" style="background:var(--green)"></div><div class="stat-label">At Base</div></div>
       <div class="summary-stat"><div class="stat-value" style="color:var(--red)">2</div><div class="divider-line" style="background:var(--red)"></div><div class="stat-label">Insp. Critical / OD</div></div>
       <div class="summary-stat"><div class="stat-value" style="color:var(--amber)">22</div><div class="divider-line" style="background:var(--amber)"></div><div class="stat-label">Insp. Coming Due</div></div>
       <div class="summary-stat"><div class="stat-value" style="color:var(--overdue)">1</div><div class="divider-line" style="background:var(--overdue)"></div><div class="stat-label">Components Overdue</div></div>
@@ -194,7 +226,7 @@
           </tr>
         </thead>
         <tbody id="insp-tbody">
-<tr data-tail="N251HC"><td><div class="tail-number">N251HC<span class="location-badge location-at-base">At St. George base</span></div><div class="airframe-hrs">6,078.6 TT</div></td><td class="hr-cell"><span class="hr-badge hr-red">12.0</span></td><td class="hr-cell"><span class="hr-badge hr-amber">62.0</span></td><td class="hr-cell"><span class="hr-badge hr-amber">64.6</span></td><td class="hr-cell"><span class="hr-badge hr-green">264.6</span></td><td class="hr-cell"><span class="hr-badge hr-green">275.3</span></td><td class="hr-cell"><span class="hr-badge hr-green">1077.5</span></td><td class="hr-cell"><span class="hr-badge hr-green">257.0</span></td></tr>
+<tr data-tail="N251HC"><td><div class="tail-number">N251HC<span class="location-badge location-active">airborne 6969.0ft</span></div><div class="airframe-hrs">6,078.6 TT</div></td><td class="hr-cell"><span class="hr-badge hr-red">12.0</span></td><td class="hr-cell"><span class="hr-badge hr-amber">62.0</span></td><td class="hr-cell"><span class="hr-badge hr-amber">64.6</span></td><td class="hr-cell"><span class="hr-badge hr-green">264.6</span></td><td class="hr-cell"><span class="hr-badge hr-green">275.3</span></td><td class="hr-cell"><span class="hr-badge hr-green">1077.5</span></td><td class="hr-cell"><span class="hr-badge hr-green">257.0</span></td></tr>
 <tr data-tail="N261HC"><td><div class="tail-number">N261HC<span class="location-badge location-at-base">At Cedar City base</span></div><div class="airframe-hrs">6,091.5 TT</div></td><td class="hr-cell"><span class="hr-badge hr-amber">45.9</span></td><td class="hr-cell"><span class="hr-badge hr-amber">45.9</span></td><td class="hr-cell"><span class="hr-badge hr-amber">44.4</span></td><td class="hr-cell"><span class="hr-badge hr-green">244.4</span></td><td class="hr-cell"><span class="hr-badge hr-green">239.7</span></td><td class="hr-cell"><span class="hr-badge hr-green">1048.7</span></td><td class="hr-cell"><span class="hr-badge hr-green">282.8</span></td></tr>
 <tr data-tail="N271HC"><td><div class="tail-number">N271HC<span class="location-badge location-at-base">At Roosevelt base</span></div><div class="airframe-hrs">6,979.8 TT</div></td><td class="hr-cell"><span class="hr-badge hr-amber">35.0</span></td><td class="hr-cell"><span class="hr-badge hr-amber">35.1</span></td><td class="hr-cell"><span class="hr-badge hr-green">135.1</span></td><td class="hr-cell"><span class="hr-badge hr-green">163.1</span></td><td class="hr-cell"><span class="hr-badge hr-green">172.4</span></td><td class="hr-cell"><span class="hr-badge hr-green">157.9</span></td><td class="hr-cell"><span class="hr-badge hr-green">2572.4</span></td></tr>
 <tr data-tail="N281HC"><td><div class="tail-number">N281HC<span class="location-badge location-at-base">At IMED base</span></div><div class="airframe-hrs">6,524.4 TT</div></td><td class="hr-cell"><span class="hr-badge hr-amber">45.5</span></td><td class="hr-cell"><span class="hr-badge hr-amber">95.5</span></td><td class="hr-cell"><span class="hr-badge hr-green">195.5</span></td><td class="hr-cell"><span class="hr-badge hr-green">195.9</span></td><td class="hr-cell"><span class="hr-badge hr-green">595.9</span></td><td class="hr-cell"><span class="hr-badge hr-green">199.4</span></td><td class="hr-cell"><span class="hr-badge hr-green">2995.9</span></td></tr>
@@ -871,16 +903,32 @@
 <style>
 .location-status{margin-top:8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-family:var(--mono);font-size:11px;color:var(--muted);}
 .location-status.error{color:var(--amber);}
-#location-map{width:100%;height:600px;border-radius:6px;border:1px solid var(--border);background:var(--surface);display:block;margin-top:10px;}
+.location-wrap{display:grid;grid-template-columns:minmax(0,2fr) minmax(280px,1fr);gap:12px;margin-top:10px;align-items:flex-start;}
+.location-map-col{min-width:0;}
+.location-cards-col{min-width:0;max-height:520px;overflow-y:auto;}
+#location-map{width:100%;height:520px;border-radius:6px;border:1px solid var(--border);background:var(--surface);display:block;}
 .location-map-note{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:4px;opacity:.7;}
+.location-grid{display:grid;grid-template-columns:1fr;gap:8px;}
+.location-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px;}
+.location-card-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:8px;}
+.location-card-tail{font-family:var(--sans);font-size:16px;font-weight:800;letter-spacing:1px;color:var(--heading);}
+.location-card-state{font-family:var(--mono);font-size:10px;color:var(--blue);letter-spacing:.8px;text-transform:uppercase;}
+.location-card-row{font-family:var(--mono);font-size:10px;color:var(--muted);line-height:1.5;}
 </style>
 <div class="section-label">Aircraft Location</div>
 <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:4px;">
   Live positions via SkyRouter GPS &middot; refreshes every 60 seconds
 </div>
 <div id="location-status" class="location-status">Loading locations...</div>
-<div id="location-map"></div>
-<div class="location-map-note">&#x1F534; airborne &middot; click aircraft for details &middot; OpenStreetMap</div>
+<div class="location-wrap">
+  <div class="location-map-col">
+    <div id="location-map"></div>
+    <div class="location-map-note">&#x1F534; airborne &middot; icon rotates to heading &middot; OpenStreetMap</div>
+  </div>
+  <div class="location-cards-col">
+    <div id="location-grid" class="location-grid"></div>
+  </div>
+</div>
 <script>
 (function() {
   var AC_HRS = {"N251HC": "6,078.6", "N261HC": "6,091.5", "N271HC": "6,979.8", "N281HC": "6,524.4", "N291HC": "5,907.2", "N431HC": "2,019.7", "N531HC": "3,343.0", "N631HC": "1,847.5", "N731HC": "20.6"};
@@ -958,8 +1006,7 @@
         + 'State: ' + esc(p.state || 'UNKNOWN') + '<br>'
         + 'Speed: ' + esc(String(p.speed_kts || 0)) + ' kts<br>'
         + 'Heading: ' + esc(String(p.heading || 0)) + '&deg;<br>'
-        + 'Last ping: ' + esc(p.lastPing || 'N/A') + ' ' + esc(ageFmt(p.lastPing)) + '<br>'
-        + 'Airframe: ' + esc(AC_HRS[p.tail] || 'N/A') + ' TT</div>'
+        + 'Last ping: ' + esc(p.lastPing || 'N/A') + ' ' + esc(ageFmt(p.lastPing)) + '</div>'
       );
       marker.addTo(_map);
       _markers.push(marker);
@@ -985,6 +1032,25 @@
     el.classList.toggle('error', !!isError);
   }
 
+  function renderRegistry(points) {
+    var wrap = document.getElementById('location-grid');
+    if (!wrap) return;
+    if (!points.length) {
+      wrap.innerHTML = '<div class="location-card"><div class="location-card-row">No live aircraft position data found.</div></div>';
+      return;
+    }
+    points.sort(function(a,b){ return a.tail.localeCompare(b.tail); });
+    wrap.innerHTML = points.map(function(p) {
+      var dot = '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:'
+        + (p.state === 'AIRBORNE' ? '#dc2626' : '#94a3b8') + ';margin-right:4px;vertical-align:middle;"></span>';
+      return '<div class="location-card"><div class="location-card-head"><div class="location-card-tail">'+dot+esc(p.tail)+
+        '</div><div class="location-card-state">'+esc(p.state || 'UNKNOWN')+
+        '</div></div><div class="location-card-row">'+esc((p.position.lat||0).toFixed(4))+', '+esc((p.position.lng||0).toFixed(4))+
+        '</div><div class="location-card-row">Speed: '+esc(String(p.speed_kts||0))+' kts &middot; Hdg: '+esc(String(p.heading||0))+'&deg;'+
+        '</div><div class="location-card-row">Last ping: '+esc(p.lastPing||'No ping time')+' '+esc(ageFmt(p.lastPing))+
+        '</div><div class="location-card-row">Airframe: '+esc(AC_HRS[p.tail]||'N/A')+' TT</div></div>';
+    }).join('');
+  }
 
   function deriveStatusFromRaw(rawState, speedKts) { var s = String(rawState||'').toUpperCase(); return (s.indexOf('AIRBORNE')>=0||s.indexOf('IN_FLIGHT')>=0||speedKts>40) ? 'AIRBORNE' : 'AWAY'; }
   function buildAircraftDetail(rows) {
@@ -1009,6 +1075,7 @@
       return { tail: tail, position: {lat:lat,lng:lng}, heading: toNum(d.heading),
                speed_kts: toNum(d.speed_kts), lastPing: d.utc||'', state: d.status||'UNKNOWN' };
     }).filter(Boolean);
+    renderRegistry(points);
     updateMarkers(points);
     setLocationStatus(points.length ? ('Updated '+new Date().toLocaleTimeString()) : 'No current positions to draw.', !points.length);
   }
@@ -1041,7 +1108,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 <script>
-  const DASHBOARD_VERSION = "20260321032922";
+  const DASHBOARD_VERSION = "20260321045235";
 
   // Auto-reload when a newer build is deployed
   (function() {
@@ -1059,10 +1126,13 @@
   })();
 
   function switchTab(tabName, btn) {
+    var activeBtn = btn || document.querySelector('.tab-btn[data-tab="' + tabName + '"]');
     document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
-    btn.classList.add('active');
+    if (activeBtn) activeBtn.classList.add('active');
     document.querySelectorAll('.tab-content').forEach(function(t){ t.classList.remove('active'); });
     document.getElementById('tab-' + tabName).classList.add('active');
+    var mobileSelect = document.getElementById('mobile-tab-select');
+    if (mobileSelect && mobileSelect.value !== tabName) mobileSelect.value = tabName;
     if (tabName === 'location') {
       setTimeout(function(){ window.dispatchEvent(new Event('fleet:location:shown')); }, 0);
     }
