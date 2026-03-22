@@ -45,6 +45,34 @@ TRACKED_AIRCRAFT_TAILS_JS = json.dumps(sorted(TRACKED_AIRCRAFT_TAILS))
 PHOTO_FILENAME     = "IMG_9250.jpeg"
 COMPONENT_CHANGE_FILENAME = "ComponentChangeReport_109SP.csv"
 
+# Helicopter SVG path (same shape used in the map marker icons)
+_HELI_SVG_PATH = (
+    'M60.64,28.1a1.24,1.24,0,0,0-1.27-1.22l-14.89-.33c.61-.91,1.51-2.05,2.78-3.57,'
+    '6.16-7.36,4.19-9.8,4.19-9.8s-2.28-2-9.91,3.84c-1.31,1-2.34,1.76-3.19,2.31l.3-14.09a1.19,'
+    '1.19,0,1,0-2.38,0l-.34,15.33c-2,.44-3-1.25-7.33-3.31,0,0-2.34.91-2.86,2.77a39.41,39.41,'
+    '0,0,1,3.39,6.24l-14.5-.31a1.2,1.2,0,1,0-.05,2.39l14.6.31a1.28,1.28,0,0,0,.35.59L19.84,'
+    '41.61l-4.57-3.24.54-1.25S12,39.7,11.5,41.34l-.14,2,1.37-.48.41-1.31L16,45.91s-.79.9-.24,'
+    '1.47,1.55-.1,1.55-.1l4.35,3.1-1.32.35-.54,1.35,2,0c1.65-.39,4.4-4.13,4.4-4.13l-1.28.49'
+    '-3-4.71,12.81-9.15a1.31,1.31,0,0,0,1,.45l-.32,15a1.19,1.19,0,1,0,2.38,0L38,35.23a42.17,'
+    '42.17,0,0,1,5.67,3.47c1.88-.44,2.87-2.75,2.87-2.75-1.71-4.1-3.24-5.34-3.09-7l15.87.34A1.25,'
+    '1.25,0,0,0,60.64,28.1Z'
+)
+
+def _make_favicon_data_uri():
+    """Return a base64 data URI for the app icon (red helicopter on black, 'MX DASHBOARD' label)."""
+    svg = (
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">'
+        '<rect width="512" height="512" fill="#000"/>'
+        '<g transform="translate(94,56) scale(4.5)">'
+        f'<path fill="#dc2626" d="{_HELI_SVG_PATH}"/>'
+        '</g>'
+        '<text x="256" y="458" font-family="Arial,sans-serif" font-size="50"'
+        ' font-weight="400" fill="#fff" text-anchor="middle" letter-spacing="5">'
+        'MX DASHBOARD</text>'
+        '</svg>'
+    )
+    return 'data:image/svg+xml;base64,' + base64.b64encode(svg.encode()).decode()
+
 TARGET_INTERVALS = [50, 100, 200, 400, 800, 2400, 3200]
 
 PHASE_MATCH = {
