@@ -1262,11 +1262,12 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
 
 # -- AIRCRAFT LOCATION TAB -----------------------------------------------------
 
-def _build_location_tab(aircraft_list, positions, maps_api_key=''):
+def _build_location_tab(aircraft_list, positions, maps_api_key='', base_locs=None):
     """Aircraft location tab: Leaflet/OpenStreetMap panel (left) + registry cards (right)."""
 
     ac_hrs = {ac['tail']: ac['airframe_hrs'] for ac in aircraft_list}
     ac_hrs_js = json.dumps({t: (f"{h:,.1f}" if h else 'N/A') for t, h in ac_hrs.items()})
+    base_locs_js = json.dumps(base_locs or [])
 
     css = '''<style>
 .location-status{margin-top:8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-family:var(--mono);font-size:11px;color:var(--muted);}
@@ -1396,10 +1397,11 @@ def _build_location_tab(aircraft_list, positions, maps_api_key=''):
     }
     points.sort(function(a,b){ return a.tail.localeCompare(b.tail); });
     wrap.innerHTML = points.map(function(p) {
-      var dot = '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:'
-        + (p.state === 'AIRBORNE' ? '#dc2626' : '#94a3b8') + ';margin-right:4px;vertical-align:middle;"></span>';
+      var dotColor = p.state==='AIRBORNE' ? '#dc2626' : p.state==='AT_BASE' ? '#16a34a' : '#94a3b8';
+      var dot = '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:'+dotColor+';margin-right:4px;vertical-align:middle;"></span>';
+      var stateLabel = p.state==='AT_BASE' ? 'AT '+esc(p.baseName||'BASE') : esc(p.state||'UNKNOWN');
       return '<div class="location-card"><div class="location-card-head"><div class="location-card-tail">'+dot+esc(p.tail)+
-        '</div><div class="location-card-state">'+esc(p.state || 'UNKNOWN')+
+        '</div><div class="location-card-state">'+stateLabel+
         '</div></div><div class="location-card-row">'+esc((p.position.lat||0).toFixed(4))+', '+esc((p.position.lng||0).toFixed(4))+
         '</div><div class="location-card-row">Speed: '+esc(String(p.speed_kts||0))+' kts &middot; Hdg: '+esc(String(p.heading||0))+'&deg;'+
         '</div><div class="location-card-row">Last ping: '+esc(p.lastPing||'No ping time')+' '+esc(ageFmt(p.lastPing))+
@@ -1407,16 +1409,34 @@ def _build_location_tab(aircraft_list, positions, maps_api_key=''):
     }).join('');
   }
 
-  function deriveStatusFromRaw(rawState, speedKts) { var s = String(rawState||'').toUpperCase(); return (s.indexOf('AIRBORNE')>=0||s.indexOf('IN_FLIGHT')>=0||speedKts>40) ? 'AIRBORNE' : 'AWAY'; }
+  var BASE_LOCS = __BASE_LOCS_JSON__;
+  function distanceMiles(lat1, lon1, lat2, lon2) {
+    var R=3958.8, r=Math.PI/180, dLat=(lat2-lat1)*r, dLon=(lon2-lon1)*r;
+    var a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*r)*Math.cos(lat2*r)*Math.sin(dLon/2)*Math.sin(dLon/2);
+    return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+  }
+  function deriveStatus(rawState, speedKts, lat, lon) {
+    var s = String(rawState||'').toUpperCase();
+    if (s.indexOf('AIRBORNE')>=0||s.indexOf('IN_FLIGHT')>=0||s.indexOf('INFLIGHT')>=0||(speedKts!==null&&speedKts>40))
+      return {status:'AIRBORNE', baseName:''};
+    if (lat!==null && lon!==null && BASE_LOCS.length) {
+      var best=null, bestDist=Infinity;
+      BASE_LOCS.forEach(function(b){ var d=distanceMiles(lat,lon,b.lat,b.lon); if(d<bestDist){bestDist=d;best=b;} });
+      if (best && bestDist<=10) return {status:'AT_BASE', baseName:best.name};
+    }
+    return {status:'AWAY', baseName:''};
+  }
   function buildAircraftDetail(rows) {
     var detail = {};
     (Array.isArray(rows) ? rows : []).forEach(function(row) {
       var tail = String((row&&(row.vin||row.tail||row.registration))||'').toUpperCase();
       if (!tail || !TRACKED_TAILS.has(tail)) return;
       var speed = toNum(row.speed_kts); if (speed===null) speed=toNum(row.speed);
+      var lat=toNum(row.latitude), lon=toNum(row.longitude);
+      var st = deriveStatus(row.state||row.status, speed, lat, lon);
       detail[tail] = { lat: row.latitude, lon: row.longitude, heading: row.heading,
         speed_kts: speed, utc: row.last_ping||row.utc||'',
-        status: deriveStatusFromRaw(row.state||row.status, speed||0) };
+        status: st.status, baseName: st.baseName };
     });
     return detail;
   }
@@ -1428,7 +1448,7 @@ def _build_location_tab(aircraft_list, positions, maps_api_key=''):
       var d = detail[tail]||{}, lat=toNum(d.lat), lng=toNum(d.lon);
       if (lat===null||lng===null) return null;
       return { tail: tail, position: {lat:lat,lng:lng}, heading: toNum(d.heading),
-               speed_kts: toNum(d.speed_kts), lastPing: d.utc||'', state: d.status||'UNKNOWN' };
+               speed_kts: toNum(d.speed_kts), lastPing: d.utc||'', state: d.status||'UNKNOWN', baseName: d.baseName||'' };
     }).filter(Boolean);
     renderRegistry(points);
     updateMarkers(points);
@@ -1456,6 +1476,7 @@ def _build_location_tab(aircraft_list, positions, maps_api_key=''):
 """
     refresh_js = refresh_js.replace('__AC_HRS_JSON__', ac_hrs_js)
     refresh_js = refresh_js.replace('__TRACKED_TAILS_JSON__', TRACKED_AIRCRAFT_TAILS_JS)
+    refresh_js = refresh_js.replace('__BASE_LOCS_JSON__', base_locs_js)
 
     return f'''{css}
 <div class="section-label">Aircraft Location</div>
@@ -1477,7 +1498,7 @@ def _build_location_tab(aircraft_list, positions, maps_api_key=''):
 # -- BUILD HTML ----------------------------------------------------------------
 
 def build_html(report_date, aircraft_list, components, component_changes, flight_hours_stats, positions,
-               source_filename, photo_b64='', gcfg=None):
+               source_filename, photo_b64='', gcfg=None, base_locs=None):
 
     _target   = (gcfg or {}).get('TARGET_INTERVALS', TARGET_INTERVALS)
     _interval_cfg = (gcfg or {}).get('INTERVAL_CFG', None)
@@ -1651,7 +1672,7 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
 
     calendar_tab_html  = _build_calendar_tab(aircraft_list, flight_hours_stats, _interval_cfg)
     maps_api_key = os.environ.get('GOOGLE_MAPS_API_KEY', '')
-    location_tab_html  = _build_location_tab(aircraft_list, positions, maps_api_key)
+    location_tab_html  = _build_location_tab(aircraft_list, positions, maps_api_key, base_locs=base_locs)
 
     # Component change report tab: keep the full dataset in JS but only render one month at a time.
     component_change_payload_js = '[]'
@@ -2191,6 +2212,18 @@ def main():
         else:
             log("No positions data yet.")
 
+        base_locs = []
+        try:
+            with open(positions_path, 'r', encoding='utf-8') as _f:
+                _ba = json.load(_f)
+            for _b in (_ba.get('bases') or {}).values():
+                _lat = safe_float(_b.get('lat'))
+                _lon = safe_float(_b.get('lon'))
+                if _lat is not None and _lon is not None:
+                    base_locs.append({'name': _b.get('name', ''), 'lat': _lat, 'lon': _lon})
+        except Exception:
+            pass
+
         log("Loading fleet photo...")
         photo_b64 = load_photo_b64(data_dir)
         log(f"Photo: {'loaded' if photo_b64 else 'not found'}")
@@ -2202,7 +2235,7 @@ def main():
         html = build_html(
             report_date, aircraft_list, components, component_changes,
             flight_hours_stats, positions,
-            input_path.name, photo_b64, gcfg,
+            input_path.name, photo_b64, gcfg, base_locs=base_locs,
         )
 
         with open(output_path, 'w', encoding='utf-8') as f:
