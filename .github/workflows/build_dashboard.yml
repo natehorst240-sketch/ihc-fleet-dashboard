@@ -13,6 +13,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
       TROOTRAX_USER: ${{ secrets.TROOTRAX_USER }}
       TROOTRAX_PASS: ${{ secrets.TROOTRAX_PASS }}
       TROOTRAX_CUSTOMER_ID: ${{ secrets.TROOTRAX_CUSTOMER_ID }}

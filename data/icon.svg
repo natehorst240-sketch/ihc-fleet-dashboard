@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-labelledby="title desc">
+  <title id="title">MX Dashboard icon</title>
+  <desc id="desc">A coral helicopter silhouette above the words MX Dashboard on a black background.</desc>
+  <rect width="512" height="512" rx="64" fill="#000000"/>
+
+  <g fill="#ff6b6b" stroke="#ff8f8f" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M34 79C96 75 160 76 222 82L278 83C344 80 410 76 478 70C469 79 448 82 414 84L294 92L263 88L236 92L114 88C79 87 53 84 34 79Z" stroke-width="2"/>
+    <path d="M208 40L235 39L249 84L221 84Z" stroke-width="2"/>
+    <path d="M245 83L266 84L284 92L275 101L247 99L234 91Z" stroke-width="2"/>
+    <path d="M90 210L105 194L126 188L149 164L177 145L208 141L242 132L286 136L320 148L353 172L391 178L414 193L404 206L378 208L353 219L330 223L315 236L290 239L265 233L240 236L215 232L188 235L160 229L135 231L111 221Z" stroke-width="2.5"/>
+    <path d="M126 188L162 150L177 145L149 182Z" fill="#000000" opacity="0.18" stroke="none"/>
+    <path d="M173 154L187 153L180 171L164 180Z" fill="#000000" opacity="0.18" stroke="none"/>
+    <path d="M191 148L217 147L213 181L184 182Z" fill="#000000" opacity="0.18" stroke="none"/>
+    <path d="M220 145L246 145L246 182L217 182Z" fill="#000000" opacity="0.18" stroke="none"/>
+    <path d="M251 145L277 147L281 179L249 181Z" fill="#000000" opacity="0.18" stroke="none"/>
+    <path d="M369 171L397 130L419 137L404 181Z" stroke-width="2"/>
+    <path d="M404 181L416 181L420 222L411 224L405 205Z" stroke-width="2"/>
+    <path d="M420 198L430 200L429 257L420 259Z" stroke-width="2"/>
+    <path d="M404 230L416 229L430 252L418 257L404 244L391 228Z" fill="none" stroke-width="4"/>
+    <path d="M99 212L86 217L75 213L62 214L56 205L73 195L89 194Z" stroke-width="2"/>
+    <path d="M116 222L109 230L111 238L117 239L121 230Z" stroke-width="2"/>
+    <path d="M145 232L144 247" fill="none" stroke-width="4"/>
+    <path d="M294 235L294 246" fill="none" stroke-width="4"/>
+    <path d="M328 225L328 238" fill="none" stroke-width="4"/>
+    <path d="M163 114L163 120" fill="none" stroke-width="3"/>
+    <path d="M171 112L171 120" fill="none" stroke-width="3"/>
+  </g>
+
+  <text x="256" y="390" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="54" letter-spacing="-1" fill="#f2f2f2">MX DASHBOARD</text>
+</svg>
