@@ -160,6 +160,7 @@ def load_config(path):
         'COL_DISPOSITION':  col.get('disposition',  COL_DISPOSITION),
         'COL_DESC':         col.get('desc',         COL_DESC),
         'COL_REM_DAYS':     col.get('rem_days',     COL_REM_DAYS),
+        'COL_REM_MONTHS':   col.get('rem_months',   COL_REM_MONTHS),
         'COL_REM_HRS':      col.get('rem_hrs',      COL_REM_HRS),
         'COL_STATUS':       col.get('status',       COL_STATUS),
     }
@@ -589,6 +590,7 @@ def parse_due_list_parts(filepath, gcfg=None):
     _col_dis  = (gcfg or {}).get('COL_DISPOSITION',  COL_DISPOSITION)
     _col_desc = (gcfg or {}).get('COL_DESC',         COL_DESC)
     _col_rd   = (gcfg or {}).get('COL_REM_DAYS',     COL_REM_DAYS)
+    _col_rm   = (gcfg or {}).get('COL_REM_MONTHS',   COL_REM_MONTHS)
     _col_rh   = (gcfg or {}).get('COL_REM_HRS',      COL_REM_HRS)
     _col_st   = (gcfg or {}).get('COL_STATUS',       COL_STATUS)
 
@@ -613,7 +615,7 @@ def parse_due_list_parts(filepath, gcfg=None):
     components_raw = {}
     report_date_dt = None
 
-    max_col = max(_col_st, _col_rh, _col_rd, _col_desc, _col_ata, _col_it)
+    max_col = max(_col_st, _col_rh, _col_rd, _col_rm, _col_desc, _col_ata, _col_it)
 
     compiled_phase = {
         interval: [re.compile(p, re.IGNORECASE) for p in pats]
@@ -638,9 +640,10 @@ def parse_due_list_parts(filepath, gcfg=None):
         ata_text  = row[_col_ata].strip()  if row[_col_ata]  else ""
         item_type = row[_col_it].strip()   if row[_col_it]   else ""
         desc      = row[_col_desc].strip() if row[_col_desc] else ""
-        rem_hrs   = safe_float(row[_col_rh])
-        rem_days  = safe_float(row[_col_rd])
-        status    = row[_col_st].strip()   if row[_col_st]   else ""
+        rem_hrs    = safe_float(row[_col_rh])
+        rem_days   = safe_float(row[_col_rd])
+        rem_months = safe_float(row[_col_rm])
+        status     = row[_col_st].strip()   if row[_col_st]   else ""
 
         if item_type.upper() == "INSPECTION":
             for interval in _target:
@@ -658,7 +661,7 @@ def parse_due_list_parts(filepath, gcfg=None):
                     rem_hrs is not None and (existing["rem_hrs"] is None or rem_hrs < existing["rem_hrs"])
                 ):
                     aircraft_raw[reg][key] = {
-                        "rem_hrs": rem_hrs, "rem_days": rem_days,
+                        "rem_hrs": rem_hrs, "rem_days": rem_days, "rem_months": rem_months,
                         "status": status, "desc": desc,
                     }
 
@@ -715,9 +718,10 @@ def parse_due_list(input_path, gcfg=None):
             if key in insp:
                 entry = insp[key]
                 intervals[i] = {
-                    "rem_hrs":  entry.get("rem_hrs"),
-                    "rem_days": entry.get("rem_days"),
-                    "status":   entry.get("status", ""),
+                    "rem_hrs":    entry.get("rem_hrs"),
+                    "rem_days":   entry.get("rem_days"),
+                    "rem_months": entry.get("rem_months"),
+                    "status":     entry.get("status", ""),
                 }
             else:
                 intervals[i] = None
@@ -867,9 +871,20 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
             v = ac['intervals'].get(interval)
             if v is None:
                 continue
-            rem_hrs = v.get('rem_hrs')
-            rem_days = v.get('rem_days')
-            if rem_hrs is None and rem_days is None:
+            rem_hrs    = v.get('rem_hrs')
+            rem_days   = v.get('rem_days')
+            rem_months = v.get('rem_months')
+
+            # Convert months + days into a single total_days value.
+            # The CSV stores remaining time as two separate components:
+            # rem_months = whole months remaining, rem_days = remaining days beyond those months.
+            # We must add them together to get the true calendar distance.
+            if rem_months is not None or rem_days is not None:
+                total_days = (rem_months or 0) * 30 + (rem_days or 0)
+            else:
+                total_days = None
+
+            if rem_hrs is None and total_days is None:
                 continue
 
             due_candidates = []
@@ -884,28 +899,36 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
                     due_candidates.append(today + timedelta(days=days_away))
                     due_reasons.append(('hours_remaining', rem_hrs, days_away))
 
-            if rem_days is not None:
-                due_candidates.append(today + timedelta(days=rem_days))
-                due_reasons.append(('days_remaining', rem_days, rem_days))
+            if total_days is not None:
+                due_candidates.append(today + timedelta(days=total_days))
+                due_reasons.append(('days_remaining', total_days, total_days))
 
             due_idx = min(range(len(due_candidates)), key=lambda idx: due_candidates[idx])
             due = due_candidates[due_idx].date() if isinstance(due_candidates[due_idx], datetime) else due_candidates[due_idx]
             reason_kind, reason_value, reason_days = due_reasons[due_idx]
 
+            # Build a human-readable months+days label for calendar-based limits
+            def _months_days_label(td):
+                mo = int(td) // 30
+                dy = int(abs(td)) % 30
+                if td < 0:
+                    return f'{abs(int(td))} days PAST LIMIT'
+                if mo > 0 and dy > 0:
+                    return f'~{mo} mo {dy} days remaining'
+                if mo > 0:
+                    return f'~{mo} month{"s" if mo != 1 else ""} remaining'
+                return f'~{dy} days remaining'
+
             if reason_kind == 'hours_past_due':
                 rem_label = f'{abs(reason_value):.1f} hrs PAST LIMIT'
             elif reason_kind == 'days_remaining':
-                rem_label = (
-                    f'{abs(reason_value):.0f} days PAST LIMIT'
-                    if reason_value < 0 else
-                    f'~{reason_value:.0f} days remaining'
-                )
+                rem_label = _months_days_label(reason_value)
                 if rem_hrs is not None and rem_hrs >= 0:
                     rem_label += f' · {rem_hrs:.1f} hrs remaining'
             else:
                 rem_label = f'{reason_value:.1f} hrs remaining (~{reason_days:.1f} days)'
-                if rem_days is not None and rem_days >= 0:
-                    rem_label += f' · earlier than {rem_days:.0f}-day calendar limit'
+                if total_days is not None and total_days >= 0:
+                    rem_label += f' · earlier than {_months_days_label(total_days)}'
 
             maint_events.append({
                 'tail': tail,
