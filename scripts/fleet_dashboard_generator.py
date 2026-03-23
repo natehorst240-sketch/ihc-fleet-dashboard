@@ -990,6 +990,25 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
   text-overflow: ellipsis;
   white-space: nowrap;
 }}
+.fc-ext-pill {{
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}}
+.fc-ext-icon {{
+  font-weight: bold;
+  font-size: 9px;
+  padding: 1px 3px;
+  border-radius: 2px;
+  background: rgba(255,255,255,0.15);
+  flex-shrink: 0;
+}}
 .fc-maint-hover {{
   position: fixed;
   z-index: 9999;
@@ -1154,33 +1173,19 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
     hoverEl.style.top = y + 'px';
   }}
 
-  var NOTE_STORE = 'fleet-cal-notes';
-
-  function saveNotes(cal) {{
-    var notes = cal.getEvents()
-      .filter(function(e) {{ return (e.extendedProps || {{}}).type === 'note'; }})
-      .map(function(e) {{
-        return {{ id: e.id, title: e.title, start: e.startStr, noteText: (e.extendedProps || {{}}).noteText || '' }};
-      }});
-    try {{ localStorage.setItem(NOTE_STORE, JSON.stringify(notes)); }} catch(ex) {{}}
-  }}
-
-  function loadNoteEvents() {{
-    try {{
-      var stored = localStorage.getItem(NOTE_STORE);
-      if (!stored) return [];
-      return JSON.parse(stored).map(function(n) {{
-        return {{
-          id: n.id,
-          title: n.title,
-          start: n.start,
-          allDay: true,
-          backgroundColor: '#1e3a4a',
-          borderColor: '#4a9eca',
-          extendedProps: {{ type: 'note', noteText: n.noteText }}
-        }};
-      }});
-    }} catch(ex) {{ return []; }}
+  // API-backed calendar persistence (Microsoft 365 via /api/events)
+  function apiEvent(method, id, payload) {{
+    var url = '/api/events' + (id ? '/' + encodeURIComponent(id) : '');
+    var opts = {{
+      method: method,
+      headers: {{ 'Content-Type': 'application/json' }}
+    }};
+    if (payload) opts.body = JSON.stringify(payload);
+    return fetch(url, opts).then(function(r) {{
+      if (r.status === 204 || r.status === 200) return r.text().then(function(t) {{ return t ? JSON.parse(t) : {{}}; }});
+      if (!r.ok) return r.text().then(function(t) {{ throw new Error(t || ('HTTP ' + r.status)); }});
+      return r.json();
+    }});
   }}
 
   function renderCalendar() {{
@@ -1206,8 +1211,6 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
         extendedProps: ev
       }};
     }});
-    var events = maintEvents.concat(loadNoteEvents());
-    
     var calendar = new FullCalendar.Calendar(calEl, {{
       initialView: 'dayGridMonth',
       height: 680,
@@ -1215,7 +1218,19 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
       eventStartEditable: true,
       dayMaxEvents: 4,
       headerToolbar: {{ left: 'prev,next today', center: 'title', right: 'dayGridMonth,listMonth' }},
-      events: events,
+      eventSources: [
+        {{
+          events: maintEvents,
+          id: 'maintenance'
+        }},
+        {{
+          url: '/api/events',
+          id: 'external',
+          failure: function() {{
+            console.warn('Microsoft 365 calendar sync unavailable — API not reachable.');
+          }}
+        }}
+      ],
       eventContent: function(arg) {{
         var ev = arg.event.extendedProps || {{}};
         var node = document.createElement('div');
@@ -1223,6 +1238,14 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
           node.className = 'fc-note-pill';
           node.title = ev.noteText || '';
           node.innerHTML = '&#9998; <span>' + (ev.noteText || 'Note') + '</span>';
+        }} else if (ev.type === 'teams') {{
+          node.className = 'fc-ext-pill fc-teams-pill';
+          node.title = arg.event.title + (ev.noteText ? '\\n' + ev.noteText : '');
+          node.innerHTML = '<span class="fc-ext-icon">T</span><span>' + arg.event.title + '</span>';
+        }} else if (ev.type === 'sharepoint') {{
+          node.className = 'fc-ext-pill fc-sp-pill';
+          node.title = arg.event.title + (ev.noteText ? '\\n' + ev.noteText : '');
+          node.innerHTML = '<span class="fc-ext-icon">S</span><span>' + arg.event.title + '</span>';
         }} else {{
           node.className = 'fc-maint-pill';
           node.innerHTML = '<strong>' + (ev.tail || '') + '</strong><span>' + (ev.intervalLabel || '') + '</span>';
@@ -1231,36 +1254,49 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
       }},
       dateClick: function(info) {{
         var text = prompt('Add note for ' + info.dateStr + ':');
-        if (text && text.trim()) {{
-          var noteId = 'note-' + Date.now();
+        if (!text || !text.trim()) return;
+        var payload = {{ title: text.trim(), start: info.dateStr, allDay: true, noteText: text.trim() }};
+        apiEvent('POST', null, payload).then(function(created) {{
           calendar.addEvent({{
-            id: noteId,
-            title: text.trim(),
-            start: info.dateStr,
+            id: created.id,
+            title: created.title,
+            start: created.start,
             allDay: true,
             backgroundColor: '#1e3a4a',
             borderColor: '#4a9eca',
-            extendedProps: {{ type: 'note', noteText: text.trim() }}
+            extendedProps: {{ type: 'note', noteText: created.extendedProps && created.extendedProps.noteText || text.trim(), editable: true }}
           }});
-          saveNotes(calendar);
-        }}
+        }}).catch(function(err) {{
+          alert('Could not save note to Microsoft 365: ' + err.message);
+        }});
       }},
       eventClick: function(info) {{
         var ev = info.event.extendedProps || {{}};
-        if (ev.type !== 'note') return;
-        var action = prompt('Note: "' + (ev.noteText || '') + '"\\n\\nEnter new text to edit, or type DELETE to remove:');
-        if (action === null) return;
-        if (action.trim().toUpperCase() === 'DELETE') {{
-          info.event.remove();
-          saveNotes(calendar);
-        }} else if (action.trim()) {{
-          info.event.setExtendedProp('noteText', action.trim());
-          info.event.setProp('title', action.trim());
-          saveNotes(calendar);
+        if (ev.type === 'note') {{
+          var action = prompt('Note: "' + (ev.noteText || '') + '"\\n\\nEnter new text to edit, or type DELETE to remove:');
+          if (action === null) return;
+          if (action.trim().toUpperCase() === 'DELETE') {{
+            apiEvent('DELETE', info.event.id).then(function() {{
+              info.event.remove();
+            }}).catch(function(err) {{
+              alert('Could not delete: ' + err.message);
+            }});
+          }} else if (action.trim()) {{
+            var updated = {{ title: action.trim(), start: info.event.startStr, allDay: true, noteText: action.trim() }};
+            apiEvent('PUT', info.event.id, updated).then(function() {{
+              info.event.setExtendedProp('noteText', action.trim());
+              info.event.setProp('title', action.trim());
+            }}).catch(function(err) {{
+              alert('Could not update: ' + err.message);
+            }});
+          }}
+        }} else if (ev.type === 'teams' || ev.type === 'sharepoint') {{
+          alert(info.event.title + (ev.noteText ? '\\n\\n' + ev.noteText : '') + '\\n\\nSource: ' + (ev.source || ev.type));
         }}
       }},
       eventMouseEnter: function(info) {{
-        if ((info.event.extendedProps || {{}}).type === 'note') return;
+        var t = (info.event.extendedProps || {{}}).type;
+        if (t === 'note' || t === 'teams' || t === 'sharepoint') return;
         showHover(info.event.extendedProps || {{}}, info.jsEvent);
       }},
       eventMouseLeave: function() {{ removeHover(); }},
@@ -1268,7 +1304,13 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
       eventDrop: function(info) {{
         var props = info.event.extendedProps || {{}};
         if (props.type === 'note') {{
-          saveNotes(calendar);
+          var payload = {{ title: info.event.title, start: info.event.startStr, allDay: true, noteText: props.noteText || '' }};
+          apiEvent('PUT', info.event.id, payload).catch(function(err) {{
+            info.revert();
+            alert('Could not update note: ' + err.message);
+          }});
+        }} else if (props.type === 'teams' || props.type === 'sharepoint') {{
+          info.revert(); // external events are not draggable
         }} else {{
           props.dueDate = info.event.startStr;
           renderInspectionList();
