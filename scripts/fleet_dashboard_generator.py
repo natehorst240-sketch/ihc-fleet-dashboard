@@ -1109,6 +1109,24 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
 .cal-ev {{ border-left: 4px solid #4a5568; padding-left: 8px; margin-bottom: 7px; }}
 .cal-ev-title {{ font-family: 'Barlow Condensed', sans-serif; color: #e8edf2; font-size: 14px; }}
 .cal-ev-sub {{ font-family: 'Share Tech Mono', monospace; color: #4a5568; font-size: 10px; }}
+/* ── Calendar modal ── */
+.cal-modal-overlay{{position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:10000;display:none;}}
+.cal-modal{{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10001;display:none;flex-direction:column;background:#0d1822;border:1px solid #263445;border-radius:8px;min-width:340px;max-width:480px;width:90%;box-shadow:0 16px 48px rgba(0,0,0,0.6);}}
+.cal-modal-title{{padding:14px 18px 10px;font-family:'Barlow Condensed',sans-serif;font-size:18px;letter-spacing:1px;color:#e8edf2;border-bottom:1px solid #1e2a38;display:flex;align-items:center;gap:8px;}}
+.cal-modal-body{{padding:14px 18px;color:#8fa2b8;font-family:'Share Tech Mono',monospace;font-size:12px;}}
+.cal-modal-note-date{{font-size:10px;color:#4a5568;margin-bottom:8px;}}
+.cal-modal-textarea{{width:100%;box-sizing:border-box;background:#0a1018;border:1px solid #263445;border-radius:4px;color:#e8edf2;font-family:'Share Tech Mono',monospace;font-size:12px;padding:8px 10px;resize:vertical;min-height:80px;outline:none;}}
+.cal-modal-textarea:focus{{border-color:#1e88e5;}}
+.cal-modal-desc{{margin:0 0 8px;color:#e8edf2;}}
+.cal-modal-source{{font-size:10px;color:#4a5568;margin-top:4px;}}
+.cal-modal-err{{margin:0;color:#ef5350;}}
+.cal-modal-footer{{padding:10px 18px 14px;display:flex;gap:8px;justify-content:flex-end;border-top:1px solid #1e2a38;}}
+.cal-modal-btn{{font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:1px;text-transform:uppercase;padding:7px 16px;border-radius:4px;border:1px solid #263445;background:#1a2535;color:#8fa2b8;cursor:pointer;}}
+.cal-modal-btn:hover{{background:#263445;color:#e8edf2;}}
+.cal-modal-btn-primary{{background:#1565a8;border-color:#1e88e5;color:#e8edf2;}}
+.cal-modal-btn-primary:hover{{background:#1e88e5;}}
+.cal-modal-btn-danger{{background:#7b1a1a;border-color:#ef5350;color:#ef5350;}}
+.cal-modal-btn-danger:hover{{background:#ef5350;color:#fff;}}
 </style>
 
 <div class="section-label">PROJECTED MAINTENANCE CALENDAR</div>
@@ -1124,6 +1142,15 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
     <div id="estimated-inspection-list"></div>
   </div>
 </div>
+
+<!-- Calendar modal -->
+<div id="cal-modal-overlay" onclick="calModalClose()"></div>
+<div id="cal-modal" role="dialog" aria-modal="true">
+  <div class="cal-modal-title" id="cal-modal-title"></div>
+  <div class="cal-modal-body" id="cal-modal-body"></div>
+  <div class="cal-modal-footer" id="cal-modal-footer"></div>
+</div>
+
 <script>
 (function () {{
   var MAINT = {events_json};
@@ -1209,6 +1236,42 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
     hoverEl.style.top = y + 'px';
   }}
 
+  // ── Modal helpers ──────────────────────────────────────────────────────
+  function escHtml(t) {{
+    return String(t || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }}
+  var _calOverlay = document.getElementById('cal-modal-overlay');
+  var _calModal   = document.getElementById('cal-modal');
+  var _calMTitle  = document.getElementById('cal-modal-title');
+  var _calMBody   = document.getElementById('cal-modal-body');
+  var _calMFooter = document.getElementById('cal-modal-footer');
+
+  function calModalClose() {{
+    _calOverlay.style.display = 'none';
+    _calModal.style.display   = 'none';
+  }}
+
+  function calModalOpen(title, bodyHtml, buttons) {{
+    _calMTitle.innerHTML  = title;
+    _calMBody.innerHTML   = bodyHtml;
+    _calMFooter.innerHTML = '';
+    buttons.forEach(function(btn) {{
+      var b = document.createElement('button');
+      b.className = 'cal-modal-btn' + (btn.cls ? ' ' + btn.cls : '');
+      b.innerHTML = btn.label;
+      b.onclick   = btn.action;
+      _calMFooter.appendChild(b);
+    }});
+    _calOverlay.style.display = 'block';
+    _calModal.style.display   = 'flex';
+    var inp = document.getElementById('cal-modal-input');
+    if (inp) {{ inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }}
+  }}
+
+  document.addEventListener('keydown', function(e) {{
+    if (e.key === 'Escape' && _calModal && _calModal.style.display === 'flex') calModalClose();
+  }});
+
   // API-backed calendar persistence (Microsoft 365 via /api/events)
   function apiEvent(method, id, payload) {{
     var url = '/api/events' + (id ? '/' + encodeURIComponent(id) : '');
@@ -1289,45 +1352,80 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
         return {{ domNodes: [node] }};
       }},
       dateClick: function(info) {{
-        var text = prompt('Add note for ' + info.dateStr + ':');
-        if (!text || !text.trim()) return;
-        var payload = {{ title: text.trim(), start: info.dateStr, allDay: true, noteText: text.trim() }};
-        apiEvent('POST', null, payload).then(function(created) {{
-          calendar.addEvent({{
-            id: created.id,
-            title: created.title,
-            start: created.start,
-            allDay: true,
-            backgroundColor: '#1e3a4a',
-            borderColor: '#4a9eca',
-            extendedProps: {{ type: 'note', noteText: created.extendedProps && created.extendedProps.noteText || text.trim(), editable: true }}
-          }});
-        }}).catch(function(err) {{
-          alert('Could not save note to Microsoft 365: ' + err.message);
-        }});
+        calModalOpen(
+          'Add Note \u2014 ' + fmtDate(info.dateStr),
+          '<textarea id="cal-modal-input" class="cal-modal-textarea" placeholder="Enter note text\u2026"></textarea>',
+          [
+            {{ label: 'Save', cls: 'cal-modal-btn-primary', action: function() {{
+              var inp = document.getElementById('cal-modal-input');
+              var text = inp ? inp.value : '';
+              if (!text || !text.trim()) {{ calModalClose(); return; }}
+              calModalClose();
+              var payload = {{ title: text.trim(), start: info.dateStr, allDay: true, noteText: text.trim() }};
+              apiEvent('POST', null, payload).then(function(created) {{
+                calendar.addEvent({{
+                  id: created.id,
+                  title: created.title,
+                  start: created.start,
+                  allDay: true,
+                  backgroundColor: '#1e3a4a',
+                  borderColor: '#4a9eca',
+                  extendedProps: {{ type: 'note', noteText: created.extendedProps && created.extendedProps.noteText || text.trim(), editable: true }}
+                }});
+              }}).catch(function(err) {{
+                calModalOpen('Error',
+                  '<p class="cal-modal-err">Could not save note: ' + escHtml(err.message) + '</p>',
+                  [{{ label: 'OK', action: calModalClose }}]);
+              }});
+            }}}},
+            {{ label: 'Cancel', action: calModalClose }}
+          ]
+        );
       }},
       eventClick: function(info) {{
         var ev = info.event.extendedProps || {{}};
         if (ev.type === 'note') {{
-          var action = prompt('Note: "' + (ev.noteText || '') + '"\\n\\nEnter new text to edit, or type DELETE to remove:');
-          if (action === null) return;
-          if (action.trim().toUpperCase() === 'DELETE') {{
-            apiEvent('DELETE', info.event.id).then(function() {{
-              info.event.remove();
-            }}).catch(function(err) {{
-              alert('Could not delete: ' + err.message);
-            }});
-          }} else if (action.trim()) {{
-            var updated = {{ title: action.trim(), start: info.event.startStr, allDay: true, noteText: action.trim() }};
-            apiEvent('PUT', info.event.id, updated).then(function() {{
-              info.event.setExtendedProp('noteText', action.trim());
-              info.event.setProp('title', action.trim());
-            }}).catch(function(err) {{
-              alert('Could not update: ' + err.message);
-            }});
-          }}
+          calModalOpen(
+            '&#9998; Edit Note',
+            '<div class="cal-modal-note-date">' + fmtDate(info.event.startStr) + '</div>' +
+            '<textarea id="cal-modal-input" class="cal-modal-textarea">' + escHtml(ev.noteText || '') + '</textarea>',
+            [
+              {{ label: 'Save', cls: 'cal-modal-btn-primary', action: function() {{
+                var inp = document.getElementById('cal-modal-input');
+                var text = inp ? inp.value : '';
+                if (!text || !text.trim()) {{ calModalClose(); return; }}
+                calModalClose();
+                var updated = {{ title: text.trim(), start: info.event.startStr, allDay: true, noteText: text.trim() }};
+                apiEvent('PUT', info.event.id, updated).then(function() {{
+                  info.event.setExtendedProp('noteText', text.trim());
+                  info.event.setProp('title', text.trim());
+                }}).catch(function(err) {{
+                  calModalOpen('Error',
+                    '<p class="cal-modal-err">Could not update: ' + escHtml(err.message) + '</p>',
+                    [{{ label: 'OK', action: calModalClose }}]);
+                }});
+              }}}},
+              {{ label: 'Delete', cls: 'cal-modal-btn-danger', action: function() {{
+                calModalClose();
+                apiEvent('DELETE', info.event.id).then(function() {{
+                  info.event.remove();
+                }}).catch(function(err) {{
+                  calModalOpen('Error',
+                    '<p class="cal-modal-err">Could not delete: ' + escHtml(err.message) + '</p>',
+                    [{{ label: 'OK', action: calModalClose }}]);
+                }});
+              }}}},
+              {{ label: 'Cancel', action: calModalClose }}
+            ]
+          );
         }} else if (ev.type === 'teams' || ev.type === 'sharepoint') {{
-          alert(info.event.title + (ev.noteText ? '\\n\\n' + ev.noteText : '') + '\\n\\nSource: ' + (ev.source || ev.type));
+          var src = ev.type === 'teams' ? 'Microsoft Teams' : 'SharePoint';
+          calModalOpen(
+            '<span class="fc-ext-icon">' + (ev.type === 'teams' ? 'T' : 'S') + '</span> ' + escHtml(info.event.title),
+            (ev.noteText ? '<p class="cal-modal-desc">' + escHtml(ev.noteText) + '</p>' : '') +
+            '<div class="cal-modal-source">Source: ' + src + ' \u00b7 ' + fmtDate(info.event.startStr) + '</div>',
+            [{{ label: 'Close', action: calModalClose }}]
+          );
         }}
       }},
       eventMouseEnter: function(info) {{
@@ -1343,7 +1441,9 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
           var payload = {{ title: info.event.title, start: info.event.startStr, allDay: true, noteText: props.noteText || '' }};
           apiEvent('PUT', info.event.id, payload).catch(function(err) {{
             info.revert();
-            alert('Could not update note: ' + err.message);
+            calModalOpen('Error',
+              '<p class="cal-modal-err">Could not update note: ' + escHtml(err.message) + '</p>',
+              [{{ label: 'OK', action: calModalClose }}]);
           }});
         }} else if (props.type === 'teams' || props.type === 'sharepoint') {{
           info.revert(); // external events are not draggable
