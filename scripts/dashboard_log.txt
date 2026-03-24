@@ -278,3 +278,17 @@
 [2026-03-24 10:33:09] Dashboard written to data/index.html
 [2026-03-24 10:33:09] Version: 20260324103309
 [2026-03-24 10:33:09] Done.
+[2026-03-24 22:52:28] Dashboard generator started.
+[2026-03-24 22:52:28] Parsing data/Due-List_BIG_WEEKLY_aw109sp.csv ...
+[2026-03-24 22:52:28] Parsed 9 aircraft.
+[2026-03-24 22:52:28] Loading flight hours history...
+[2026-03-24 22:52:28] Flight hours stats calculated.
+[2026-03-24 22:52:28] Loading positions...
+[2026-03-24 22:52:28] Loaded positions for 6 aircraft.
+[2026-03-24 22:52:28] Loading fleet photo...
+[2026-03-24 22:52:28] Photo: loaded
+[2026-03-24 22:52:28] Loading component change report...
+[2026-03-24 22:52:28] Component change months loaded: 168
+[2026-03-24 22:52:28] Dashboard written to data/index.html
+[2026-03-24 22:52:28] Version: 20260324225228
+[2026-03-24 22:52:28] Done.

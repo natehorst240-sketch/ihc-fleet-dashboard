@@ -1086,6 +1086,167 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
   font-size: 10px;
   color: #8fa2b8;
 }}
+/* FullCalendar dark theme overrides */
+.fc-theme-standard td,
+.fc-theme-standard th {{
+  border-color: #1e2530;
+}}
+.fc-theme-standard .fc-scrollgrid {{
+  border-color: #1e2530;
+}}
+.fc .fc-daygrid-day {{
+  background: transparent;
+}}
+.fc .fc-daygrid-day:hover .fc-daygrid-day-frame {{
+  background: rgba(41,182,246,0.04);
+  cursor: pointer;
+}}
+.fc .fc-day-today {{
+  background: rgba(41,182,246,0.07) !important;
+}}
+.fc .fc-day-today .fc-daygrid-day-number {{
+  background: #29b6f6;
+  color: #0a0c0f;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  padding: 0;
+}}
+.fc .fc-col-header-cell {{
+  background: #0f1318;
+  border-color: #1e2530;
+}}
+.fc .fc-col-header-cell-cushion {{
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #4a5568;
+  font-weight: 600;
+  padding: 6px 8px;
+  text-decoration: none;
+}}
+.fc .fc-daygrid-day-number {{
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  color: #637080;
+  padding: 4px 6px;
+  text-decoration: none;
+}}
+.fc .fc-daygrid-day-top {{
+  flex-direction: row;
+}}
+.fc .fc-scrollgrid-section-header th {{
+  background: #0f1318;
+}}
+.fc .fc-popover {{
+  background: #111418;
+  border: 1px solid #1e2530;
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+}}
+.fc .fc-popover-header {{
+  background: #181c22;
+  border-radius: 6px 6px 0 0;
+  padding: 6px 10px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 12px;
+  color: #cdd6e0;
+  border-bottom: 1px solid #1e2530;
+}}
+.fc .fc-popover-title {{
+  font-family: 'Barlow Condensed', sans-serif;
+  letter-spacing: 1px;
+}}
+.fc .fc-popover-close {{
+  color: #4a5568;
+  opacity: 1;
+}}
+.fc .fc-more-link {{
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px;
+  color: #29b6f6;
+  letter-spacing: 0.5px;
+  text-decoration: none;
+  padding: 1px 4px;
+}}
+.fc .fc-more-link:hover {{
+  color: #81d4fa;
+  background: rgba(41,182,246,0.1);
+  border-radius: 2px;
+}}
+.fc .fc-list-empty {{
+  background: #111418;
+}}
+.fc .fc-list-empty-cushion {{
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  color: #4a5568;
+}}
+.fc .fc-list-event:hover td {{
+  background: rgba(41,182,246,0.05);
+}}
+.fc td.fc-list-event-graphic {{
+  padding-top: 10px;
+}}
+.fc .fc-list-day-cushion {{
+  background: #181c22;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #8fa2b8;
+}}
+.fc .fc-list-event-title a {{
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  color: #cdd6e0;
+  text-decoration: none;
+}}
+.fc .fc-list-event-time {{
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  color: #4a5568;
+}}
+.fc th {{
+  font-weight: normal;
+}}
+.fc .fc-toolbar.fc-header-toolbar {{
+  margin-bottom: 14px;
+  gap: 8px;
+  flex-wrap: wrap;
+}}
+.fc .fc-button {{
+  padding: 5px 14px;
+  border-radius: 3px !important;
+  font-size: 10px;
+}}
+.fc .fc-button-group {{
+  gap: 2px;
+}}
+.fc .fc-button-primary:not(:disabled).fc-button-active,
+.fc .fc-button-primary:not(:disabled):active {{
+  background: #0d47a1;
+  border-color: #0d47a1;
+}}
+.fc .fc-button:focus,
+.fc .fc-button-primary:focus {{
+  box-shadow: 0 0 0 2px rgba(29,136,229,0.3) !important;
+}}
+.fc .fc-daygrid-more-link {{
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px;
+}}
+.fc .fc-daygrid-day-events {{
+  padding-bottom: 2px;
+}}
+.fc .fc-scrollgrid-liquid {{
+  height: 100%;
+}}
 #estimated-inspection-panel {{
   border: 1px solid var(--border);
   border-radius: 6px;
