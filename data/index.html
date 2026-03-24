@@ -919,6 +919,10 @@
           node.className = 'fc-ext-pill fc-sp-pill';
           node.title = arg.event.title + (ev.noteText ? '\n' + ev.noteText : '');
           node.innerHTML = '<span class="fc-ext-icon">S</span><span>' + arg.event.title + '</span>';
+        } else if (ev.type === 'google') {
+          node.className = 'fc-ext-pill fc-google-pill';
+          node.title = arg.event.title + (ev.noteText ? '\n' + ev.noteText : '');
+          node.innerHTML = '<span class="fc-ext-icon">G</span><span>' + arg.event.title + '</span>';
         } else {
           node.className = 'fc-maint-pill';
           node.innerHTML = '<strong>' + (ev.tail || '') + '</strong><span>' + (ev.intervalLabel || '') + '</span>';
@@ -1000,11 +1004,18 @@
             '<div class="cal-modal-source">Source: ' + src + ' · ' + fmtDate(info.event.startStr) + '</div>',
             [{ label: 'Close', action: calModalClose }]
           );
+        } else if (ev.type === 'google') {
+          calModalOpen(
+            '<span class="fc-ext-icon">G</span> ' + escHtml(info.event.title),
+            (ev.noteText ? '<p class="cal-modal-desc">' + escHtml(ev.noteText) + '</p>' : '') +
+            '<div class="cal-modal-source">Source: Google Calendar · ' + fmtDate(info.event.startStr) + '</div>',
+            [{ label: 'Close', action: calModalClose }]
+          );
         }
       },
       eventMouseEnter: function(info) {
         var t = (info.event.extendedProps || {}).type;
-        if (t === 'note' || t === 'teams' || t === 'sharepoint') return;
+        if (t === 'note' || t === 'teams' || t === 'sharepoint' || t === 'google') return;
         showHover(info.event.extendedProps || {}, info.jsEvent);
       },
       eventMouseLeave: function() { removeHover(); },
@@ -1019,7 +1030,7 @@
               '<p class="cal-modal-err">Could not update note: ' + escHtml(err.message) + '</p>',
               [{ label: 'OK', action: calModalClose }]);
           });
-        } else if (props.type === 'teams' || props.type === 'sharepoint') {
+        } else if (props.type === 'teams' || props.type === 'sharepoint' || props.type === 'google') {
           info.revert(); // external events are not draggable
         } else {
           props.dueDate = info.event.startStr;
