@@ -82,7 +82,7 @@ function spPath(suffix = '') {
   const siteId = process.env.SHAREPOINT_SITE_ID;
   const listId = process.env.SHAREPOINT_LIST_ID;
   if (!siteId || !listId) throw new Error('SHAREPOINT_SITE_ID / SHAREPOINT_LIST_ID not configured');
-  return `/sites/${siteId}/lists/${listId}/items${suffix}`;
+  return `/sites/${siteId}/lists/${encodeURIComponent(listId)}/items${suffix}`;
 }
 
 async function getSharePointEvents() {
@@ -100,7 +100,7 @@ async function getSharePointEvents() {
 
   const { value } = await graphFetch(
     spPath() +
-    `?expand=fields(select=Title,EventDate,EndDate,Description,fAllDayEvent,Category)` +
+    `?$expand=fields($select=Title,EventDate,EndDate,Description,fAllDayEvent,Category)` +
     `&$filter=${encodeURIComponent(filter)}&$top=500`
   );
   return (value || []).map(item => normalizeSpEvent(item));
