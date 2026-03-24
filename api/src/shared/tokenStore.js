@@ -4,7 +4,7 @@
  * functions can always exchange it for a fresh access token.
  */
 
-const { TableClient, AzureNamedKeyCredential } = require('@azure/data-tables');
+const { TableClient } = require('@azure/data-tables');
 
 const TABLE_NAME = 'fleetCalendarTokens';
 const PARTITION_KEY = 'oauth';

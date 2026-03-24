@@ -1,15 +1,12 @@
 /**
- * GET  /api/events         — Returns merged Teams + SharePoint calendar events
- * POST /api/events         — Creates an event in both Teams and SharePoint
+ * GET  /api/events         — Returns merged SharePoint + Google Calendar events
+ * POST /api/events         — Creates an event in SharePoint
  * POST /api/setup-token    — Seeds the initial refresh token (run once after get-refresh-token.js)
  */
 
 const { app } = require('@azure/functions');
 const { setRefreshToken } = require('../shared/tokenStore');
-const {
-  getTeamsEvents, getSharePointEvents,
-  createTeamsEvent, createSharePointEvent
-} = require('../shared/graphClient');
+const { getSharePointEvents, createSharePointEvent } = require('../shared/graphClient');
 const { getGoogleCalendarEvents } = require('../shared/googleCalendarClient');
 
 // GET /api/events
@@ -19,11 +16,7 @@ app.http('GetEvents', {
   authLevel: 'anonymous',
   handler: async (req, context) => {
     try {
-      const [teamsEvents, spEvents, googleEvents] = await Promise.all([
-        getTeamsEvents().catch(err => {
-          context.warn('Teams fetch failed:', err.message);
-          return [];
-        }),
+      const [spEvents, googleEvents] = await Promise.all([
         getSharePointEvents().catch(err => {
           context.warn('SharePoint fetch failed:', err.message);
           return [];
@@ -34,22 +27,7 @@ app.http('GetEvents', {
         })
       ]);
 
-      // Deduplicate: if the same event was created via the dashboard it will
-      // appear in both calendars with a matching title + date. Keep the Teams
-      // version as canonical and drop the duplicate SharePoint entry.
-      const seen = new Set();
-      const merged = [];
-      for (const ev of teamsEvents) {
-        const key = `${ev.title}|${ev.start}`;
-        seen.add(key);
-        merged.push(ev);
-      }
-      for (const ev of spEvents) {
-        const key = `${ev.title}|${ev.start}`;
-        if (!seen.has(key)) merged.push(ev);
-      }
-      // Google Calendar events are always included (different source, no dedup needed)
-      for (const ev of googleEvents) merged.push(ev);
+      const merged = [...spEvents, ...googleEvents];
 
       return {
         status: 200,
@@ -81,28 +59,7 @@ app.http('CreateEvent', {
     }
 
     try {
-      // Write to both calendars in parallel; log failures but don't block
-      const [teamsResult, spResult] = await Promise.allSettled([
-        createTeamsEvent(payload),
-        createSharePointEvent(payload)
-      ]);
-
-      if (teamsResult.status === 'rejected') {
-        context.warn('Teams create failed:', teamsResult.reason?.message);
-      }
-      if (spResult.status === 'rejected') {
-        context.warn('SharePoint create failed:', spResult.reason?.message);
-      }
-
-      // Return the Teams event as the canonical ID (used for updates/deletes)
-      const created = teamsResult.status === 'fulfilled'
-        ? teamsResult.value
-        : (spResult.status === 'fulfilled' ? spResult.value : null);
-
-      if (!created) {
-        return { status: 502, body: JSON.stringify({ error: 'Failed to write to any calendar' }) };
-      }
-
+      const created = await createSharePointEvent(payload);
       return {
         status: 201,
         headers: { 'Content-Type': 'application/json' },
@@ -121,7 +78,6 @@ app.http('SetupToken', {
   route: 'setup-token',
   authLevel: 'anonymous',
   handler: async (req, context) => {
-    // Protect with a shared secret to prevent unauthorized token replacement
     const secret = req.headers.get('x-setup-secret');
     if (!secret || secret !== process.env.SETUP_SECRET) {
       return { status: 401, body: JSON.stringify({ error: 'Unauthorized' }) };

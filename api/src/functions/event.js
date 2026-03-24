@@ -1,22 +1,13 @@
 /**
- * PUT    /api/events/{id}   — Update an event (Teams and/or SharePoint)
- * DELETE /api/events/{id}   — Delete an event from both calendars
+ * PUT    /api/events/{id}   — Update a SharePoint event
+ * DELETE /api/events/{id}   — Delete a SharePoint event
  *
- * The {id} prefix determines the source:
- *   teams-{eventId}    → Teams group calendar
- *   sp-{itemId}        → SharePoint list item
- *
- * Dashboard-created events always have a teams- prefixed id as the canonical
- * identifier. Deletes and updates are applied to both calendars by title+date
- * matching for the counterpart.
+ * The {id} must be prefixed with sp- (e.g. sp-42).
+ * Google Calendar events are read-only and cannot be updated or deleted here.
  */
 
 const { app } = require('@azure/functions');
-const {
-  updateTeamsEvent, deleteTeamsEvent,
-  updateSharePointEvent, deleteSharePointEvent,
-  getSharePointEvents
-} = require('../shared/graphClient');
+const { updateSharePointEvent, deleteSharePointEvent } = require('../shared/graphClient');
 
 // PUT /api/events/{id}
 app.http('UpdateEvent', {
@@ -25,6 +16,10 @@ app.http('UpdateEvent', {
   authLevel: 'anonymous',
   handler: async (req, context) => {
     const eventId = req.params.id;
+    if (!eventId.startsWith('sp-')) {
+      return { status: 400, body: JSON.stringify({ error: 'Only sp- prefixed event ids are supported' }) };
+    }
+
     let payload;
     try {
       payload = await req.json();
@@ -33,14 +28,7 @@ app.http('UpdateEvent', {
     }
 
     try {
-      const results = await Promise.allSettled([
-        updateById(eventId, payload, context),
-        updateCounterpart(eventId, payload, context)
-      ]);
-      const errors = results.filter(r => r.status === 'rejected').map(r => r.reason?.message);
-      if (errors.length === results.length) {
-        return { status: 502, body: JSON.stringify({ error: 'Update failed on all calendars', details: errors }) };
-      }
+      await updateSharePointEvent(eventId.slice(3), payload);
       return { status: 200, body: JSON.stringify({ ok: true }) };
     } catch (err) {
       context.error('UpdateEvent error:', err);
@@ -56,15 +44,12 @@ app.http('DeleteEvent', {
   authLevel: 'anonymous',
   handler: async (req, context) => {
     const eventId = req.params.id;
+    if (!eventId.startsWith('sp-')) {
+      return { status: 400, body: JSON.stringify({ error: 'Only sp- prefixed event ids are supported' }) };
+    }
+
     try {
-      const results = await Promise.allSettled([
-        deleteById(eventId, context),
-        deleteCounterpart(eventId, context)
-      ]);
-      const errors = results.filter(r => r.status === 'rejected').map(r => r.reason?.message);
-      if (errors.length === results.length) {
-        return { status: 502, body: JSON.stringify({ error: 'Delete failed on all calendars', details: errors }) };
-      }
+      await deleteSharePointEvent(eventId.slice(3));
       return { status: 200, body: JSON.stringify({ ok: true }) };
     } catch (err) {
       context.error('DeleteEvent error:', err);
@@ -72,42 +57,3 @@ app.http('DeleteEvent', {
     }
   }
 });
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-async function updateById(id, payload, context) {
-  if (id.startsWith('teams-')) {
-    return updateTeamsEvent(id.slice(6), payload);
-  }
-  if (id.startsWith('sp-')) {
-    return updateSharePointEvent(id.slice(3), payload);
-  }
-  throw new Error(`Unknown event id prefix: ${id}`);
-}
-
-async function deleteById(id, context) {
-  if (id.startsWith('teams-')) {
-    return deleteTeamsEvent(id.slice(6));
-  }
-  if (id.startsWith('sp-')) {
-    return deleteSharePointEvent(id.slice(3));
-  }
-  throw new Error(`Unknown event id prefix: ${id}`);
-}
-
-// For events created by the dashboard, try to also update/delete the counterpart
-// in the other calendar by matching title + start date.
-async function updateCounterpart(id, payload, context) {
-  if (!id.startsWith('teams-')) return; // only mirror from Teams → SharePoint
-  const spEvents = await getSharePointEvents();
-  const match = spEvents.find(e => e.title === payload.title && e.start === payload.start);
-  if (match) {
-    await updateSharePointEvent(match.id.slice(3), payload);
-  }
-}
-
-async function deleteCounterpart(id, context) {
-  if (!id.startsWith('teams-')) return;
-  // We need the original title to find the SP counterpart; caller must pass ?title=...
-  // For simplicity, the frontend sends the title as a query param on DELETE.
-}

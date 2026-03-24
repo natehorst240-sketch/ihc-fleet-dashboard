@@ -10,13 +10,12 @@
  *   npm install node-fetch (or: node >= 18 which has global fetch)
  *
  * What you need first (see SETUP_GUIDE.md for step-by-step):
- *   1. Go to https://portal.azure.com → Azure Active Directory → App registrations
+ *   1. Go to https://portal.azure.com → Microsoft Entra ID → App registrations
  *   2. Click "New registration", name it "IHC Fleet Dashboard"
  *   3. Under "Supported account types" select "Single tenant"
  *   4. No redirect URI needed for device code flow
  *   5. After creating: copy the Application (client) ID and Directory (tenant) ID
  *   6. Under "API permissions":
- *      - Add → Microsoft Graph → Delegated → Calendars.ReadWrite
  *      - Add → Microsoft Graph → Delegated → Sites.ReadWrite.All (needs admin consent)
  *      - Add → Microsoft Graph → Delegated → offline_access
  *   7. Under "Authentication" → Advanced settings → enable "Allow public client flows"
@@ -36,7 +35,6 @@ const SETUP_SECRET = process.env.SETUP_SECRET || 'YOUR_SETUP_SECRET';
 // ─────────────────────────────────────────────────────────────────────────────
 
 const SCOPES = [
-  'https://graph.microsoft.com/Calendars.ReadWrite',
   'https://graph.microsoft.com/Sites.ReadWrite.All',
   'offline_access'
 ].join(' ');
@@ -45,7 +43,6 @@ const DEVICE_CODE_URL = `https://login.microsoftonline.com/${TENANT_ID}/oauth2/v
 const TOKEN_URL = `https://login.microsoftonline.com/${TENANT_ID}/oauth2/v2.0/token`;
 
 async function fetchJson(url, opts) {
-  // Node 18+ has global fetch; fallback to dynamic import for older versions
   const fetchFn = typeof fetch !== 'undefined' ? fetch : (await import('node-fetch')).default;
   const res = await fetchFn(url, opts);
   const text = await res.text();
@@ -54,13 +51,12 @@ async function fetchJson(url, opts) {
 
 async function main() {
   if (TENANT_ID === 'YOUR_TENANT_ID' || CLIENT_ID === 'YOUR_CLIENT_ID') {
-    console.error('\n❌  Fill in TENANT_ID and CLIENT_ID at the top of this script (or set env vars AZURE_TENANT_ID and AZURE_CLIENT_ID).\n');
+    console.error('\nFill in TENANT_ID and CLIENT_ID at the top of this script (or set env vars AZURE_TENANT_ID and AZURE_CLIENT_ID).\n');
     process.exit(1);
   }
 
-  console.log('\n🔑  Requesting device code...\n');
+  console.log('\nRequesting device code...\n');
 
-  // Step 1: Request device code
   const dcResponse = await fetchJson(DEVICE_CODE_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -77,7 +73,6 @@ async function main() {
   console.log('────────────────────────────────────────────────────────────────\n');
   console.log('Waiting for you to complete sign-in...\n');
 
-  // Step 2: Poll for token
   const interval = (dcResponse.interval || 5) * 1000;
   const expiresAt = Date.now() + dcResponse.expires_in * 1000;
   let tokenResponse;
@@ -103,7 +98,7 @@ async function main() {
     }
 
     if (tokenResponse.error === 'authorization_declined') {
-      console.error('\n❌  Authorization was declined.');
+      console.error('\nAuthorization was declined.');
       process.exit(1);
     }
 
@@ -112,21 +107,20 @@ async function main() {
   }
 
   if (!tokenResponse?.refresh_token) {
-    console.error('\n❌  Did not receive a refresh token. Check that offline_access scope is included.');
+    console.error('\nDid not receive a refresh token. Check that offline_access scope is included.');
     process.exit(1);
   }
 
-  console.log('\n\n✅  Got tokens!\n');
+  console.log('\n\nGot tokens!\n');
 
-  // Step 3: Push refresh token to the API
   if (SWA_API_URL === 'YOUR_SWA_API_URL/api/setup-token') {
-    console.log('⚠️   SWA_API_URL not configured — printing token for manual entry:\n');
+    console.log('SWA_API_URL not configured — printing token for manual entry:\n');
     console.log('Refresh Token:', tokenResponse.refresh_token);
     console.log('\nStore this as the INITIAL value in Azure Table Storage, or set SWA_API_URL and re-run.\n');
     return;
   }
 
-  console.log(`📤  Pushing refresh token to ${SWA_API_URL}...\n`);
+  console.log(`Pushing refresh token to ${SWA_API_URL}...\n`);
   const setupRes = await fetchJson(SWA_API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-setup-secret': SETUP_SECRET },
@@ -134,17 +128,16 @@ async function main() {
   });
 
   if (setupRes.ok) {
-    console.log('✅  Refresh token stored successfully. Your API is ready!');
+    console.log('Refresh token stored successfully. Your API is ready!');
     console.log('\nNext: set these in Azure SWA Application Settings (portal.azure.com):');
-    console.log('  AZURE_TENANT_ID      =', TENANT_ID);
-    console.log('  AZURE_CLIENT_ID      =', CLIENT_ID);
-    console.log('  AZURE_STORAGE_CONNECTION_STRING = (from your storage account)');
-    console.log('  TEAMS_GROUP_ID       = (from Azure AD → Groups → your Teams group)');
-    console.log('  SHAREPOINT_SITE_ID   = (from Graph Explorer: /sites/{hostname}:{path})');
-    console.log('  SHAREPOINT_LIST_ID   = (from Graph Explorer: /sites/{id}/lists)');
-    console.log('  SETUP_SECRET         = (same value you used above)\n');
+    console.log('  AZURE_TENANT_ID                  =', TENANT_ID);
+    console.log('  AZURE_CLIENT_ID                  =', CLIENT_ID);
+    console.log('  AZURE_STORAGE_CONNECTION_STRING  = (from your storage account)');
+    console.log('  SHAREPOINT_SITE_ID               = (from Graph Explorer: /sites/{hostname}:{path})');
+    console.log('  SHAREPOINT_LIST_ID               = (from Graph Explorer: /sites/{id}/lists)');
+    console.log('  SETUP_SECRET                     = (same value you used above)\n');
   } else {
-    console.error('❌  Failed to store token:', setupRes);
+    console.error('Failed to store token:', setupRes);
   }
 }
 
