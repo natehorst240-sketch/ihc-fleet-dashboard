@@ -10,6 +10,7 @@ const {
   getTeamsEvents, getSharePointEvents,
   createTeamsEvent, createSharePointEvent
 } = require('../shared/graphClient');
+const { getGoogleCalendarEvents } = require('../shared/googleCalendarClient');
 
 // GET /api/events
 app.http('GetEvents', {
@@ -18,13 +19,17 @@ app.http('GetEvents', {
   authLevel: 'anonymous',
   handler: async (req, context) => {
     try {
-      const [teamsEvents, spEvents] = await Promise.all([
+      const [teamsEvents, spEvents, googleEvents] = await Promise.all([
         getTeamsEvents().catch(err => {
           context.warn('Teams fetch failed:', err.message);
           return [];
         }),
         getSharePointEvents().catch(err => {
           context.warn('SharePoint fetch failed:', err.message);
+          return [];
+        }),
+        getGoogleCalendarEvents().catch(err => {
+          context.warn('Google Calendar fetch failed:', err.message);
           return [];
         })
       ]);
@@ -43,6 +48,8 @@ app.http('GetEvents', {
         const key = `${ev.title}|${ev.start}`;
         if (!seen.has(key)) merged.push(ev);
       }
+      // Google Calendar events are always included (different source, no dedup needed)
+      for (const ev of googleEvents) merged.push(ev);
 
       return {
         status: 200,
