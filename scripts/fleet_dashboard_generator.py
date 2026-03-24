@@ -622,6 +622,15 @@ def parse_due_list_parts(filepath, gcfg=None):
         for interval, pats in _pm.items()
     }
 
+    def _remaining_score(rem_hrs, rem_days, rem_months):
+        """Smaller score means closer to due."""
+        if rem_hrs is not None:
+            return float(rem_hrs)
+        if rem_days is not None:
+            months = rem_months or 0
+            return float((months * 30) + rem_days) * 0.5
+        return float('inf')
+
     for row in data_rows:
         if len(row) <= max_col:
             continue
@@ -657,9 +666,13 @@ def parse_due_list_parts(filepath, gcfg=None):
                 # Use a stable string key derived from the interval identifier
                 key = str(interval)
                 existing = aircraft_raw[reg].get(key)
-                if existing is None or (
-                    rem_hrs is not None and (existing["rem_hrs"] is None or rem_hrs < existing["rem_hrs"])
-                ):
+                existing_score = _remaining_score(
+                    existing.get("rem_hrs") if existing else None,
+                    existing.get("rem_days") if existing else None,
+                    existing.get("rem_months") if existing else None,
+                )
+                current_score = _remaining_score(rem_hrs, rem_days, rem_months)
+                if existing is None or current_score < existing_score:
                     aircraft_raw[reg][key] = {
                         "rem_hrs": rem_hrs, "rem_days": rem_days, "rem_months": rem_months,
                         "status": status, "desc": desc,
