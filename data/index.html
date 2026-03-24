@@ -683,11 +683,13 @@
 .cal-ev-sub { font-family: 'Share Tech Mono', monospace; color: #4a5568; font-size: 10px; }
 /* ── Calendar modal ── */
 .cal-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:10000;display:none;}
-.cal-modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10001;display:none;flex-direction:column;background:#0d1822;border:1px solid #263445;border-radius:8px;min-width:340px;max-width:480px;width:90%;box-shadow:0 16px 48px rgba(0,0,0,0.6);}
+.cal-modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:10001;display:none;flex-direction:column;background:#0d1822;border:1px solid #263445;border-radius:8px;min-width:300px;max-width:480px;width:92%;box-shadow:0 16px 48px rgba(0,0,0,0.6);}
 .cal-modal-title{padding:14px 18px 10px;font-family:'Barlow Condensed',sans-serif;font-size:18px;letter-spacing:1px;color:#e8edf2;border-bottom:1px solid #1e2a38;display:flex;align-items:center;gap:8px;}
 .cal-modal-body{padding:14px 18px;color:#8fa2b8;font-family:'Share Tech Mono',monospace;font-size:12px;}
 .cal-modal-note-date{font-size:10px;color:#4a5568;margin-bottom:8px;}
-.cal-modal-textarea{width:100%;box-sizing:border-box;background:#0a1018;border:1px solid #263445;border-radius:4px;color:#e8edf2;font-family:'Share Tech Mono',monospace;font-size:12px;padding:8px 10px;resize:vertical;min-height:80px;outline:none;}
+/* font-size:16px prevents iOS Safari auto-zoom on focus */
+.cal-modal-textarea{width:100%;box-sizing:border-box;background:#0a1018;border:1px solid #263445;border-radius:4px;color:#e8edf2;font-family:'Share Tech Mono',monospace;font-size:16px;padding:8px 10px;resize:vertical;min-height:80px;outline:none;}
+@media (max-width:520px){.cal-modal{top:12%;transform:translateX(-50%);max-height:55vh;overflow-y:auto;}}
 .cal-modal-textarea:focus{border-color:#1e88e5;}
 .cal-modal-desc{margin:0 0 8px;color:#e8edf2;}
 .cal-modal-source{font-size:10px;color:#4a5568;margin-top:4px;}
