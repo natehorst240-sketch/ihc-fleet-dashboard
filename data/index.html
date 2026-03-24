@@ -161,7 +161,7 @@
   </div>
   <div class="header-meta">
     <div class="date">REPORT DATE: 20 FEB 2026</div>
-    <div>FLEET: 9 AIRCRAFT &nbsp;|&nbsp; 0 AIRBORNE &nbsp;|&nbsp; 6 AT BASE &nbsp;|&nbsp; GENERATED: 24 MAR 2026 11:57</div>
+    <div>FLEET: 9 AIRCRAFT &nbsp;|&nbsp; 0 AIRBORNE &nbsp;|&nbsp; 6 AT BASE &nbsp;|&nbsp; GENERATED: 24 MAR 2026 13:04</div>
     <button id="pwa-install-btn" style="display:none;margin-top:6px;font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;padding:5px 12px;background:transparent;border:1px solid var(--blue);color:var(--blue);border-radius:2px;cursor:pointer;align-items:center;gap:6px;" title="Install as app on your device">
       &#x2B07; ADD TO HOME SCREEN
     </button>
@@ -917,10 +917,6 @@
           node.className = 'fc-ext-pill fc-sp-pill';
           node.title = arg.event.title + (ev.noteText ? '\n' + ev.noteText : '');
           node.innerHTML = '<span class="fc-ext-icon">S</span><span>' + arg.event.title + '</span>';
-        } else if (ev.type === 'google') {
-          node.className = 'fc-ext-pill fc-google-pill';
-          node.title = arg.event.title + (ev.noteText ? '\n' + ev.noteText : '');
-          node.innerHTML = '<span class="fc-ext-icon">G</span><span>' + arg.event.title + '</span>';
         } else {
           node.className = 'fc-maint-pill';
           node.innerHTML = '<strong>' + (ev.tail || '') + '</strong><span>' + (ev.intervalLabel || '') + '</span>';
@@ -1002,18 +998,11 @@
             '<div class="cal-modal-source">Source: ' + src + ' · ' + fmtDate(info.event.startStr) + '</div>',
             [{ label: 'Close', action: calModalClose }]
           );
-        } else if (ev.type === 'google') {
-          calModalOpen(
-            '<span class="fc-ext-icon">G</span> ' + escHtml(info.event.title),
-            (ev.noteText ? '<p class="cal-modal-desc">' + escHtml(ev.noteText) + '</p>' : '') +
-            '<div class="cal-modal-source">Source: Google Calendar · ' + fmtDate(info.event.startStr) + '</div>',
-            [{ label: 'Close', action: calModalClose }]
-          );
         }
       },
       eventMouseEnter: function(info) {
         var t = (info.event.extendedProps || {}).type;
-        if (t === 'note' || t === 'teams' || t === 'sharepoint' || t === 'google') return;
+        if (t === 'note' || t === 'teams' || t === 'sharepoint') return;
         showHover(info.event.extendedProps || {}, info.jsEvent);
       },
       eventMouseLeave: function() { removeHover(); },
@@ -1028,7 +1017,7 @@
               '<p class="cal-modal-err">Could not update note: ' + escHtml(err.message) + '</p>',
               [{ label: 'OK', action: calModalClose }]);
           });
-        } else if (props.type === 'teams' || props.type === 'sharepoint' || props.type === 'google') {
+        } else if (props.type === 'teams' || props.type === 'sharepoint') {
           info.revert(); // external events are not draggable
         } else {
           props.dueDate = info.event.startStr;
@@ -1269,7 +1258,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 <script>
-  const DASHBOARD_VERSION = "20260324115702";
+  const DASHBOARD_VERSION = "20260324130421";
 
   // Auto-reload when a newer build is deployed
   (function() {
