@@ -1,14 +1,13 @@
 {
   "name": "ihc-fleet-calendar-api",
   "version": "1.0.0",
-  "description": "Azure Functions API for IHC Fleet Dashboard calendar sync with Microsoft 365",
+  "description": "Azure Functions API for IHC Fleet Dashboard calendar sync",
   "main": "src/functions/*.js",
   "scripts": {
     "start": "func start"
   },
   "dependencies": {
     "@azure/functions": "^4.3.0",
-    "@azure/data-tables": "^13.2.2",
     "node-fetch": "^3.3.2"
   },
   "engines": {
