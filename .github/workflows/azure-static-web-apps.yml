@@ -56,8 +56,8 @@ jobs:
           app_location: '/'
           # Azure Functions API folder
           api_location: 'api'
-          # Generated output is already in data/ — no separate build output dir
-          output_location: ''
+          # Static files are served from the repo root (index.html, data/, etc.)
+          output_location: '/'
 
   close_pull_request:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
