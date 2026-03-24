@@ -1,0 +1,17 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+
+    "AZURE_TENANT_ID": "YOUR_TENANT_ID",
+    "AZURE_CLIENT_ID": "YOUR_CLIENT_ID",
+
+    "AZURE_STORAGE_CONNECTION_STRING": "DefaultEndpointsProtocol=https;AccountName=YOUR_STORAGE;AccountKey=YOUR_KEY;EndpointSuffix=core.windows.net",
+
+    "TEAMS_GROUP_ID": "YOUR_M365_GROUP_ID_BEHIND_TEAMS_TEAM",
+
+    "SHAREPOINT_SITE_ID": "YOUR_SHAREPOINT_SITE_ID",
+    "SHAREPOINT_LIST_ID": "YOUR_SHAREPOINT_CALENDAR_LIST_ID"
+  }
+}

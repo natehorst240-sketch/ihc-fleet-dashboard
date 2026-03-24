@@ -1,0 +1,71 @@
+name: Azure Static Web Apps CI/CD
+
+# Deploys to Azure Static Web Apps on every push to main.
+# The build_dashboard.yml workflow still regenerates data/index.html;
+# this workflow picks up those changes and publishes to Azure SWA.
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build_and_deploy:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+    runs-on: ubuntu-latest
+    name: Build and Deploy
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          lfs: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        run: pip install Pillow requests
+
+      - name: Fetch aircraft locations
+        env:
+          TROOTRAX_USER: ${{ secrets.TROOTRAX_USER }}
+          TROOTRAX_PASS: ${{ secrets.TROOTRAX_PASS }}
+          TROOTRAX_CUSTOMER_ID: ${{ secrets.TROOTRAX_CUSTOMER_ID }}
+        run: python scripts/trootrax.py || true
+
+      - name: Generate dashboard
+        env:
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+        run: python scripts/fleet_dashboard_generator.py
+
+      - name: Deploy to Azure Static Web Apps
+        id: deploy
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: 'upload'
+          # Root of the static site (contains index.html redirect + data/ folder)
+          app_location: '/'
+          # Azure Functions API folder
+          api_location: 'api'
+          # Generated output is already in data/ — no separate build output dir
+          output_location: ''
+
+  close_pull_request:
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    name: Close Pull Request Environment
+    steps:
+      - name: Close staging environment
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: 'close'
