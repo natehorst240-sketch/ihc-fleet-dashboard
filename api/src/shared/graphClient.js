@@ -87,8 +87,21 @@ function spPath(suffix = '') {
 
 async function getSharePointEvents() {
   if (!process.env.SHAREPOINT_SITE_ID || !process.env.SHAREPOINT_LIST_ID) return [];
+
+  const now = new Date();
+  const from = new Date(now);
+  from.setMonth(from.getMonth() - 3);
+  const to = new Date(now);
+  to.setMonth(to.getMonth() + 6);
+
+  const fromStr = from.toISOString().split('T')[0] + 'T00:00:00Z';
+  const toStr = to.toISOString().split('T')[0] + 'T23:59:59Z';
+  const filter = `fields/EventDate ge '${fromStr}' and fields/EventDate le '${toStr}'`;
+
   const { value } = await graphFetch(
-    spPath() + '?expand=fields(select=Title,EventDate,EndDate,Description,fAllDayEvent,Category)&$top=200'
+    spPath() +
+    `?expand=fields(select=Title,EventDate,EndDate,Description,fAllDayEvent,Category)` +
+    `&$filter=${encodeURIComponent(filter)}&$top=500`
   );
   return (value || []).map(item => normalizeSpEvent(item));
 }
