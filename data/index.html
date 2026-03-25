@@ -159,7 +159,6 @@
   [data-theme="light"] .hr-amber{background:rgba(154,103,0,0.08);border-color:rgba(154,103,0,0.25);}
   [data-theme="light"] .hr-red{background:rgba(207,34,46,0.08);border-color:rgba(207,34,46,0.25);}
   [data-theme="light"] .hr-overdue{background:rgba(188,76,0,0.10);border-color:rgba(188,76,0,0.3);}
-  /* FullCalendar light overrides */
   [data-theme="light"] .fc-theme-standard td,
   [data-theme="light"] .fc-theme-standard th{border-color:#ced5dd;}
   [data-theme="light"] .fc-theme-standard .fc-scrollgrid{border-color:#ced5dd;}
@@ -181,7 +180,6 @@
   [data-theme="light"] .fc-hover-chart{background:#dde3ea;}
   [data-theme="light"] .fc-edit-note{color:#6e7781;}
   [data-theme="light"] .fc-ext-icon{background:rgba(0,0,0,0.08);}
-  /* Modal light overrides */
   [data-theme="light"] .cal-modal{background:#fff;border-color:#ced5dd;}
   [data-theme="light"] .cal-modal-title{color:#0d1117;border-bottom-color:#ced5dd;}
   [data-theme="light"] .cal-modal-body{color:#6e7781;}
@@ -196,14 +194,12 @@
   [data-theme="light"] .cal-modal-btn-primary:hover{background:#0a5dc2;}
   [data-theme="light"] .cal-modal-btn-danger{background:rgba(207,34,46,0.08);border-color:#cf222e;color:#cf222e;}
   [data-theme="light"] .cal-modal-btn-danger:hover{background:#cf222e;color:#fff;}
-  /* Location & misc badges */
   [data-theme="light"] .location-at-base{background:rgba(26,127,55,0.10);border-color:rgba(26,127,55,0.3);}
   [data-theme="light"] .location-away{background:rgba(207,34,46,0.08);border-color:rgba(207,34,46,0.3);}
   [data-theme="light"] .location-active{background:rgba(9,105,218,0.10);border-color:rgba(9,105,218,0.3);}
   [data-theme="light"] .rii-badge{background:rgba(154,103,0,0.10);border-color:rgba(154,103,0,0.3);color:var(--amber);}
   [data-theme="light"] .tab-btn:hover{color:var(--text);background:rgba(0,0,0,0.04);}
   [data-theme="light"] .filter-btn:hover,[data-theme="light"] .filter-btn.active{color:#fff;}
-  /* Theme toggle button */
   #theme-toggle{font-size:14px;padding:4px 8px;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:2px;cursor:pointer;line-height:1;margin-top:6px;transition:border-color 0.15s,color 0.15s;}
   #theme-toggle:hover{border-color:var(--blue);color:var(--blue);}
 </style>
@@ -223,7 +219,7 @@
   </div>
   <div class="header-meta">
     <div class="date">REPORT DATE: 20 FEB 2026</div>
-    <div>FLEET: 9 AIRCRAFT &nbsp;|&nbsp; 0 AIRBORNE &nbsp;|&nbsp; 6 AT BASE &nbsp;|&nbsp; GENERATED: 25 MAR 2026 06:37</div>
+    <div>FLEET: 9 AIRCRAFT &nbsp;|&nbsp; 0 AIRBORNE &nbsp;|&nbsp; 6 AT BASE &nbsp;|&nbsp; GENERATED: 25 MAR 2026 00:54</div>
     <button id="pwa-install-btn" style="display:none;margin-top:6px;font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;padding:5px 12px;background:transparent;border:1px solid var(--blue);color:var(--blue);border-radius:2px;cursor:pointer;align-items:center;gap:6px;" title="Install as app on your device">
       &#x2B07; ADD TO HOME SCREEN
     </button>
@@ -1068,7 +1064,7 @@
     if (e.key === 'Escape' && _calModal && _calModal.style.display === 'flex') calModalClose();
   });
 
-  // ── Azure calendar storage helpers ───────────────────────────────────────────
+  // ── Azure calendar storage helpers ──────────────────────────────────────────
   var CAL_API = '/api/calendar';
 
   function calSaveToAzure(id, tail, intervalLabel, dueDate, color, note) {
@@ -1076,8 +1072,22 @@
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: id, tail: tail, intervalLabel: intervalLabel,
-                             dueDate: dueDate, color: color, note: note || '', type: 'override' })
+                              dueDate: dueDate, color: color, note: note || '', type: 'override' })
     }).then(function(r) { if (!r.ok) throw new Error('Save failed: ' + r.status); });
+  }
+
+  function calSaveCustomNote(id, title, dueDate, note) {
+    return fetch(CAL_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: id, tail: '', intervalLabel: title,
+                              dueDate: dueDate, color: '#f59e0b', note: note || '', type: 'custom' })
+    }).then(function(r) { if (!r.ok) throw new Error('Save failed: ' + r.status); });
+  }
+
+  function calDeleteFromAzure(id) {
+    return fetch(CAL_API + '/' + encodeURIComponent(id), { method: 'DELETE' })
+      .then(function(r) { if (!r.ok && r.status !== 404) throw new Error('Delete failed: ' + r.status); });
   }
 
   function calShowStatus(msg, isErr) {
@@ -1093,6 +1103,8 @@
   function renderCalendar() {
     if (!calEl || !window.FullCalendar) return;
 
+    // Build base maintenance events (from computed CSV data)
+    var maintEventMap = {};
     var maintEvents = MAINT.map(function(ev, idx) {
       var durationDays = Math.max(1, Number(ev.durationDays) || 1);
       var endDate = null;
@@ -1104,6 +1116,7 @@
         }
       }
       var azId = 'maint-' + (ev.tail || '').replace(/\s+/g,'') + '-' + (ev.intervalLabel || '').replace(/\s+/g,'');
+      maintEventMap[azId] = idx;
       return {
         id: azId,
         title: ev.tail + ' ' + ev.intervalLabel,
@@ -1135,6 +1148,7 @@
             fetch(CAL_API + '?t=' + Date.now())
               .then(function(r) { return r.json(); })
               .then(function(saved) {
+                // Apply saved overrides to maintenance events
                 saved.forEach(function(s) {
                   if (s.type === 'override') {
                     var ev = calendar.getEventById(s.id);
@@ -1145,13 +1159,14 @@
                     }
                   }
                 });
+                // Return only user-created custom events (not overrides)
                 var custom = saved.filter(function(s) { return s.type === 'custom'; }).map(function(s) {
                   return {
                     id: s.id, title: s.tail ? (s.tail + ' ' + s.intervalLabel) : s.intervalLabel,
                     start: s.dueDate, allDay: true,
                     backgroundColor: s.color || '#29b6f6', borderColor: s.color || '#29b6f6',
                     extendedProps: { type: 'custom', note: s.note, _azId: s.id,
-                                    tail: s.tail, intervalLabel: s.intervalLabel, color: s.color }
+                                     tail: s.tail, intervalLabel: s.intervalLabel, color: s.color }
                   };
                 });
                 renderInspectionList();
@@ -1163,12 +1178,18 @@
       ],
       eventContent: function(arg) {
         var ev = arg.event.extendedProps || {};
+        var isDateNote = ev.type === 'custom' && !ev.tail;
         var hasNote = ev.note && ev.note.trim();
         var node = document.createElement('div');
         node.className = 'fc-maint-pill';
-        node.innerHTML = '<strong>' + (ev.tail || '') + '</strong>'
-          + '<span>' + (ev.intervalLabel || '') + '</span>'
-          + (hasNote ? '<span style="opacity:0.7;font-size:9px;margin-left:4px;">&#128196;</span>' : '');
+        if (isDateNote) {
+          node.innerHTML = '<span style="opacity:0.85;">&#128196; </span>'
+            + '<span>' + (ev.intervalLabel || ev.note || '').replace(/</g,'&lt;').slice(0,40) + '</span>';
+        } else {
+          node.innerHTML = '<strong>' + (ev.tail || '') + '</strong>'
+            + '<span>' + (ev.intervalLabel || '') + '</span>'
+            + (hasNote ? '<span style="opacity:0.7;font-size:9px;margin-left:4px;">&#128196;</span>' : '');
+        }
         return { domNodes: [node] };
       },
       eventMouseEnter: function(info) {
@@ -1183,7 +1204,7 @@
         var azId  = props._azId || info.event.id;
         props.dueDate = info.event.startStr;
         renderInspectionList();
-        calShowStatus('Saving\u2026');
+        calShowStatus('Saving…');
         calSaveToAzure(azId, props.tail, props.intervalLabel, info.event.startStr, props.color, props.note || '')
           .then(function() { calShowStatus('Saved'); })
           .catch(function() { calShowStatus('Save failed', true); info.revert(); });
@@ -1192,8 +1213,34 @@
         var props = info.event.extendedProps || {};
         var azId  = props._azId || info.event.id;
         var currentNote = props.note || '';
+        var isDateNote = props.type === 'custom' && !props.tail;
+        if (isDateNote) {
+          calModalOpen(
+            'Note — ' + info.event.startStr,
+            '<textarea id="cal-modal-input" class="cal-modal-textarea" rows="4">' + currentNote.replace(/</g,'&lt;') + '</textarea>',
+            [
+              { label: 'Cancel', cls: '', action: calModalClose },
+              { label: 'Delete Note', cls: 'cal-modal-btn-danger', action: function() {
+                  calModalClose();
+                  calShowStatus('Deleting…');
+                  calDeleteFromAzure(azId)
+                    .then(function() { calShowStatus('Deleted'); calendar.refetchEvents(); })
+                    .catch(function() { calShowStatus('Delete failed', true); });
+              } },
+              { label: 'Save Note', cls: 'cal-modal-btn-primary', action: function() {
+                  var txt = (document.getElementById('cal-modal-input') || {}).value || '';
+                  calModalClose();
+                  calShowStatus('Saving…');
+                  calSaveCustomNote(azId, txt.slice(0, 60), info.event.startStr, txt)
+                    .then(function() { calShowStatus('Saved'); calendar.refetchEvents(); })
+                    .catch(function() { calShowStatus('Save failed', true); });
+              } }
+            ]
+          );
+          return;
+        }
         calModalOpen(
-          (props.tail ? props.tail + ' \u2014 ' : '') + (props.intervalLabel || info.event.title),
+          (props.tail ? props.tail + ' — ' : '') + (props.intervalLabel || info.event.title),
           '<p class="cal-modal-desc">' + info.event.startStr + '</p>'
             + '<p class="cal-modal-note-date">Note (shared across all devices):</p>'
             + '<textarea id="cal-modal-input" class="cal-modal-textarea" rows="4">' + currentNote.replace(/</g,'&lt;') + '</textarea>',
@@ -1203,7 +1250,7 @@
                 calModalClose();
                 props.note = '';
                 calendar.refetchEvents();
-                calShowStatus('Clearing\u2026');
+                calShowStatus('Clearing…');
                 calSaveToAzure(azId, props.tail, props.intervalLabel, info.event.startStr, props.color, '')
                   .then(function() { calShowStatus('Cleared'); })
                   .catch(function() { calShowStatus('Failed', true); });
@@ -1213,9 +1260,29 @@
                 calModalClose();
                 props.note = txt;
                 calendar.refetchEvents();
-                calShowStatus('Saving\u2026');
+                calShowStatus('Saving…');
                 calSaveToAzure(azId, props.tail, props.intervalLabel, info.event.startStr, props.color, txt)
                   .then(function() { calShowStatus('Saved'); })
+                  .catch(function() { calShowStatus('Save failed', true); });
+            } }
+          ]
+        );
+      },
+      dateClick: function(info) {
+        var dateStr = info.dateStr;
+        var newId   = 'note-' + dateStr + '-' + Date.now();
+        calModalOpen(
+          'Add Note — ' + dateStr,
+          '<textarea id="cal-modal-input" class="cal-modal-textarea" rows="4" placeholder="Enter note…"></textarea>',
+          [
+            { label: 'Cancel', cls: 'cal-modal-btn-secondary', action: function() { calModalClose(); } },
+            { label: 'Save Note', cls: 'cal-modal-btn-primary', action: function() {
+                var txt = (document.getElementById('cal-modal-input') || {}).value || '';
+                if (!txt.trim()) { calModalClose(); return; }
+                calModalClose();
+                calShowStatus('Saving…');
+                calSaveCustomNote(newId, txt.slice(0, 60), dateStr, txt)
+                  .then(function() { calShowStatus('Saved'); calendar.refetchEvents(); })
                   .catch(function() { calShowStatus('Save failed', true); });
             } }
           ]
@@ -1243,7 +1310,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 <script>
-  const DASHBOARD_VERSION = "20260325063710";
+  const DASHBOARD_VERSION = "20260325005402";
 
   // Auto-reload when a newer build is deployed
   (function() {
@@ -1298,7 +1365,6 @@
     if (btn) filterTable(filter, btn);
   }
 
-  // Used by the "Critical / OD" stat card — shows both hr-red AND hr-overdue rows
   function applyFilterCriticalOD() {
     switchTab('maintenance');
     document.querySelectorAll('.filter-btn').forEach(function(b){ b.classList.remove('active'); });
@@ -1325,16 +1391,16 @@
         else if (cls.includes('hr-amber') && worst === null) worst = 'coming';
         else if (cls.includes('hr-green') && worst === null) worst = 'ok';
       });
-      if (worst === null) return; // all-NA row — exclude from counts
+      if (worst === null) return;
       counts[worst]++;
       counts.all++;
     });
     var labels = {
-      all: 'All\u00a0(' + counts.all + ')',
-      overdue: 'Past Due\u00a0(' + counts.overdue + ')',
-      critical: 'Critical\u00a0(' + counts.critical + ')',
-      coming: 'Coming Due\u00a0(' + counts.coming + ')',
-      ok: 'OK\u00a0(' + counts.ok + ')'
+      all: 'All (' + counts.all + ')',
+      overdue: 'Past Due (' + counts.overdue + ')',
+      critical: 'Critical (' + counts.critical + ')',
+      coming: 'Coming Due (' + counts.coming + ')',
+      ok: 'OK (' + counts.ok + ')'
     };
     document.querySelectorAll('.filter-btn[data-filter]').forEach(function(btn) {
       var f = btn.getAttribute('data-filter');
@@ -1352,13 +1418,12 @@
       document.documentElement.removeAttribute('data-theme');
     }
     localStorage.setItem('fleet-theme', next);
-    // Show current-state icon: sun = light mode, moon = dark mode
-    document.getElementById('theme-toggle').textContent = next === 'light' ? '\u2600' : '\u263D';
+    document.getElementById('theme-toggle').textContent = next === 'light' ? '☀' : '☽';
   }
   (function(){
     var t = localStorage.getItem('fleet-theme') || 'dark';
     var btn = document.getElementById('theme-toggle');
-    if (btn) btn.textContent = t === 'light' ? '\u2600' : '\u263D';
+    if (btn) btn.textContent = t === 'light' ? '☀' : '☽';
   })();
 
   // 200hr bar chart
