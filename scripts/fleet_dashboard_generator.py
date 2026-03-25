@@ -1476,7 +1476,7 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
     _calDebugLog.unshift('[' + ts + '] ' + method + ' ' + url + ' → ' + status + (body ? ': ' + body : ''));
     if (_calDebugLog.length > 20) _calDebugLog.pop();
     var el = document.getElementById('cal-debug-log');
-    if (el) el.textContent = _calDebugLog.join('\n');
+    if (el) el.textContent = _calDebugLog.join('\\n');
   }}
 
   // ── Azure calendar storage helpers ──────────────────────────────────────────
