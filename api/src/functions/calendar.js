@@ -95,7 +95,7 @@ app.http('UpsertCalendarEvent', {
         tail:          tail          || '',
         intervalLabel: intervalLabel || '',
         dueDate:       dueDate,
-        endDate:       endDate       || null,
+        endDate:       endDate       || '',
         note:          note          || '',
         color:         color         || '#29b6f6',
         type:          type          || 'override',
