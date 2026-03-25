@@ -1563,6 +1563,8 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
     el._t = setTimeout(function() {{ el.style.opacity = '0'; }}, isErr ? 15000 : 3000);
   }}
 
+  var calendar; // outer scope so calOpenNewNoteModal can call calendar.addEvent()
+
   function renderCalendar() {{
     if (!calEl || !window.FullCalendar) return;
 
@@ -1592,7 +1594,7 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
       }};
     }});
 
-    var calendar = new FullCalendar.Calendar(calEl, {{
+    calendar = new FullCalendar.Calendar(calEl, {{
       initialView: window.innerWidth < 900 ? 'listMonth' : 'dayGridMonth',
       height: 680,
       editable: true,
