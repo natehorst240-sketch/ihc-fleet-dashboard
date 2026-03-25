@@ -1295,12 +1295,23 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
 
 <div id="cal-shell">
   <div id="calendar-wrap">
-    <div class="fc-edit-note">Drag and drop pills to adjust projected dates · Click a date to add a custom note (local view only).</div>
+    <div class="fc-edit-note">Drag and drop pills to adjust projected dates.</div>
     <div id="maint-calendar"></div>
   </div>
   <div id="estimated-inspection-panel">
     <div class="section-label" style="margin-top:0;">Estimated Inspection Dates</div>
     <div id="estimated-inspection-list"></div>
+  </div>
+</div>
+
+<div style="margin-top:20px;">
+  <div class="section-label">PERSONAL CALENDAR &mdash; dashboard109hub@gmail.com</div>
+  <div style="border:1px solid var(--border);border-radius:6px;overflow:hidden;">
+    <iframe src="https://calendar.google.com/calendar/embed?src=dashboard109hub%40gmail.com&bgcolor=%230a0e14&color=%23039BE5&showTitle=0&showNav=1&showDate=1&showPrint=0&showTabs=0&showCalendars=0"
+      style="border:0;display:block;" width="100%" height="540" frameborder="0" scrolling="no"></iframe>
+  </div>
+  <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:#4a5568;margin-top:4px;">
+    Requires calendar to be set to public in Google Calendar settings (Settings &rarr; your calendar &rarr; Access permissions &rarr; Make available to public).
   </div>
 </div>
 
@@ -1433,21 +1444,6 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
     if (e.key === 'Escape' && _calModal && _calModal.style.display === 'flex') calModalClose();
   }});
 
-  // API-backed calendar persistence (Microsoft 365 via /api/events)
-  function apiEvent(method, id, payload) {{
-    var url = '/api/events' + (id ? '/' + encodeURIComponent(id) : '');
-    var opts = {{
-      method: method,
-      headers: {{ 'Content-Type': 'application/json' }}
-    }};
-    if (payload) opts.body = JSON.stringify(payload);
-    return fetch(url, opts).then(function(r) {{
-      if (r.status === 204 || r.status === 200) return r.text().then(function(t) {{ return t ? JSON.parse(t) : {{}}; }});
-      if (!r.ok) return r.text().then(function(t) {{ throw new Error(t || ('HTTP ' + r.status)); }});
-      return r.json();
-    }});
-  }}
-
   function renderCalendar() {{
     if (!calEl || !window.FullCalendar) return;
     var maintEvents = MAINT.map(function(ev, idx) {{
@@ -1482,112 +1478,14 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
         {{
           events: maintEvents,
           id: 'maintenance'
-        }},
-        {{
-          url: '/api/events',
-          id: 'external',
-          failure: function() {{
-            console.warn('Microsoft 365 calendar sync unavailable — API not reachable.');
-          }}
         }}
       ],
       eventContent: function(arg) {{
         var ev = arg.event.extendedProps || {{}};
         var node = document.createElement('div');
-        if (ev.type === 'note') {{
-          node.className = 'fc-note-pill';
-          node.title = ev.noteText || '';
-          node.innerHTML = '&#9998; <span>' + (ev.noteText || 'Note') + '</span>';
-        }} else if (ev.type === 'teams') {{
-          node.className = 'fc-ext-pill fc-teams-pill';
-          node.title = arg.event.title + (ev.noteText ? '\\n' + ev.noteText : '');
-          node.innerHTML = '<span class="fc-ext-icon">T</span><span>' + arg.event.title + '</span>';
-        }} else if (ev.type === 'sharepoint') {{
-          node.className = 'fc-ext-pill fc-sp-pill';
-          node.title = arg.event.title + (ev.noteText ? '\\n' + ev.noteText : '');
-          node.innerHTML = '<span class="fc-ext-icon">S</span><span>' + arg.event.title + '</span>';
-        }} else {{
-          node.className = 'fc-maint-pill';
-          node.innerHTML = '<strong>' + (ev.tail || '') + '</strong><span>' + (ev.intervalLabel || '') + '</span>';
-        }}
+        node.className = 'fc-maint-pill';
+        node.innerHTML = '<strong>' + (ev.tail || '') + '</strong><span>' + (ev.intervalLabel || '') + '</span>';
         return {{ domNodes: [node] }};
-      }},
-      dateClick: function(info) {{
-        calModalOpen(
-          'Add Note \u2014 ' + fmtDate(info.dateStr),
-          '<textarea id="cal-modal-input" class="cal-modal-textarea" placeholder="Enter note text\u2026"></textarea>',
-          [
-            {{ label: 'Save', cls: 'cal-modal-btn-primary', action: function() {{
-              var inp = document.getElementById('cal-modal-input');
-              var text = inp ? inp.value : '';
-              if (!text || !text.trim()) {{ calModalClose(); return; }}
-              calModalClose();
-              var payload = {{ title: text.trim(), start: info.dateStr, allDay: true, noteText: text.trim() }};
-              apiEvent('POST', null, payload).then(function(created) {{
-                calendar.addEvent({{
-                  id: created.id,
-                  title: created.title,
-                  start: created.start,
-                  allDay: true,
-                  backgroundColor: '#1e3a4a',
-                  borderColor: '#4a9eca',
-                  extendedProps: {{ type: 'note', noteText: created.extendedProps && created.extendedProps.noteText || text.trim(), editable: true }}
-                }});
-              }}).catch(function(err) {{
-                calModalOpen('Error',
-                  '<p class="cal-modal-err">Could not save note: ' + escHtml(err.message) + '</p>',
-                  [{{ label: 'OK', action: calModalClose }}]);
-              }});
-            }}}},
-            {{ label: 'Cancel', action: calModalClose }}
-          ]
-        );
-      }},
-      eventClick: function(info) {{
-        var ev = info.event.extendedProps || {{}};
-        if (ev.type === 'note') {{
-          calModalOpen(
-            '&#9998; Edit Note',
-            '<div class="cal-modal-note-date">' + fmtDate(info.event.startStr) + '</div>' +
-            '<textarea id="cal-modal-input" class="cal-modal-textarea">' + escHtml(ev.noteText || '') + '</textarea>',
-            [
-              {{ label: 'Save', cls: 'cal-modal-btn-primary', action: function() {{
-                var inp = document.getElementById('cal-modal-input');
-                var text = inp ? inp.value : '';
-                if (!text || !text.trim()) {{ calModalClose(); return; }}
-                calModalClose();
-                var updated = {{ title: text.trim(), start: info.event.startStr, allDay: true, noteText: text.trim() }};
-                apiEvent('PUT', info.event.id, updated).then(function() {{
-                  info.event.setExtendedProp('noteText', text.trim());
-                  info.event.setProp('title', text.trim());
-                }}).catch(function(err) {{
-                  calModalOpen('Error',
-                    '<p class="cal-modal-err">Could not update: ' + escHtml(err.message) + '</p>',
-                    [{{ label: 'OK', action: calModalClose }}]);
-                }});
-              }}}},
-              {{ label: 'Delete', cls: 'cal-modal-btn-danger', action: function() {{
-                calModalClose();
-                apiEvent('DELETE', info.event.id).then(function() {{
-                  info.event.remove();
-                }}).catch(function(err) {{
-                  calModalOpen('Error',
-                    '<p class="cal-modal-err">Could not delete: ' + escHtml(err.message) + '</p>',
-                    [{{ label: 'OK', action: calModalClose }}]);
-                }});
-              }}}},
-              {{ label: 'Cancel', action: calModalClose }}
-            ]
-          );
-        }} else if (ev.type === 'teams' || ev.type === 'sharepoint') {{
-          var src = ev.type === 'teams' ? 'Microsoft Teams' : 'SharePoint';
-          calModalOpen(
-            '<span class="fc-ext-icon">' + (ev.type === 'teams' ? 'T' : 'S') + '</span> ' + escHtml(info.event.title),
-            (ev.noteText ? '<p class="cal-modal-desc">' + escHtml(ev.noteText) + '</p>' : '') +
-            '<div class="cal-modal-source">Source: ' + src + ' \u00b7 ' + fmtDate(info.event.startStr) + '</div>',
-            [{{ label: 'Close', action: calModalClose }}]
-          );
-        }}
       }},
       eventMouseEnter: function(info) {{
         var t = (info.event.extendedProps || {{}}).type;
@@ -1598,20 +1496,8 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
       eventDragStart: function() {{ removeHover(); }},
       eventDrop: function(info) {{
         var props = info.event.extendedProps || {{}};
-        if (props.type === 'note') {{
-          var payload = {{ title: info.event.title, start: info.event.startStr, allDay: true, noteText: props.noteText || '' }};
-          apiEvent('PUT', info.event.id, payload).catch(function(err) {{
-            info.revert();
-            calModalOpen('Error',
-              '<p class="cal-modal-err">Could not update note: ' + escHtml(err.message) + '</p>',
-              [{{ label: 'OK', action: calModalClose }}]);
-          }});
-        }} else if (props.type === 'teams' || props.type === 'sharepoint') {{
-          info.revert(); // external events are not draggable
-        }} else {{
-          props.dueDate = info.event.startStr;
-          renderInspectionList();
-        }}
+        props.dueDate = info.event.startStr;
+        renderInspectionList();
       }}
     }});
 
