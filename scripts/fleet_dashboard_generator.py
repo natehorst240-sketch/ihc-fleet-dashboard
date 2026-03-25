@@ -1304,17 +1304,6 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
   </div>
 </div>
 
-<div style="margin-top:20px;">
-  <div class="section-label">PERSONAL CALENDAR &mdash; dashboard109hub@gmail.com</div>
-  <div style="border:1px solid var(--border);border-radius:6px;overflow:hidden;">
-    <iframe src="https://calendar.google.com/calendar/embed?src=dashboard109hub%40gmail.com&bgcolor=%230a0e14&color=%23039BE5&showTitle=0&showNav=1&showDate=1&showPrint=0&showTabs=0&showCalendars=0"
-      style="border:0;display:block;" width="100%" height="540" frameborder="0" scrolling="no"></iframe>
-  </div>
-  <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:#4a5568;margin-top:4px;">
-    Requires calendar to be set to public in Google Calendar settings (Settings &rarr; your calendar &rarr; Access permissions &rarr; Make available to public).
-  </div>
-</div>
-
 <!-- Calendar modal -->
 <div id="cal-modal-overlay" onclick="calModalClose()"></div>
 <div id="cal-modal" role="dialog" aria-modal="true">
