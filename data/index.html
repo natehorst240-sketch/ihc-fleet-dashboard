@@ -29,7 +29,6 @@
   }
   *{margin:0;padding:0;box-sizing:border-box;}
   body{background:var(--bg);color:var(--text);font-family:var(--body);min-height:100vh;overflow-x:hidden;}
-  body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);pointer-events:none;z-index:1000;}
   header{background:var(--surface);border-bottom:1px solid var(--border);padding:18px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
   .header-left{display:flex;align-items:center;gap:0;}
   .logo{font-family:var(--sans);font-weight:900;font-size:22px;letter-spacing:3px;color:var(--heading);text-transform:uppercase;}
@@ -57,6 +56,8 @@
   .tab-content.active{display:block;}
   .summary-bar{display:flex;gap:16px;margin-bottom:24px;flex-wrap:wrap;}
   .summary-stat{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:12px 20px;min-width:130px;}
+  .summary-stat.stat-clickable{cursor:pointer;transition:border-color 0.15s,background 0.15s;}
+  .summary-stat.stat-clickable:hover{border-color:rgba(41,182,246,0.4);background:rgba(41,182,246,0.06);}
   .stat-value{font-family:var(--sans);font-size:32px;font-weight:900;line-height:1;margin-bottom:4px;}
   .stat-label{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;}
   .divider-line{width:40px;height:2px;margin:8px 0;border-radius:1px;}
@@ -138,16 +139,77 @@
     main{padding:20px 20px 28px;}
     .tabs{display:none;}
     .mobile-tab-select-wrap{display:block;}
-    #location-map{height:420px;}
   }
   @media (max-width: 640px){
     .logo{font-size:18px;letter-spacing:2px;}
     .subtitle{font-size:10px;letter-spacing:1.4px;}
     .legend{padding:10px 20px;gap:12px;}
     .summary-stat{flex:1 1 140px;min-width:0;}
-    #location-map{height:360px;}
   }
+  /* ── Light theme ──────────────────────────────────────── */
+  [data-theme="light"]{
+    --bg:#f0f4f8;--surface:#ffffff;--surface2:#eaeff4;--border:#ced5dd;
+    --green:#1a7f37;--amber:#9a6700;--red:#cf222e;--overdue:#bc4c00;
+    --blue:#0969da;--text:#24292f;--muted:#6e7781;--heading:#0d1117;
+  }
+  [data-theme="light"] .dot-green,[data-theme="light"] .dot-amber,
+  [data-theme="light"] .dot-red,[data-theme="light"] .dot-overdue{box-shadow:none;}
+  [data-theme="light"] tbody tr:hover{background:rgba(0,0,0,0.03);}
+  [data-theme="light"] .hr-green{background:rgba(26,127,55,0.08);border-color:rgba(26,127,55,0.25);}
+  [data-theme="light"] .hr-amber{background:rgba(154,103,0,0.08);border-color:rgba(154,103,0,0.25);}
+  [data-theme="light"] .hr-red{background:rgba(207,34,46,0.08);border-color:rgba(207,34,46,0.25);}
+  [data-theme="light"] .hr-overdue{background:rgba(188,76,0,0.10);border-color:rgba(188,76,0,0.3);}
+  /* FullCalendar light overrides */
+  [data-theme="light"] .fc-theme-standard td,
+  [data-theme="light"] .fc-theme-standard th{border-color:#ced5dd;}
+  [data-theme="light"] .fc-theme-standard .fc-scrollgrid{border-color:#ced5dd;}
+  [data-theme="light"] .fc .fc-col-header-cell{background:#eaeff4;border-color:#ced5dd;}
+  [data-theme="light"] .fc .fc-col-header-cell-cushion{color:#6e7781;}
+  [data-theme="light"] .fc .fc-daygrid-day-number{color:#24292f;}
+  [data-theme="light"] .fc .fc-day-today{background:rgba(9,105,218,0.07) !important;}
+  [data-theme="light"] .fc .fc-day-today .fc-daygrid-day-number{background:#0969da;color:#fff;}
+  [data-theme="light"] .fc .fc-scrollgrid-section-header th{background:#eaeff4;}
+  [data-theme="light"] .fc .fc-popover{background:#fff;border-color:#ced5dd;box-shadow:0 4px 12px rgba(0,0,0,0.12);}
+  [data-theme="light"] .fc .fc-popover-header{background:#eaeff4;border-color:#ced5dd;color:#24292f;}
+  [data-theme="light"] .fc .fc-list-empty{background:#fff;}
+  [data-theme="light"] .fc .fc-list-day-cushion{background:#eaeff4;color:#24292f;}
+  [data-theme="light"] .fc .fc-list-event-title a{color:#24292f;}
+  [data-theme="light"] .fc .fc-list-event-time{color:#6e7781;}
+  [data-theme="light"] .fc .fc-list-event:hover td{background:rgba(9,105,218,0.05);}
+  [data-theme="light"] .fc-maint-hover{background:#fff;color:#24292f;border-color:#ced5dd;box-shadow:0 4px 12px rgba(0,0,0,0.12);}
+  [data-theme="light"] .fc-hover-sub{color:#6e7781;}
+  [data-theme="light"] .fc-hover-chart{background:#dde3ea;}
+  [data-theme="light"] .fc-edit-note{color:#6e7781;}
+  [data-theme="light"] .fc-ext-icon{background:rgba(0,0,0,0.08);}
+  /* Modal light overrides */
+  [data-theme="light"] .cal-modal{background:#fff;border-color:#ced5dd;}
+  [data-theme="light"] .cal-modal-title{color:#0d1117;border-bottom-color:#ced5dd;}
+  [data-theme="light"] .cal-modal-body{color:#6e7781;}
+  [data-theme="light"] .cal-modal-note-date{color:#6e7781;}
+  [data-theme="light"] .cal-modal-textarea{background:#f0f4f8;border-color:#ced5dd;color:#24292f;}
+  [data-theme="light"] .cal-modal-desc{color:#24292f;}
+  [data-theme="light"] .cal-modal-source{color:#6e7781;}
+  [data-theme="light"] .cal-modal-footer{border-top-color:#ced5dd;}
+  [data-theme="light"] .cal-modal-btn{background:#eaeff4;border-color:#ced5dd;color:#6e7781;}
+  [data-theme="light"] .cal-modal-btn:hover{background:#dde3ea;color:#24292f;}
+  [data-theme="light"] .cal-modal-btn-primary{background:#0969da;border-color:#0969da;color:#fff;}
+  [data-theme="light"] .cal-modal-btn-primary:hover{background:#0a5dc2;}
+  [data-theme="light"] .cal-modal-btn-danger{background:rgba(207,34,46,0.08);border-color:#cf222e;color:#cf222e;}
+  [data-theme="light"] .cal-modal-btn-danger:hover{background:#cf222e;color:#fff;}
+  /* Location & misc badges */
+  [data-theme="light"] .location-at-base{background:rgba(26,127,55,0.10);border-color:rgba(26,127,55,0.3);}
+  [data-theme="light"] .location-away{background:rgba(207,34,46,0.08);border-color:rgba(207,34,46,0.3);}
+  [data-theme="light"] .location-active{background:rgba(9,105,218,0.10);border-color:rgba(9,105,218,0.3);}
+  [data-theme="light"] .rii-badge{background:rgba(154,103,0,0.10);border-color:rgba(154,103,0,0.3);color:var(--amber);}
+  [data-theme="light"] .tab-btn:hover{color:var(--text);background:rgba(0,0,0,0.04);}
+  [data-theme="light"] .filter-btn:hover,[data-theme="light"] .filter-btn.active{color:#fff;}
+  /* Theme toggle button */
+  #theme-toggle{font-size:14px;padding:4px 8px;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:2px;cursor:pointer;line-height:1;margin-top:6px;transition:border-color 0.15s,color 0.15s;}
+  #theme-toggle:hover{border-color:var(--blue);color:var(--blue);}
 </style>
+<script>
+  (function(){var t=localStorage.getItem('fleet-theme')||'dark';if(t==='light')document.documentElement.setAttribute('data-theme','light');})();
+</script>
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
 </head>
 <body>
@@ -165,6 +227,7 @@
     <button id="pwa-install-btn" style="display:none;margin-top:6px;font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;padding:5px 12px;background:transparent;border:1px solid var(--blue);color:var(--blue);border-radius:2px;cursor:pointer;align-items:center;gap:6px;" title="Install as app on your device">
       &#x2B07; ADD TO HOME SCREEN
     </button>
+    <button id="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark mode">&#9788;</button>
   </div>
 </header>
 <div class="legend">
@@ -179,7 +242,6 @@
     <label class="mobile-tab-label" for="mobile-tab-select">Section</label>
     <select id="mobile-tab-select" class="mobile-tab-select" onchange="switchTab(this.value)">
       <option value="maintenance" selected>Maintenance Due List</option>
-      <option value="location">Aircraft Location</option>
       <option value="flight-hours">Flight Hours Tracking</option>
       <option value="component-changes">Component Changes</option>
       <option value="calendar">Calendar</option>
@@ -187,7 +249,6 @@
   </div>
   <div class="tabs">
     <button class="tab-btn active" data-tab="maintenance" onclick="switchTab('maintenance', this)">Maintenance Due List</button>
-    <button class="tab-btn" data-tab="location" onclick="switchTab('location', this)">Aircraft Location</button>
     <button class="tab-btn" data-tab="flight-hours" onclick="switchTab('flight-hours', this)">Flight Hours Tracking</button>
     <button class="tab-btn" data-tab="component-changes" onclick="switchTab('component-changes', this)">Component Changes</button>
     <button class="tab-btn" data-tab="calendar" onclick="switchTab('calendar', this)">Calendar</button>
@@ -199,8 +260,8 @@
       <div class="summary-stat"><div class="stat-value" style="color:var(--blue)">9</div><div class="divider-line" style="background:var(--blue)"></div><div class="stat-label">Aircraft</div></div>
       <div class="summary-stat"><div class="stat-value" style="color:var(--blue)">0</div><div class="divider-line" style="background:var(--blue)"></div><div class="stat-label">Airborne</div></div>
       <div class="summary-stat"><div class="stat-value" style="color:var(--green)">6</div><div class="divider-line" style="background:var(--green)"></div><div class="stat-label">At Base</div></div>
-      <div class="summary-stat"><div class="stat-value" style="color:var(--red)">2</div><div class="divider-line" style="background:var(--red)"></div><div class="stat-label">Insp. Critical / OD</div></div>
-      <div class="summary-stat"><div class="stat-value" style="color:var(--amber)">22</div><div class="divider-line" style="background:var(--amber)"></div><div class="stat-label">Insp. Coming Due</div></div>
+      <div class="summary-stat stat-clickable" title="Click to filter Critical &amp; Overdue" onclick="applyFilterCriticalOD()"><div class="stat-value" style="color:var(--red)">2</div><div class="divider-line" style="background:var(--red)"></div><div class="stat-label">Insp. Critical / OD</div></div>
+      <div class="summary-stat stat-clickable" title="Click to filter Coming Due" onclick="applyFilter('coming')"><div class="stat-value" style="color:var(--amber)">22</div><div class="divider-line" style="background:var(--amber)"></div><div class="stat-label">Insp. Coming Due</div></div>
       <div class="summary-stat"><div class="stat-value" style="color:var(--overdue)">1</div><div class="divider-line" style="background:var(--overdue)"></div><div class="stat-label">Components Overdue</div></div>
     </div>
     <div class="chart-card">
@@ -209,11 +270,11 @@
     </div>
     <div class="section-label">Scheduled Phase Inspections - Hours Remaining</div>
     <div class="filter-row">
-      <button class="filter-btn active" onclick="filterTable('all',this)">All</button>
-      <button class="filter-btn" onclick="filterTable('overdue',this)">Past Due</button>
-      <button class="filter-btn" onclick="filterTable('critical',this)">Critical</button>
-      <button class="filter-btn" onclick="filterTable('coming',this)">Coming Due</button>
-      <button class="filter-btn" onclick="filterTable('ok',this)">OK</button>
+      <button class="filter-btn active" data-filter="all" onclick="filterTable('all',this)">All</button>
+      <button class="filter-btn" data-filter="overdue" onclick="filterTable('overdue',this)">Past Due</button>
+      <button class="filter-btn" data-filter="critical" onclick="filterTable('critical',this)">Critical</button>
+      <button class="filter-btn" data-filter="coming" onclick="filterTable('coming',this)">Coming Due</button>
+      <button class="filter-btn" data-filter="ok" onclick="filterTable('ok',this)">OK</button>
     </div>
     <div class="insp-table-wrap">
       <table>
@@ -867,7 +928,9 @@
 
 <div id="cal-shell">
   <div id="calendar-wrap">
-    <div class="fc-edit-note">Drag and drop pills to adjust projected dates.</div>
+    <div class="fc-edit-note">Drag pills to adjust dates &mdash; click a pill to add a note. Changes sync across all devices.
+      <span id="cal-sync-status" style="margin-left:10px;font-size:10px;color:var(--muted);opacity:0;transition:opacity 0.4s;"></span>
+    </div>
     <div id="maint-calendar"></div>
   </div>
   <div id="estimated-inspection-panel">
@@ -1005,47 +1068,107 @@
     if (e.key === 'Escape' && _calModal && _calModal.style.display === 'flex') calModalClose();
   });
 
+  // ── Azure calendar storage helpers ───────────────────────────────────────────
+  var CAL_API = '/api/calendar';
+
+  function calSaveToAzure(id, tail, intervalLabel, dueDate, color, note) {
+    return fetch(CAL_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: id, tail: tail, intervalLabel: intervalLabel,
+                             dueDate: dueDate, color: color, note: note || '', type: 'override' })
+    }).then(function(r) { if (!r.ok) throw new Error('Save failed: ' + r.status); });
+  }
+
+  function calShowStatus(msg, isErr) {
+    var el = document.getElementById('cal-sync-status');
+    if (!el) return;
+    el.textContent = msg;
+    el.style.color = isErr ? 'var(--red)' : 'var(--muted)';
+    el.style.opacity = '1';
+    clearTimeout(el._t);
+    el._t = setTimeout(function() { el.style.opacity = '0'; }, 3000);
+  }
+
   function renderCalendar() {
     if (!calEl || !window.FullCalendar) return;
+
     var maintEvents = MAINT.map(function(ev, idx) {
       var durationDays = Math.max(1, Number(ev.durationDays) || 1);
       var endDate = null;
       if (durationDays > 1) {
-        var dueDate = new Date(ev.dueDate + 'T00:00:00');
-        if (!isNaN(dueDate.getTime())) {
-          dueDate.setDate(dueDate.getDate() + durationDays);
-          endDate = dueDate.toISOString().slice(0, 10);
+        var d = new Date(ev.dueDate + 'T00:00:00');
+        if (!isNaN(d.getTime())) {
+          d.setDate(d.getDate() + durationDays);
+          endDate = d.toISOString().slice(0, 10);
         }
       }
+      var azId = 'maint-' + (ev.tail || '').replace(/\s+/g,'') + '-' + (ev.intervalLabel || '').replace(/\s+/g,'');
       return {
-        id: String(idx + 1),
+        id: azId,
         title: ev.tail + ' ' + ev.intervalLabel,
         start: ev.dueDate,
         end: endDate,
         allDay: true,
         backgroundColor: ev.color,
         borderColor: ev.color,
-        extendedProps: ev
+        extendedProps: Object.assign({}, ev, { _azId: azId })
       };
     });
+
     var calendar = new FullCalendar.Calendar(calEl, {
-      initialView: 'dayGridMonth',
+      initialView: window.innerWidth < 900 ? 'listMonth' : 'dayGridMonth',
       height: 680,
       editable: true,
       eventStartEditable: true,
       dayMaxEvents: 4,
       headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,listMonth' },
+      windowResize: function() {
+        var target = window.innerWidth < 900 ? 'listMonth' : 'dayGridMonth';
+        if (calendar.view.type !== target) calendar.changeView(target);
+      },
       eventSources: [
+        { events: maintEvents, id: 'maintenance' },
         {
-          events: maintEvents,
-          id: 'maintenance'
+          id: 'azure',
+          events: function(fetchInfo, successCb, failureCb) {
+            fetch(CAL_API + '?t=' + Date.now())
+              .then(function(r) { return r.json(); })
+              .then(function(saved) {
+                saved.forEach(function(s) {
+                  if (s.type === 'override') {
+                    var ev = calendar.getEventById(s.id);
+                    if (ev && s.dueDate) {
+                      ev.setStart(s.dueDate);
+                      if (ev.extendedProps) ev.extendedProps.dueDate = s.dueDate;
+                      if (ev.extendedProps) ev.extendedProps.note = s.note || '';
+                    }
+                  }
+                });
+                var custom = saved.filter(function(s) { return s.type === 'custom'; }).map(function(s) {
+                  return {
+                    id: s.id, title: s.tail ? (s.tail + ' ' + s.intervalLabel) : s.intervalLabel,
+                    start: s.dueDate, allDay: true,
+                    backgroundColor: s.color || '#29b6f6', borderColor: s.color || '#29b6f6',
+                    extendedProps: { type: 'custom', note: s.note, _azId: s.id,
+                                    tail: s.tail, intervalLabel: s.intervalLabel, color: s.color }
+                  };
+                });
+                renderInspectionList();
+                successCb(custom);
+              })
+              .catch(function(err) { console.warn('Azure calendar fetch:', err); successCb([]); });
+          }
         }
       ],
       eventContent: function(arg) {
         var ev = arg.event.extendedProps || {};
+        var hasNote = ev.note && ev.note.trim();
         var node = document.createElement('div');
         node.className = 'fc-maint-pill';
-        node.innerHTML = '<strong>' + (ev.tail || '') + '</strong><span>' + (ev.intervalLabel || '') + '</span>';
+        node.innerHTML = '<strong>' + (ev.tail || '') + '</strong>'
+          + '<span>' + (ev.intervalLabel || '') + '</span>'
+          + (hasNote ? '<span style="opacity:0.7;font-size:9px;margin-left:4px;">&#128196;</span>' : '');
         return { domNodes: [node] };
       },
       eventMouseEnter: function(info) {
@@ -1057,8 +1180,46 @@
       eventDragStart: function() { removeHover(); },
       eventDrop: function(info) {
         var props = info.event.extendedProps || {};
+        var azId  = props._azId || info.event.id;
         props.dueDate = info.event.startStr;
         renderInspectionList();
+        calShowStatus('Saving\u2026');
+        calSaveToAzure(azId, props.tail, props.intervalLabel, info.event.startStr, props.color, props.note || '')
+          .then(function() { calShowStatus('Saved'); })
+          .catch(function() { calShowStatus('Save failed', true); info.revert(); });
+      },
+      eventClick: function(info) {
+        var props = info.event.extendedProps || {};
+        var azId  = props._azId || info.event.id;
+        var currentNote = props.note || '';
+        calModalOpen(
+          (props.tail ? props.tail + ' \u2014 ' : '') + (props.intervalLabel || info.event.title),
+          '<p class="cal-modal-desc">' + info.event.startStr + '</p>'
+            + '<p class="cal-modal-note-date">Note (shared across all devices):</p>'
+            + '<textarea id="cal-modal-input" class="cal-modal-textarea" rows="4">' + currentNote.replace(/</g,'&lt;') + '</textarea>',
+          [
+            { label: 'Cancel', cls: '', action: calModalClose },
+            { label: 'Clear Note', cls: 'cal-modal-btn-danger', action: function() {
+                calModalClose();
+                props.note = '';
+                calendar.refetchEvents();
+                calShowStatus('Clearing\u2026');
+                calSaveToAzure(azId, props.tail, props.intervalLabel, info.event.startStr, props.color, '')
+                  .then(function() { calShowStatus('Cleared'); })
+                  .catch(function() { calShowStatus('Failed', true); });
+            } },
+            { label: 'Save Note', cls: 'cal-modal-btn-primary', action: function() {
+                var txt = (document.getElementById('cal-modal-input') || {}).value || '';
+                calModalClose();
+                props.note = txt;
+                calendar.refetchEvents();
+                calShowStatus('Saving\u2026');
+                calSaveToAzure(azId, props.tail, props.intervalLabel, info.event.startStr, props.color, txt)
+                  .then(function() { calShowStatus('Saved'); })
+                  .catch(function() { calShowStatus('Save failed', true); });
+            } }
+          ]
+        );
       }
     });
 
@@ -1074,218 +1235,6 @@
 
   </div>
 
-  <!-- AIRCRAFT LOCATION TAB -->
-  <div id="tab-location" class="tab-content">
-<style>
-.location-status{margin-top:8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-family:var(--mono);font-size:11px;color:var(--muted);}
-.location-status.error{color:var(--amber);}
-.location-wrap{margin-top:10px;}
-.location-map-col{min-width:0;}
-#location-map{width:100%;height:520px;border-radius:6px;border:1px solid var(--border);background:var(--surface);display:block;}
-.location-map-note{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:4px;opacity:.7;}
-</style>
-<div class="section-label">Aircraft Location</div>
-<div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:4px;">
-  Live positions via SkyRouter GPS &middot; refreshes every 60 seconds
-</div>
-<div id="location-status" class="location-status">Loading locations...</div>
-<div class="location-wrap">
-  <div class="location-map-col">
-    <div id="location-map"></div>
-    <div id="location-grid" class="location-grid" style="display:none;"></div>
-    <div class="location-map-note">&#x1F534; airborne &middot; icon rotates to heading &middot; OpenStreetMap</div>
-  </div>
-</div>
-<script>
-(function() {
-  var AC_HRS = {"N251HC": "6,086.1", "N261HC": "6,096.8", "N271HC": "6,982.3", "N281HC": "6,537.2", "N291HC": "5,913.5", "N431HC": "2,024.0", "N531HC": "3,346.4", "N631HC": "1,847.5", "N731HC": "20.6"};
-  var TRACKED_TAILS = new Set(["N251HC", "N261HC", "N271HC", "N281HC", "N291HC", "N431HC", "N531HC", "N631HC", "N731HC"]);
-
-  function esc(t) { return String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-  function ageFmt(utcStr) { if (!utcStr) return ''; var dt=new Date(utcStr),now=new Date(); var m=Math.round((now-dt)/60000); if (isNaN(m)||m<0) return ''; return m<60 ? m+'m ago' : (m/60).toFixed(1)+'h ago'; }
-  function toNum(v) { var n = Number(v); return isFinite(n) ? n : null; }
-
-  var _map = null, _markers = [], _pendingPoints = null, _resizeScheduled = false;
-
-  // Helicopter SVG path (svgrepo) baked into base64 data URI — always red
-  var HELI_PATH = 'M60.64,28.1a1.24,1.24,0,0,0-1.27-1.22l-14.89-.33c.61-.91,1.51-2.05,2.78-3.57,'
-    + '6.16-7.36,4.19-9.8,4.19-9.8s-2.28-2-9.91,3.84c-1.31,1-2.34,1.76-3.19,2.31l.3-14.09a1.19,'
-    + '1.19,0,1,0-2.38,0l-.34,15.33c-2,.44-3-1.25-7.33-3.31,0,0-2.34.91-2.86,2.77a39.41,39.41,'
-    + '0,0,1,3.39,6.24l-14.5-.31a1.2,1.2,0,1,0-.05,2.39l14.6.31a1.28,1.28,0,0,0,.35.59L19.84,'
-    + '41.61l-4.57-3.24.54-1.25S12,39.7,11.5,41.34l-.14,2,1.37-.48.41-1.31L16,45.91s-.79.9-.24,'
-    + '1.47,1.55-.1,1.55-.1l4.35,3.1-1.32.35-.54,1.35,2,0c1.65-.39,4.4-4.13,4.4-4.13l-1.28.49'
-    + '-3-4.71,12.81-9.15a1.31,1.31,0,0,0,1,.45l-.32,15a1.19,1.19,0,1,0,2.38,0L38,35.23a42.17,'
-    + '42.17,0,0,1,5.67,3.47c1.88-.44,2.87-2.75,2.87-2.75-1.71-4.1-3.24-5.34-3.09-7l15.87.34A1.25,'
-    + '1.25,0,0,0,60.64,28.1Z';
-  var HELI_B64 = btoa('<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 -8 72 72"><path fill="#dc2626" d="' + HELI_PATH + '"/></svg>');
-
-  function makeLeafletIcon(tail, heading) {
-    var html = '<div style="text-align:center;line-height:1;pointer-events:auto;">'
-      + '<div style="font-family:monospace;font-size:10px;font-weight:bold;color:#000;'
-      + 'white-space:nowrap;text-shadow:0 0 3px #fff,0 0 3px #fff;margin-bottom:2px;">' + esc(tail) + '</div>'
-      + '<img src="data:image/svg+xml;base64,' + HELI_B64 + '" width="40" height="40" '
-      + 'style="display:block;transform:rotate(' + (heading || 0) + 'deg);'
-      + 'box-shadow:0 1px 3px rgba(0,0,0,0.5);">'
-      + '</div>';
-    return L.divIcon({ html: html, className: '', iconSize: [60, 56], iconAnchor: [30, 56] });
-  }
-
-  function scheduleMapResize() {
-    if (!_map || _resizeScheduled) return;
-    _resizeScheduled = true;
-    requestAnimationFrame(function() {
-      requestAnimationFrame(function() {
-        _resizeScheduled = false;
-        _map.invalidateSize(false);
-      });
-    });
-  }
-
-  function initMap() {
-    if (_map) { scheduleMapResize(); return; }
-    // Fixed Utah view — sw/ne corners cover UT/ID/WY/NV/AZ corridor
-    var utahBounds = L.latLngBounds([36.9, -114.2], [42.1, -109.0]);
-    _map = L.map('location-map', {
-      center: [39.5, -111.5], zoom: 7,
-      minZoom: 6, maxZoom: 16,
-      maxBounds: utahBounds.pad(0.3)
-    });
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-      maxZoom: 16
-    }).addTo(_map);
-    if (_pendingPoints) { updateMarkers(_pendingPoints); _pendingPoints = null; }
-    scheduleMapResize();
-  }
-
-  function updateMarkers(points) {
-    if (!_map) { _pendingPoints = points; return; }
-    _markers.forEach(function(m) { _map.removeLayer(m); });
-    _markers = [];
-    points.forEach(function(p) {
-      var lat = p.position.lat, lng = p.position.lng;
-      if (!isFinite(lat) || !isFinite(lng)) return;
-      var icon = makeLeafletIcon(p.tail, p.heading || 0);
-      var marker = L.marker([lat, lng], { icon: icon });
-      marker.bindPopup(
-        '<div style="font-family:monospace;font-size:12px;line-height:1.7;color:#000;">'
-        + '<b style="font-size:14px;">' + esc(p.tail) + '</b><br>'
-        + 'State: ' + esc(p.state || 'UNKNOWN') + '<br>'
-        + 'Speed: ' + esc(String(p.speed_kts || 0)) + ' kts<br>'
-        + 'Heading: ' + esc(String(p.heading || 0)) + '&deg;<br>'
-        + 'Last ping: ' + esc(p.lastPing || 'N/A') + ' ' + esc(ageFmt(p.lastPing)) + '</div>'
-      );
-      marker.addTo(_map);
-      _markers.push(marker);
-    });
-  }
-
-  function loadLeaflet() {
-    if (window.L) { initMap(); return; }
-    var link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-    document.head.appendChild(link);
-    var s = document.createElement('script');
-    s.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-    s.onload = function() { initMap(); };
-    document.head.appendChild(s);
-  }
-
-  function setLocationStatus(msg, isError) {
-    var el = document.getElementById('location-status');
-    if (!el) return;
-    el.textContent = msg;
-    el.classList.toggle('error', !!isError);
-  }
-
-  function renderRegistry(points) {
-    var wrap = document.getElementById('location-grid');
-    if (!wrap) return;
-    if (!points.length) {
-      wrap.innerHTML = '<div class="location-card"><div class="location-card-row">No live aircraft position data found.</div></div>';
-      return;
-    }
-    points.sort(function(a,b){ return a.tail.localeCompare(b.tail); });
-    wrap.innerHTML = points.map(function(p) {
-      var dotColor = p.state==='AIRBORNE' ? '#dc2626' : p.state==='AT_BASE' ? '#16a34a' : '#94a3b8';
-      var dot = '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:'+dotColor+';margin-right:4px;vertical-align:middle;"></span>';
-      var stateLabel = p.state==='AT_BASE' ? 'AT '+esc(p.baseName||'BASE') : esc(p.state||'UNKNOWN');
-      return '<div class="location-card"><div class="location-card-head"><div class="location-card-tail">'+dot+esc(p.tail)+
-        '</div><div class="location-card-state">'+stateLabel+
-        '</div></div><div class="location-card-row">'+esc((p.position.lat||0).toFixed(4))+', '+esc((p.position.lng||0).toFixed(4))+
-        '</div><div class="location-card-row">Speed: '+esc(String(p.speed_kts||0))+' kts &middot; Hdg: '+esc(String(p.heading||0))+'&deg;'+
-        '</div><div class="location-card-row">Last ping: '+esc(p.lastPing||'No ping time')+' '+esc(ageFmt(p.lastPing))+
-        '</div><div class="location-card-row">Airframe: '+esc(AC_HRS[p.tail]||'N/A')+' TT</div></div>';
-    }).join('');
-  }
-
-  var BASE_LOCS = [{"name": "Logan", "lat": 41.75524176888249, "lon": -111.82057723592395}, {"name": "Mckay", "lat": 41.1829407, "lon": -111.9549936}, {"name": "IMED", "lat": 40.6602665, "lon": -111.88961}, {"name": "KSLC", "lat": 40.7746654, "lon": -111.9565804}, {"name": "Provo", "lat": 40.2463203, "lon": -111.6656218}, {"name": "Roosevelt", "lat": 40.3050418, "lon": -109.9962571}, {"name": "Cedar City", "lat": 37.7002988, "lon": -113.0674793}, {"name": "St. George", "lat": 37.0989134, "lon": -113.552642}];
-  function distanceMiles(lat1, lon1, lat2, lon2) {
-    var R=3958.8, r=Math.PI/180, dLat=(lat2-lat1)*r, dLon=(lon2-lon1)*r;
-    var a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*r)*Math.cos(lat2*r)*Math.sin(dLon/2)*Math.sin(dLon/2);
-    return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
-  }
-  function deriveStatus(rawState, speedKts, lat, lon) {
-    var s = String(rawState||'').toUpperCase();
-    if (s.indexOf('AIRBORNE')>=0||s.indexOf('IN_FLIGHT')>=0||s.indexOf('INFLIGHT')>=0||(speedKts!==null&&speedKts>40))
-      return {status:'AIRBORNE', baseName:''};
-    if (lat!==null && lon!==null && BASE_LOCS.length) {
-      var best=null, bestDist=Infinity;
-      BASE_LOCS.forEach(function(b){ var d=distanceMiles(lat,lon,b.lat,b.lon); if(d<bestDist){bestDist=d;best=b;} });
-      if (best && bestDist<=10) return {status:'AT_BASE', baseName:best.name};
-    }
-    return {status:'AWAY', baseName:''};
-  }
-  function buildAircraftDetail(rows) {
-    var detail = {};
-    (Array.isArray(rows) ? rows : []).forEach(function(row) {
-      var tail = String((row&&(row.vin||row.tail||row.registration))||'').toUpperCase();
-      if (!tail || !TRACKED_TAILS.has(tail)) return;
-      var speed = toNum(row.speed_kts); if (speed===null) speed=toNum(row.speed);
-      var lat=toNum(row.latitude), lon=toNum(row.longitude);
-      var st = deriveStatus(row.state||row.status, speed, lat, lon);
-      detail[tail] = { lat: row.latitude, lon: row.longitude, heading: row.heading,
-        speed_kts: speed, utc: row.last_ping||row.utc||'',
-        status: st.status, baseName: st.baseName };
-    });
-    return detail;
-  }
-
-  function render(payload) {
-    if (!payload) return;
-    var detail = payload.aircraft_detail || {};
-    var points = Object.keys(detail).map(function(tail) {
-      var d = detail[tail]||{}, lat=toNum(d.lat), lng=toNum(d.lon);
-      if (lat===null||lng===null) return null;
-      return { tail: tail, position: {lat:lat,lng:lng}, heading: toNum(d.heading),
-               speed_kts: toNum(d.speed_kts), lastPing: d.utc||'', state: d.status||'UNKNOWN', baseName: d.baseName||'' };
-    }).filter(Boolean);
-    renderRegistry(points);
-    updateMarkers(points);
-    setLocationStatus(points.length ? ('Updated '+new Date().toLocaleTimeString()) : 'No current positions to draw.', !points.length);
-  }
-
-  function refresh() {
-    fetch('aircraft_locations.json?ts='+Date.now(), {cache:'no-store'})
-      .then(function(r) { if (!r.ok) throw new Error('failed'); return r.json(); })
-      .then(function(rows) { render({aircraft_detail: buildAircraftDetail(rows||[])}); })
-      .catch(function() { setLocationStatus('Could not refresh aircraft location feed.', true); render({aircraft_detail:{}}); });
-  }
-
-  window.addEventListener('fleet:location:shown', function() {
-    if (window.L) initMap();
-    scheduleMapResize();
-  });
-  window.addEventListener('resize', scheduleMapResize);
-
-  loadLeaflet();
-  setLocationStatus('Refreshing live positions...', false);
-  refresh();
-  setInterval(refresh, 60000);
-})();
-</script>
-  </div>
 </main>
 <footer>
   <span>SOURCE: VERYON MAINTENANCE TRACKING &nbsp;|&nbsp; Due-List_BIG_WEEKLY_aw109sp.csv</span>
@@ -1319,9 +1268,6 @@
     document.getElementById('tab-' + tabName).classList.add('active');
     var mobileSelect = document.getElementById('mobile-tab-select');
     if (mobileSelect && mobileSelect.value !== tabName) mobileSelect.value = tabName;
-    if (tabName === 'location') {
-      setTimeout(function(){ window.dispatchEvent(new Event('fleet:location:shown')); }, 0);
-    }
     if (tabName === 'calendar') {
       setTimeout(function(){ window.dispatchEvent(new Event('fleet:calendar:shown')); }, 0);
     }
@@ -1345,6 +1291,75 @@
       tr.style.display = show ? '' : 'none';
     });
   }
+
+  function applyFilter(filter) {
+    switchTab('maintenance');
+    var btn = document.querySelector('.filter-btn[data-filter="' + filter + '"]');
+    if (btn) filterTable(filter, btn);
+  }
+
+  // Used by the "Critical / OD" stat card — shows both hr-red AND hr-overdue rows
+  function applyFilterCriticalOD() {
+    switchTab('maintenance');
+    document.querySelectorAll('.filter-btn').forEach(function(b){ b.classList.remove('active'); });
+    document.querySelectorAll('#insp-tbody tr').forEach(function(tr) {
+      var badges = tr.querySelectorAll('.hr-badge');
+      var show = false;
+      badges.forEach(function(b) {
+        var cls = b.className;
+        if (cls.includes('hr-overdue') || cls.includes('hr-red')) show = true;
+      });
+      tr.style.display = show ? '' : 'none';
+    });
+  }
+
+  function updateFilterCounts() {
+    var counts = {all:0, overdue:0, critical:0, coming:0, ok:0};
+    document.querySelectorAll('#insp-tbody tr').forEach(function(tr) {
+      var badges = tr.querySelectorAll('.hr-badge, .hr-na');
+      var worst = null;
+      badges.forEach(function(b) {
+        var cls = b.className;
+        if (cls.includes('hr-overdue')) worst = 'overdue';
+        else if (cls.includes('hr-red') && worst !== 'overdue') worst = 'critical';
+        else if (cls.includes('hr-amber') && worst === null) worst = 'coming';
+        else if (cls.includes('hr-green') && worst === null) worst = 'ok';
+      });
+      if (worst === null) return; // all-NA row — exclude from counts
+      counts[worst]++;
+      counts.all++;
+    });
+    var labels = {
+      all: 'All\u00a0(' + counts.all + ')',
+      overdue: 'Past Due\u00a0(' + counts.overdue + ')',
+      critical: 'Critical\u00a0(' + counts.critical + ')',
+      coming: 'Coming Due\u00a0(' + counts.coming + ')',
+      ok: 'OK\u00a0(' + counts.ok + ')'
+    };
+    document.querySelectorAll('.filter-btn[data-filter]').forEach(function(btn) {
+      var f = btn.getAttribute('data-filter');
+      if (labels[f] !== undefined) btn.textContent = labels[f];
+    });
+  }
+  document.addEventListener('DOMContentLoaded', updateFilterCounts);
+
+  function toggleTheme() {
+    var isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    var next = isLight ? 'dark' : 'light';
+    if (next === 'light') {
+      document.documentElement.setAttribute('data-theme', 'light');
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+    }
+    localStorage.setItem('fleet-theme', next);
+    // Show current-state icon: sun = light mode, moon = dark mode
+    document.getElementById('theme-toggle').textContent = next === 'light' ? '\u2600' : '\u263D';
+  }
+  (function(){
+    var t = localStorage.getItem('fleet-theme') || 'dark';
+    var btn = document.getElementById('theme-toggle');
+    if (btn) btn.textContent = t === 'light' ? '\u2600' : '\u263D';
+  })();
 
   // 200hr bar chart
   var labels200 = ['N261HC','N291HC','N251HC','N531HC','N271HC','N631HC','N431HC','N731HC','N281HC'];

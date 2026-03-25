@@ -1295,7 +1295,9 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
 
 <div id="cal-shell">
   <div id="calendar-wrap">
-    <div class="fc-edit-note">Drag and drop pills to adjust projected dates.</div>
+    <div class="fc-edit-note">Drag pills to adjust dates &mdash; click a pill to add a note. Changes sync across all devices.
+      <span id="cal-sync-status" style="margin-left:10px;font-size:10px;color:var(--muted);opacity:0;transition:opacity 0.4s;"></span>
+    </div>
     <div id="maint-calendar"></div>
   </div>
   <div id="estimated-inspection-panel">
@@ -1433,47 +1435,117 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
     if (e.key === 'Escape' && _calModal && _calModal.style.display === 'flex') calModalClose();
   }});
 
+  // ── Azure calendar storage helpers ──────────────────────────────────────────
+  var CAL_API = '/api/calendar';
+
+  function calSaveToAzure(id, tail, intervalLabel, dueDate, color, note) {{
+    return fetch(CAL_API, {{
+      method: 'POST',
+      headers: {{ 'Content-Type': 'application/json' }},
+      body: JSON.stringify({{ id: id, tail: tail, intervalLabel: intervalLabel,
+                              dueDate: dueDate, color: color, note: note || '', type: 'override' }})
+    }}).then(function(r) {{ if (!r.ok) throw new Error('Save failed: ' + r.status); }});
+  }}
+
+  function calDeleteFromAzure(id) {{
+    return fetch(CAL_API + '/' + encodeURIComponent(id), {{ method: 'DELETE' }})
+      .then(function(r) {{ if (!r.ok && r.status !== 404) throw new Error('Delete failed: ' + r.status); }});
+  }}
+
+  function calShowStatus(msg, isErr) {{
+    var el = document.getElementById('cal-sync-status');
+    if (!el) return;
+    el.textContent = msg;
+    el.style.color = isErr ? 'var(--red)' : 'var(--muted)';
+    el.style.opacity = '1';
+    clearTimeout(el._t);
+    el._t = setTimeout(function() {{ el.style.opacity = '0'; }}, 3000);
+  }}
+
   function renderCalendar() {{
     if (!calEl || !window.FullCalendar) return;
+
+    // Build base maintenance events (from computed CSV data)
+    var maintEventMap = {{}};
     var maintEvents = MAINT.map(function(ev, idx) {{
       var durationDays = Math.max(1, Number(ev.durationDays) || 1);
       var endDate = null;
       if (durationDays > 1) {{
-        var dueDate = new Date(ev.dueDate + 'T00:00:00');
-        if (!isNaN(dueDate.getTime())) {{
-          dueDate.setDate(dueDate.getDate() + durationDays);
-          endDate = dueDate.toISOString().slice(0, 10);
+        var d = new Date(ev.dueDate + 'T00:00:00');
+        if (!isNaN(d.getTime())) {{
+          d.setDate(d.getDate() + durationDays);
+          endDate = d.toISOString().slice(0, 10);
         }}
       }}
+      var azId = 'maint-' + (ev.tail || '').replace(/\s+/g,'') + '-' + (ev.intervalLabel || '').replace(/\s+/g,'');
+      maintEventMap[azId] = idx;
       return {{
-        id: String(idx + 1),
+        id: azId,
         title: ev.tail + ' ' + ev.intervalLabel,
         start: ev.dueDate,
         end: endDate,
         allDay: true,
         backgroundColor: ev.color,
         borderColor: ev.color,
-        extendedProps: ev
+        extendedProps: Object.assign({{}}, ev, {{ _azId: azId }})
       }};
     }});
+
     var calendar = new FullCalendar.Calendar(calEl, {{
-      initialView: 'dayGridMonth',
+      initialView: window.innerWidth < 900 ? 'listMonth' : 'dayGridMonth',
       height: 680,
       editable: true,
       eventStartEditable: true,
       dayMaxEvents: 4,
       headerToolbar: {{ left: 'prev,next today', center: 'title', right: 'dayGridMonth,listMonth' }},
+      windowResize: function() {{
+        var target = window.innerWidth < 900 ? 'listMonth' : 'dayGridMonth';
+        if (calendar.view.type !== target) calendar.changeView(target);
+      }},
       eventSources: [
+        {{ events: maintEvents, id: 'maintenance' }},
         {{
-          events: maintEvents,
-          id: 'maintenance'
+          id: 'azure',
+          events: function(fetchInfo, successCb, failureCb) {{
+            fetch(CAL_API + '?t=' + Date.now())
+              .then(function(r) {{ return r.json(); }})
+              .then(function(saved) {{
+                // Apply saved overrides to maintenance events
+                saved.forEach(function(s) {{
+                  if (s.type === 'override') {{
+                    var ev = calendar.getEventById(s.id);
+                    if (ev && s.dueDate) {{
+                      ev.setStart(s.dueDate);
+                      if (ev.extendedProps) ev.extendedProps.dueDate = s.dueDate;
+                      if (ev.extendedProps) ev.extendedProps.note = s.note || '';
+                    }}
+                  }}
+                }});
+                // Return only user-created custom events (not overrides)
+                var custom = saved.filter(function(s) {{ return s.type === 'custom'; }}).map(function(s) {{
+                  return {{
+                    id: s.id, title: s.tail ? (s.tail + ' ' + s.intervalLabel) : s.intervalLabel,
+                    start: s.dueDate, allDay: true,
+                    backgroundColor: s.color || '#29b6f6', borderColor: s.color || '#29b6f6',
+                    extendedProps: {{ type: 'custom', note: s.note, _azId: s.id,
+                                     tail: s.tail, intervalLabel: s.intervalLabel, color: s.color }}
+                  }};
+                }});
+                renderInspectionList();
+                successCb(custom);
+              }})
+              .catch(function(err) {{ console.warn('Azure calendar fetch:', err); successCb([]); }});
+          }}
         }}
       ],
       eventContent: function(arg) {{
         var ev = arg.event.extendedProps || {{}};
+        var hasNote = ev.note && ev.note.trim();
         var node = document.createElement('div');
         node.className = 'fc-maint-pill';
-        node.innerHTML = '<strong>' + (ev.tail || '') + '</strong><span>' + (ev.intervalLabel || '') + '</span>';
+        node.innerHTML = '<strong>' + (ev.tail || '') + '</strong>'
+          + '<span>' + (ev.intervalLabel || '') + '</span>'
+          + (hasNote ? '<span style="opacity:0.7;font-size:9px;margin-left:4px;">&#128196;</span>' : '');
         return {{ domNodes: [node] }};
       }},
       eventMouseEnter: function(info) {{
@@ -1485,8 +1557,46 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
       eventDragStart: function() {{ removeHover(); }},
       eventDrop: function(info) {{
         var props = info.event.extendedProps || {{}};
+        var azId  = props._azId || info.event.id;
         props.dueDate = info.event.startStr;
         renderInspectionList();
+        calShowStatus('Saving\u2026');
+        calSaveToAzure(azId, props.tail, props.intervalLabel, info.event.startStr, props.color, props.note || '')
+          .then(function() {{ calShowStatus('Saved'); }})
+          .catch(function() {{ calShowStatus('Save failed', true); info.revert(); }});
+      }},
+      eventClick: function(info) {{
+        var props = info.event.extendedProps || {{}};
+        var azId  = props._azId || info.event.id;
+        var currentNote = props.note || '';
+        calModalOpen(
+          (props.tail ? props.tail + ' \u2014 ' : '') + (props.intervalLabel || info.event.title),
+          '<p class="cal-modal-desc">' + info.event.startStr + '</p>'
+            + '<p class="cal-modal-note-date">Note (shared across all devices):</p>'
+            + '<textarea id="cal-modal-input" class="cal-modal-textarea" rows="4">' + currentNote.replace(/</g,'&lt;') + '</textarea>',
+          [
+            {{ label: 'Cancel', cls: '', action: calModalClose }},
+            {{ label: 'Clear Note', cls: 'cal-modal-btn-danger', action: function() {{
+                calModalClose();
+                props.note = '';
+                calendar.refetchEvents();
+                calShowStatus('Clearing\u2026');
+                calSaveToAzure(azId, props.tail, props.intervalLabel, info.event.startStr, props.color, '')
+                  .then(function() {{ calShowStatus('Cleared'); }})
+                  .catch(function() {{ calShowStatus('Failed', true); }});
+            }} }},
+            {{ label: 'Save Note', cls: 'cal-modal-btn-primary', action: function() {{
+                var txt = (document.getElementById('cal-modal-input') || {{}}).value || '';
+                calModalClose();
+                props.note = txt;
+                calendar.refetchEvents();
+                calShowStatus('Saving\u2026');
+                calSaveToAzure(azId, props.tail, props.intervalLabel, info.event.startStr, props.color, txt)
+                  .then(function() {{ calShowStatus('Saved'); }})
+                  .catch(function() {{ calShowStatus('Save failed', true); }});
+            }} }}
+          ]
+        );
       }}
     }});
 
@@ -1904,8 +2014,6 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
     values_js = "[" + ",".join([f"{v:.2f}" for _, v in chart_rows]) + "]"
 
     calendar_tab_html  = _build_calendar_tab(aircraft_list, flight_hours_stats, _interval_cfg)
-    maps_api_key = os.environ.get('GOOGLE_MAPS_API_KEY', '')
-    location_tab_html  = _build_location_tab(aircraft_list, positions, maps_api_key, base_locs=base_locs)
 
     # Component change report tab: keep the full dataset in JS but only render one month at a time.
     component_change_payload_js = '[]'
@@ -1970,7 +2078,6 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
   }}
   *{{margin:0;padding:0;box-sizing:border-box;}}
   body{{background:var(--bg);color:var(--text);font-family:var(--body);min-height:100vh;overflow-x:hidden;}}
-  body::before{{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);pointer-events:none;z-index:1000;}}
   header{{background:var(--surface);border-bottom:1px solid var(--border);padding:18px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}}
   .header-left{{display:flex;align-items:center;gap:0;}}
   .logo{{font-family:var(--sans);font-weight:900;font-size:22px;letter-spacing:3px;color:var(--heading);text-transform:uppercase;}}
@@ -1998,6 +2105,8 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
   .tab-content.active{{display:block;}}
   .summary-bar{{display:flex;gap:16px;margin-bottom:24px;flex-wrap:wrap;}}
   .summary-stat{{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:12px 20px;min-width:130px;}}
+  .summary-stat.stat-clickable{{cursor:pointer;transition:border-color 0.15s,background 0.15s;}}
+  .summary-stat.stat-clickable:hover{{border-color:rgba(41,182,246,0.4);background:rgba(41,182,246,0.06);}}
   .stat-value{{font-family:var(--sans);font-size:32px;font-weight:900;line-height:1;margin-bottom:4px;}}
   .stat-label{{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;}}
   .divider-line{{width:40px;height:2px;margin:8px 0;border-radius:1px;}}
@@ -2079,16 +2188,73 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
     main{{padding:20px 20px 28px;}}
     .tabs{{display:none;}}
     .mobile-tab-select-wrap{{display:block;}}
-    #location-map{{height:420px;}}
   }}
   @media (max-width: 640px){{
     .logo{{font-size:18px;letter-spacing:2px;}}
     .subtitle{{font-size:10px;letter-spacing:1.4px;}}
     .legend{{padding:10px 20px;gap:12px;}}
     .summary-stat{{flex:1 1 140px;min-width:0;}}
-    #location-map{{height:360px;}}
   }}
+  /* ── Light theme ──────────────────────────────────────── */
+  [data-theme="light"]{{
+    --bg:#f0f4f8;--surface:#ffffff;--surface2:#eaeff4;--border:#ced5dd;
+    --green:#1a7f37;--amber:#9a6700;--red:#cf222e;--overdue:#bc4c00;
+    --blue:#0969da;--text:#24292f;--muted:#6e7781;--heading:#0d1117;
+  }}
+  [data-theme="light"] .dot-green,[data-theme="light"] .dot-amber,
+  [data-theme="light"] .dot-red,[data-theme="light"] .dot-overdue{{box-shadow:none;}}
+  [data-theme="light"] tbody tr:hover{{background:rgba(0,0,0,0.03);}}
+  [data-theme="light"] .hr-green{{background:rgba(26,127,55,0.08);border-color:rgba(26,127,55,0.25);}}
+  [data-theme="light"] .hr-amber{{background:rgba(154,103,0,0.08);border-color:rgba(154,103,0,0.25);}}
+  [data-theme="light"] .hr-red{{background:rgba(207,34,46,0.08);border-color:rgba(207,34,46,0.25);}}
+  [data-theme="light"] .hr-overdue{{background:rgba(188,76,0,0.10);border-color:rgba(188,76,0,0.3);}}
+  [data-theme="light"] .fc-theme-standard td,
+  [data-theme="light"] .fc-theme-standard th{{border-color:#ced5dd;}}
+  [data-theme="light"] .fc-theme-standard .fc-scrollgrid{{border-color:#ced5dd;}}
+  [data-theme="light"] .fc .fc-col-header-cell{{background:#eaeff4;border-color:#ced5dd;}}
+  [data-theme="light"] .fc .fc-col-header-cell-cushion{{color:#6e7781;}}
+  [data-theme="light"] .fc .fc-daygrid-day-number{{color:#24292f;}}
+  [data-theme="light"] .fc .fc-day-today{{background:rgba(9,105,218,0.07) !important;}}
+  [data-theme="light"] .fc .fc-day-today .fc-daygrid-day-number{{background:#0969da;color:#fff;}}
+  [data-theme="light"] .fc .fc-scrollgrid-section-header th{{background:#eaeff4;}}
+  [data-theme="light"] .fc .fc-popover{{background:#fff;border-color:#ced5dd;box-shadow:0 4px 12px rgba(0,0,0,0.12);}}
+  [data-theme="light"] .fc .fc-popover-header{{background:#eaeff4;border-color:#ced5dd;color:#24292f;}}
+  [data-theme="light"] .fc .fc-list-empty{{background:#fff;}}
+  [data-theme="light"] .fc .fc-list-day-cushion{{background:#eaeff4;color:#24292f;}}
+  [data-theme="light"] .fc .fc-list-event-title a{{color:#24292f;}}
+  [data-theme="light"] .fc .fc-list-event-time{{color:#6e7781;}}
+  [data-theme="light"] .fc .fc-list-event:hover td{{background:rgba(9,105,218,0.05);}}
+  [data-theme="light"] .fc-maint-hover{{background:#fff;color:#24292f;border-color:#ced5dd;box-shadow:0 4px 12px rgba(0,0,0,0.12);}}
+  [data-theme="light"] .fc-hover-sub{{color:#6e7781;}}
+  [data-theme="light"] .fc-hover-chart{{background:#dde3ea;}}
+  [data-theme="light"] .fc-edit-note{{color:#6e7781;}}
+  [data-theme="light"] .fc-ext-icon{{background:rgba(0,0,0,0.08);}}
+  [data-theme="light"] .cal-modal{{background:#fff;border-color:#ced5dd;}}
+  [data-theme="light"] .cal-modal-title{{color:#0d1117;border-bottom-color:#ced5dd;}}
+  [data-theme="light"] .cal-modal-body{{color:#6e7781;}}
+  [data-theme="light"] .cal-modal-note-date{{color:#6e7781;}}
+  [data-theme="light"] .cal-modal-textarea{{background:#f0f4f8;border-color:#ced5dd;color:#24292f;}}
+  [data-theme="light"] .cal-modal-desc{{color:#24292f;}}
+  [data-theme="light"] .cal-modal-source{{color:#6e7781;}}
+  [data-theme="light"] .cal-modal-footer{{border-top-color:#ced5dd;}}
+  [data-theme="light"] .cal-modal-btn{{background:#eaeff4;border-color:#ced5dd;color:#6e7781;}}
+  [data-theme="light"] .cal-modal-btn:hover{{background:#dde3ea;color:#24292f;}}
+  [data-theme="light"] .cal-modal-btn-primary{{background:#0969da;border-color:#0969da;color:#fff;}}
+  [data-theme="light"] .cal-modal-btn-primary:hover{{background:#0a5dc2;}}
+  [data-theme="light"] .cal-modal-btn-danger{{background:rgba(207,34,46,0.08);border-color:#cf222e;color:#cf222e;}}
+  [data-theme="light"] .cal-modal-btn-danger:hover{{background:#cf222e;color:#fff;}}
+  [data-theme="light"] .location-at-base{{background:rgba(26,127,55,0.10);border-color:rgba(26,127,55,0.3);}}
+  [data-theme="light"] .location-away{{background:rgba(207,34,46,0.08);border-color:rgba(207,34,46,0.3);}}
+  [data-theme="light"] .location-active{{background:rgba(9,105,218,0.10);border-color:rgba(9,105,218,0.3);}}
+  [data-theme="light"] .rii-badge{{background:rgba(154,103,0,0.10);border-color:rgba(154,103,0,0.3);color:var(--amber);}}
+  [data-theme="light"] .tab-btn:hover{{color:var(--text);background:rgba(0,0,0,0.04);}}
+  [data-theme="light"] .filter-btn:hover,[data-theme="light"] .filter-btn.active{{color:#fff;}}
+  #theme-toggle{{font-size:14px;padding:4px 8px;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:2px;cursor:pointer;line-height:1;margin-top:6px;transition:border-color 0.15s,color 0.15s;}}
+  #theme-toggle:hover{{border-color:var(--blue);color:var(--blue);}}
 </style>
+<script>
+  (function(){{var t=localStorage.getItem('fleet-theme')||'dark';if(t==='light')document.documentElement.setAttribute('data-theme','light');}})();
+</script>
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
 </head>
 <body>
@@ -2106,6 +2272,7 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
     <button id="pwa-install-btn" style="display:none;margin-top:6px;font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;padding:5px 12px;background:transparent;border:1px solid var(--blue);color:var(--blue);border-radius:2px;cursor:pointer;align-items:center;gap:6px;" title="Install as app on your device">
       &#x2B07; ADD TO HOME SCREEN
     </button>
+    <button id="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark mode">&#9788;</button>
   </div>
 </header>
 <div class="legend">
@@ -2120,7 +2287,6 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
     <label class="mobile-tab-label" for="mobile-tab-select">Section</label>
     <select id="mobile-tab-select" class="mobile-tab-select" onchange="switchTab(this.value)">
       <option value="maintenance" selected>Maintenance Due List</option>
-      <option value="location">Aircraft Location</option>
       <option value="flight-hours">Flight Hours Tracking</option>
       <option value="component-changes">Component Changes</option>
       <option value="calendar">Calendar</option>
@@ -2128,7 +2294,6 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
   </div>
   <div class="tabs">
     <button class="tab-btn active" data-tab="maintenance" onclick="switchTab('maintenance', this)">Maintenance Due List</button>
-    <button class="tab-btn" data-tab="location" onclick="switchTab('location', this)">Aircraft Location</button>
     <button class="tab-btn" data-tab="flight-hours" onclick="switchTab('flight-hours', this)">Flight Hours Tracking</button>
     <button class="tab-btn" data-tab="component-changes" onclick="switchTab('component-changes', this)">Component Changes</button>
     <button class="tab-btn" data-tab="calendar" onclick="switchTab('calendar', this)">Calendar</button>
@@ -2140,8 +2305,8 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
       <div class="summary-stat"><div class="stat-value" style="color:var(--blue)">{total_ac}</div><div class="divider-line" style="background:var(--blue)"></div><div class="stat-label">Aircraft</div></div>
       <div class="summary-stat"><div class="stat-value" style="color:var(--blue)">{airborne_count}</div><div class="divider-line" style="background:var(--blue)"></div><div class="stat-label">Airborne</div></div>
       <div class="summary-stat"><div class="stat-value" style="color:var(--green)">{at_base_count}</div><div class="divider-line" style="background:var(--green)"></div><div class="stat-label">At Base</div></div>
-      <div class="summary-stat"><div class="stat-value" style="color:var(--red)">{crit_count}</div><div class="divider-line" style="background:var(--red)"></div><div class="stat-label">Insp. Critical / OD</div></div>
-      <div class="summary-stat"><div class="stat-value" style="color:var(--amber)">{coming_count}</div><div class="divider-line" style="background:var(--amber)"></div><div class="stat-label">Insp. Coming Due</div></div>
+      <div class="summary-stat stat-clickable" title="Click to filter Critical &amp; Overdue" onclick="applyFilterCriticalOD()"><div class="stat-value" style="color:var(--red)">{crit_count}</div><div class="divider-line" style="background:var(--red)"></div><div class="stat-label">Insp. Critical / OD</div></div>
+      <div class="summary-stat stat-clickable" title="Click to filter Coming Due" onclick="applyFilter('coming')"><div class="stat-value" style="color:var(--amber)">{coming_count}</div><div class="divider-line" style="background:var(--amber)"></div><div class="stat-label">Insp. Coming Due</div></div>
       <div class="summary-stat"><div class="stat-value" style="color:var(--overdue)">{comp_overdue}</div><div class="divider-line" style="background:var(--overdue)"></div><div class="stat-label">Components Overdue</div></div>
     </div>
     <div class="chart-card">
@@ -2150,11 +2315,11 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
     </div>
     <div class="section-label">Scheduled Phase Inspections - Hours Remaining</div>
     <div class="filter-row">
-      <button class="filter-btn active" onclick="filterTable('all',this)">All</button>
-      <button class="filter-btn" onclick="filterTable('overdue',this)">Past Due</button>
-      <button class="filter-btn" onclick="filterTable('critical',this)">Critical</button>
-      <button class="filter-btn" onclick="filterTable('coming',this)">Coming Due</button>
-      <button class="filter-btn" onclick="filterTable('ok',this)">OK</button>
+      <button class="filter-btn active" data-filter="all" onclick="filterTable('all',this)">All</button>
+      <button class="filter-btn" data-filter="overdue" onclick="filterTable('overdue',this)">Past Due</button>
+      <button class="filter-btn" data-filter="critical" onclick="filterTable('critical',this)">Critical</button>
+      <button class="filter-btn" data-filter="coming" onclick="filterTable('coming',this)">Coming Due</button>
+      <button class="filter-btn" data-filter="ok" onclick="filterTable('ok',this)">OK</button>
     </div>
     <div class="insp-table-wrap">
       <table>
@@ -2193,10 +2358,6 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
 {calendar_tab_html}
   </div>
 
-  <!-- AIRCRAFT LOCATION TAB -->
-  <div id="tab-location" class="tab-content">
-{location_tab_html}
-  </div>
 </main>
 <footer>
   <span>SOURCE: VERYON MAINTENANCE TRACKING &nbsp;|&nbsp; {source_filename}</span>
@@ -2230,9 +2391,6 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
     document.getElementById('tab-' + tabName).classList.add('active');
     var mobileSelect = document.getElementById('mobile-tab-select');
     if (mobileSelect && mobileSelect.value !== tabName) mobileSelect.value = tabName;
-    if (tabName === 'location') {{
-      setTimeout(function(){{ window.dispatchEvent(new Event('fleet:location:shown')); }}, 0);
-    }}
     if (tabName === 'calendar') {{
       setTimeout(function(){{ window.dispatchEvent(new Event('fleet:calendar:shown')); }}, 0);
     }}
@@ -2256,6 +2414,73 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
       tr.style.display = show ? '' : 'none';
     }});
   }}
+
+  function applyFilter(filter) {{
+    switchTab('maintenance');
+    var btn = document.querySelector('.filter-btn[data-filter="' + filter + '"]');
+    if (btn) filterTable(filter, btn);
+  }}
+
+  function applyFilterCriticalOD() {{
+    switchTab('maintenance');
+    document.querySelectorAll('.filter-btn').forEach(function(b){{ b.classList.remove('active'); }});
+    document.querySelectorAll('#insp-tbody tr').forEach(function(tr) {{
+      var badges = tr.querySelectorAll('.hr-badge');
+      var show = false;
+      badges.forEach(function(b) {{
+        var cls = b.className;
+        if (cls.includes('hr-overdue') || cls.includes('hr-red')) show = true;
+      }});
+      tr.style.display = show ? '' : 'none';
+    }});
+  }}
+
+  function updateFilterCounts() {{
+    var counts = {{all:0, overdue:0, critical:0, coming:0, ok:0}};
+    document.querySelectorAll('#insp-tbody tr').forEach(function(tr) {{
+      var badges = tr.querySelectorAll('.hr-badge, .hr-na');
+      var worst = null;
+      badges.forEach(function(b) {{
+        var cls = b.className;
+        if (cls.includes('hr-overdue')) worst = 'overdue';
+        else if (cls.includes('hr-red') && worst !== 'overdue') worst = 'critical';
+        else if (cls.includes('hr-amber') && worst === null) worst = 'coming';
+        else if (cls.includes('hr-green') && worst === null) worst = 'ok';
+      }});
+      if (worst === null) return;
+      counts[worst]++;
+      counts.all++;
+    }});
+    var labels = {{
+      all: 'All\u00a0(' + counts.all + ')',
+      overdue: 'Past Due\u00a0(' + counts.overdue + ')',
+      critical: 'Critical\u00a0(' + counts.critical + ')',
+      coming: 'Coming Due\u00a0(' + counts.coming + ')',
+      ok: 'OK\u00a0(' + counts.ok + ')'
+    }};
+    document.querySelectorAll('.filter-btn[data-filter]').forEach(function(btn) {{
+      var f = btn.getAttribute('data-filter');
+      if (labels[f] !== undefined) btn.textContent = labels[f];
+    }});
+  }}
+  document.addEventListener('DOMContentLoaded', updateFilterCounts);
+
+  function toggleTheme() {{
+    var isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    var next = isLight ? 'dark' : 'light';
+    if (next === 'light') {{
+      document.documentElement.setAttribute('data-theme', 'light');
+    }} else {{
+      document.documentElement.removeAttribute('data-theme');
+    }}
+    localStorage.setItem('fleet-theme', next);
+    document.getElementById('theme-toggle').textContent = next === 'light' ? '\u2600' : '\u263D';
+  }}
+  (function(){{
+    var t = localStorage.getItem('fleet-theme') || 'dark';
+    var btn = document.getElementById('theme-toggle');
+    if (btn) btn.textContent = t === 'light' ? '\u2600' : '\u263D';
+  }})();
 
   // 200hr bar chart
   var labels200 = {labels_js};
