@@ -1393,10 +1393,12 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
 
   function showNoteHover(ev, e) {{
     removeHover();
+    var rangeText = ev._rangeText ? ('<div class="fc-hover-sub" style="margin-top:2px;">' + escHtml(ev._rangeText) + '</div>') : '';
     hoverEl = document.createElement('div');
     hoverEl.className = 'fc-maint-hover';
     hoverEl.innerHTML =
       '<div class="fc-hover-title" style="color:#f59e0b;">&#128196; Note</div>' +
+      rangeText +
       '<div class="fc-hover-sub" style="color:#e8edf2;margin-top:6px;white-space:pre-wrap;max-width:220px;line-height:1.4;">'
         + (ev.note || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>';
     document.body.appendChild(hoverEl);
@@ -1409,6 +1411,22 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
     var y = e.clientY + 14;
     hoverEl.style.left = x + 'px';
     hoverEl.style.top = y + 'px';
+  }}
+
+  function addDaysYmd(ymd, deltaDays) {{
+    if (!ymd) return '';
+    var d = new Date(ymd + 'T00:00:00Z');
+    if (isNaN(d.getTime())) return '';
+    d.setUTCDate(d.getUTCDate() + deltaDays);
+    return d.toISOString().slice(0, 10);
+  }}
+
+  function toExclusiveEndDate(inclusiveEndYmd) {{
+    return inclusiveEndYmd ? addDaysYmd(inclusiveEndYmd, 1) : null;
+  }}
+
+  function toInclusiveEndDate(exclusiveEndYmd) {{
+    return exclusiveEndYmd ? addDaysYmd(exclusiveEndYmd, -1) : '';
   }}
 
   // ── Modal helpers ──────────────────────────────────────────────────────
@@ -1500,7 +1518,7 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
                 calShowStatus('Saved');
                 calendar.addEvent({{
                   id: newId, title: txt.slice(0, 60),
-                  start: start, end: end || null, allDay: true,
+                  start: start, end: toExclusiveEndDate(end), allDay: true,
                   backgroundColor: '#f59e0b', borderColor: '#f59e0b',
                   extendedProps: {{ type: 'custom', note: txt, _azId: newId, tail: null,
                                    intervalLabel: txt.slice(0, 60), endDate: end || null, color: '#f59e0b' }}
@@ -1591,7 +1609,7 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
                 var custom = saved.filter(function(s) {{ return s.type === 'custom'; }}).map(function(s) {{
                   return {{
                     id: s.id, title: s.tail ? (s.tail + ' ' + s.intervalLabel) : (s.intervalLabel || s.note || 'Note'),
-                    start: s.dueDate, end: s.endDate || null, allDay: true,
+                    start: s.dueDate, end: toExclusiveEndDate(s.endDate), allDay: true,
                     backgroundColor: s.color || '#29b6f6', borderColor: s.color || '#29b6f6',
                     extendedProps: {{ type: 'custom', note: s.note, _azId: s.id,
                                      tail: s.tail, intervalLabel: s.intervalLabel, endDate: s.endDate, color: s.color }}
@@ -1624,7 +1642,14 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
         var props = info.event.extendedProps || {{}};
         var t = props.type;
         if (t === 'note' || t === 'teams' || t === 'sharepoint') return;
-        if (t === 'custom' && !props.tail) {{ showNoteHover(props, info.jsEvent); return; }}
+        if (t === 'custom' && !props.tail) {{
+          var start = info.event.startStr || '';
+          var endInclusive = props.endDate || toInclusiveEndDate(info.event.endStr || '');
+          var rangeText = endInclusive ? (start + ' → ' + endInclusive) : start;
+          var noteWithRange = Object.assign({{}}, props, {{ _rangeText: rangeText }});
+          showNoteHover(noteWithRange, info.jsEvent);
+          return;
+        }}
         showHover(props, info.jsEvent);
       }},
       eventMouseLeave: function() {{ removeHover(); }},
@@ -1633,9 +1658,16 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
         var props = info.event.extendedProps || {{}};
         var azId  = props._azId || info.event.id;
         props.dueDate = info.event.startStr;
+        var isDateNote = props.type === 'custom' && !props.tail;
+        if (isDateNote) {{
+          props.endDate = toInclusiveEndDate(info.event.endStr || '');
+        }}
         renderInspectionList();
         calShowStatus('Saving\u2026');
-        calSaveToAzure(azId, props.tail, props.intervalLabel, info.event.startStr, props.color, props.note || '')
+        var saveReq = isDateNote
+          ? calSaveCustomNote(azId, props.intervalLabel || 'Note', info.event.startStr, props.endDate || null, props.note || '')
+          : calSaveToAzure(azId, props.tail, props.intervalLabel, info.event.startStr, props.color, props.note || '');
+        saveReq
           .then(function() {{ calShowStatus('Saved'); }})
           .catch(function() {{ calShowStatus('Save failed', true); info.revert(); }});
       }},
@@ -1645,7 +1677,7 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
         var currentNote = props.note || '';
         var isDateNote = props.type === 'custom' && !props.tail;
         if (isDateNote) {{
-          var endVal = info.event.endStr ? info.event.endStr.slice(0,10) : '';
+          var endVal = props.endDate || toInclusiveEndDate(info.event.endStr || '');
           calModalOpen(
             'Edit Note',
             '<div style="display:flex;gap:10px;margin-bottom:8px;">'
@@ -1675,9 +1707,10 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
                       calShowStatus('Saved');
                       var ev = calendar.getEventById(azId);
                       if (ev) {{
-                        ev.setStart(start); ev.setEnd(end || null);
+                        ev.setStart(start); ev.setEnd(toExclusiveEndDate(end));
                         ev.setExtendedProp('note', txt);
                         ev.setExtendedProp('intervalLabel', txt.slice(0, 60));
+                        ev.setExtendedProp('endDate', end || null);
                       }} else {{ calendar.refetchEvents(); }}
                     }})
                     .catch(function() {{ calShowStatus('Save failed', true); }});
