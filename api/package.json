@@ -8,7 +8,7 @@
   },
   "dependencies": {
     "@azure/functions": "^4.3.0",
-    "@azure/data-tables": "^13.2.2",
+    "@azure/storage-blob": "^12.24.0",
     "node-fetch": "^3.3.2"
   },
   "engines": {

@@ -1,31 +1,54 @@
 /**
- * Calendar event persistence via Azure Table Storage.
+ * Calendar event persistence via Azure Blob Storage.
  *
- * Stores user-created notes, inspection date overrides, and custom events
- * so they sync across all computers viewing the dashboard.
+ * All events are stored as a JSON array in a single blob:
+ *   container: fleetcalendar
+ *   blob:      notes.json
  *
  * GET    /api/calendar          — list all saved events
  * POST   /api/calendar          — upsert an event (create or update by id)
  * DELETE /api/calendar/{id}     — delete an event
  */
 
-const { app }                                    = require('@azure/functions');
-const { TableClient, AzureNamedKeyCredential }   = require('@azure/data-tables');
+const { app }                                            = require('@azure/functions');
+const { BlobServiceClient, StorageSharedKeyCredential } = require('@azure/storage-blob');
 
-const TABLE_NAME   = 'fleetCalendarEvents';
-const PARTITION    = 'events';
+const CONTAINER = 'fleetcalendar';
+const BLOB      = 'notes.json';
 
-function getClient() {
+function getContainerClient() {
   const account = process.env.AZURE_STORAGE_ACCOUNT;
   const key     = process.env.AZURE_STORAGE_KEY;
   if (!account || !key) throw new Error('AZURE_STORAGE_ACCOUNT and AZURE_STORAGE_KEY must be set');
-  const url = `https://${account}.table.core.windows.net`;
-  return new TableClient(url, TABLE_NAME, new AzureNamedKeyCredential(account, key));
+  const credential = new StorageSharedKeyCredential(account, key);
+  const blobService = new BlobServiceClient(`https://${account}.blob.core.windows.net`, credential);
+  return blobService.getContainerClient(CONTAINER);
 }
 
-async function ensureTable(client) {
-  try { await client.createTable(); }
-  catch (err) { if (err.statusCode !== 409) throw err; }
+async function readEvents(containerClient) {
+  const blobClient = containerClient.getBlobClient(BLOB);
+  try {
+    const response = await blobClient.download(0);
+    const chunks = [];
+    for await (const chunk of response.readableStreamBody) {
+      chunks.push(chunk instanceof Buffer ? chunk : Buffer.from(chunk));
+    }
+    return JSON.parse(Buffer.concat(chunks).toString('utf8'));
+  } catch (err) {
+    if (err.statusCode === 404) return [];
+    throw err;
+  }
+}
+
+async function writeEvents(containerClient, events) {
+  try { await containerClient.create(); } catch (err) { if (err.statusCode !== 409) throw err; }
+  const blobClient = containerClient.getBlockBlobClient(BLOB);
+  const content = JSON.stringify(events, null, 2);
+  const buf = Buffer.from(content, 'utf8');
+  await blobClient.upload(buf, buf.length, {
+    blobHTTPHeaders: { blobContentType: 'application/json' },
+    overwrite: true
+  });
 }
 
 function corsHeaders() {
@@ -43,25 +66,7 @@ app.http('GetCalendarEvents', {
   authLevel: 'anonymous',
   handler: async (req, context) => {
     try {
-      const client = getClient();
-      await ensureTable(client);
-
-      const events = [];
-      const iter = client.listEntities({ queryOptions: { filter: `PartitionKey eq '${PARTITION}'` } });
-      for await (const entity of iter) {
-        events.push({
-          id:            entity.rowKey,
-          tail:          entity.tail          || null,
-          intervalLabel: entity.intervalLabel || null,
-          dueDate:       entity.dueDate       || null,
-          endDate:       entity.endDate       || null,
-          note:          entity.note          || '',
-          color:         entity.color         || '#29b6f6',
-          type:          entity.type          || 'override',
-          updatedAt:     entity.updatedAt     || null
-        });
-      }
-
+      const events = await readEvents(getContainerClient());
       return { status: 200, headers: corsHeaders(), body: JSON.stringify(events) };
     } catch (err) {
       context.error('GetCalendarEvents error:', err);
@@ -69,15 +74,13 @@ app.http('GetCalendarEvents', {
       return { status: 500, headers: corsHeaders(), body: JSON.stringify({
         error: err.message,
         account: acct,
-        url: `https://${acct}.table.core.windows.net`
+        url: `https://${acct}.blob.core.windows.net`
       }) };
     }
   }
 });
 
 // ── POST /api/calendar ────────────────────────────────────────────────────────
-// Body: { id, tail, intervalLabel, dueDate, note, color, type }
-// Uses upsert so the same call handles both create and update.
 app.http('UpsertCalendarEvent', {
   methods: ['POST'],
   route: 'calendar',
@@ -93,23 +96,18 @@ app.http('UpsertCalendarEvent', {
     }
 
     try {
-      const client = getClient();
-      await ensureTable(client);
+      const containerClient = getContainerClient();
+      const events = await readEvents(containerClient);
 
-      const entity = {
-        partitionKey:  PARTITION,
-        rowKey:        String(id),
-        tail:          tail          || '',
-        intervalLabel: intervalLabel || '',
-        dueDate:       dueDate,
-        endDate:       endDate       || '',
-        note:          note          || '',
-        color:         color         || '#29b6f6',
-        type:          type          || 'override',
-        updatedAt:     new Date().toISOString()
+      const idx = events.findIndex(e => e.id === id);
+      const event = {
+        id, tail: tail || '', intervalLabel: intervalLabel || '', dueDate,
+        endDate: endDate || '', note: note || '', color: color || '#29b6f6',
+        type: type || 'override', updatedAt: new Date().toISOString()
       };
+      if (idx >= 0) events[idx] = event; else events.push(event);
 
-      await client.upsertEntity(entity, 'Replace');
+      await writeEvents(containerClient, events);
       return { status: 200, headers: corsHeaders(), body: JSON.stringify({ ok: true, id }) };
     } catch (err) {
       context.error('UpsertCalendarEvent error:', err);
@@ -130,14 +128,15 @@ app.http('DeleteCalendarEvent', {
     }
 
     try {
-      const client = getClient();
-      await ensureTable(client);
-      await client.deleteEntity(PARTITION, String(id));
-      return { status: 200, headers: corsHeaders(), body: JSON.stringify({ ok: true }) };
-    } catch (err) {
-      if (err.statusCode === 404) {
+      const containerClient = getContainerClient();
+      const events = await readEvents(containerClient);
+      const filtered = events.filter(e => e.id !== id);
+      if (filtered.length === events.length) {
         return { status: 404, headers: corsHeaders(), body: JSON.stringify({ error: 'Not found' }) };
       }
+      await writeEvents(containerClient, filtered);
+      return { status: 200, headers: corsHeaders(), body: JSON.stringify({ ok: true }) };
+    } catch (err) {
       context.error('DeleteCalendarEvent error:', err);
       return { status: 500, headers: corsHeaders(), body: JSON.stringify({ error: err.message }) };
     }
