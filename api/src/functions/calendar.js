@@ -52,6 +52,7 @@ app.http('GetCalendarEvents', {
           tail:          entity.tail          || null,
           intervalLabel: entity.intervalLabel || null,
           dueDate:       entity.dueDate       || null,
+          endDate:       entity.endDate       || null,
           note:          entity.note          || '',
           color:         entity.color         || '#29b6f6',
           type:          entity.type          || 'override',
@@ -79,7 +80,7 @@ app.http('UpsertCalendarEvent', {
     try { payload = await req.json(); }
     catch { return { status: 400, headers: corsHeaders(), body: JSON.stringify({ error: 'Invalid JSON' }) }; }
 
-    const { id, tail, intervalLabel, dueDate, note, color, type } = payload;
+    const { id, tail, intervalLabel, dueDate, endDate, note, color, type } = payload;
     if (!id || !dueDate) {
       return { status: 400, headers: corsHeaders(), body: JSON.stringify({ error: 'id and dueDate are required' }) };
     }
@@ -94,6 +95,7 @@ app.http('UpsertCalendarEvent', {
         tail:          tail          || '',
         intervalLabel: intervalLabel || '',
         dueDate:       dueDate,
+        endDate:       endDate       || null,
         note:          note          || '',
         color:         color         || '#29b6f6',
         type:          type          || 'override',

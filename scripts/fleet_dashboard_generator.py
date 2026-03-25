@@ -1447,12 +1447,13 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
     }}).then(function(r) {{ if (!r.ok) throw new Error('Save failed: ' + r.status); }});
   }}
 
-  function calSaveCustomNote(id, title, dueDate, note) {{
+  function calSaveCustomNote(id, title, dueDate, endDate, note) {{
     return fetch(CAL_API, {{
       method: 'POST',
       headers: {{ 'Content-Type': 'application/json' }},
-      body: JSON.stringify({{ id: id, tail: '', intervalLabel: title,
-                              dueDate: dueDate, color: '#f59e0b', note: note || '', type: 'custom' }})
+      body: JSON.stringify({{ id: id, tail: '', intervalLabel: title || 'Note',
+                              dueDate: dueDate, endDate: endDate || null,
+                              color: '#f59e0b', note: note || '', type: 'custom' }})
     }}).then(function(r) {{ if (!r.ok) throw new Error('Save failed: ' + r.status); }});
   }}
 
@@ -1533,11 +1534,11 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
                 // Return only user-created custom events (not overrides)
                 var custom = saved.filter(function(s) {{ return s.type === 'custom'; }}).map(function(s) {{
                   return {{
-                    id: s.id, title: s.tail ? (s.tail + ' ' + s.intervalLabel) : s.intervalLabel,
-                    start: s.dueDate, allDay: true,
+                    id: s.id, title: s.tail ? (s.tail + ' ' + s.intervalLabel) : (s.intervalLabel || s.note || 'Note'),
+                    start: s.dueDate, end: s.endDate || null, allDay: true,
                     backgroundColor: s.color || '#29b6f6', borderColor: s.color || '#29b6f6',
                     extendedProps: {{ type: 'custom', note: s.note, _azId: s.id,
-                                     tail: s.tail, intervalLabel: s.intervalLabel, color: s.color }}
+                                     tail: s.tail, intervalLabel: s.intervalLabel, endDate: s.endDate, color: s.color }}
                   }};
                 }});
                 renderInspectionList();
@@ -1554,8 +1555,8 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
         var node = document.createElement('div');
         node.className = 'fc-maint-pill';
         if (isDateNote) {{
-          node.innerHTML = '<span style="opacity:0.85;">&#128196; </span>'
-            + '<span>' + (ev.intervalLabel || ev.note || '').replace(/</g,'&lt;').slice(0,40) + '</span>';
+          node.innerHTML = '<span style="opacity:0.85;">&#128196;</span>'
+            + '<span style="margin-left:4px;">' + (ev.note || ev.intervalLabel || 'Note').replace(/</g,'&lt;').slice(0,40) + '</span>';
         }} else {{
           node.innerHTML = '<strong>' + (ev.tail || '') + '</strong>'
             + '<span>' + (ev.intervalLabel || '') + '</span>'
@@ -1586,9 +1587,16 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
         var currentNote = props.note || '';
         var isDateNote = props.type === 'custom' && !props.tail;
         if (isDateNote) {{
+          var endVal = info.event.endStr ? info.event.endStr.slice(0,10) : '';
           calModalOpen(
-            'Note \u2014 ' + info.event.startStr,
-            '<textarea id="cal-modal-input" class="cal-modal-textarea" rows="4">' + currentNote.replace(/</g,'&lt;') + '</textarea>',
+            'Edit Note',
+            '<div style="display:flex;gap:10px;margin-bottom:8px;">'
+              + '<label style="flex:1;font-size:12px;color:var(--muted);">Start<br>'
+              + '<input type="date" id="cal-note-start" value="' + info.event.startStr + '" style="width:100%;padding:4px 6px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:13px;margin-top:2px;"></label>'
+              + '<label style="flex:1;font-size:12px;color:var(--muted);">End (optional)<br>'
+              + '<input type="date" id="cal-note-end" value="' + endVal + '" style="width:100%;padding:4px 6px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:13px;margin-top:2px;"></label>'
+              + '</div>'
+              + '<textarea id="cal-modal-input" class="cal-modal-textarea" rows="4">' + currentNote.replace(/</g,'&lt;') + '</textarea>',
             [
               {{ label: 'Cancel', cls: '', action: calModalClose }},
               {{ label: 'Delete Note', cls: 'cal-modal-btn-danger', action: function() {{
@@ -1599,10 +1607,12 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
                     .catch(function() {{ calShowStatus('Delete failed', true); }});
               }} }},
               {{ label: 'Save Note', cls: 'cal-modal-btn-primary', action: function() {{
-                  var txt = (document.getElementById('cal-modal-input') || {{}}).value || '';
+                  var txt   = (document.getElementById('cal-modal-input') || {{}}).value || '';
+                  var start = (document.getElementById('cal-note-start') || {{}}).value || info.event.startStr;
+                  var end   = (document.getElementById('cal-note-end')   || {{}}).value || '';
                   calModalClose();
                   calShowStatus('Saving\u2026');
-                  calSaveCustomNote(azId, txt.slice(0, 60), info.event.startStr, txt)
+                  calSaveCustomNote(azId, txt.slice(0, 60), start, end || null, txt)
                     .then(function() {{ calShowStatus('Saved'); calendar.refetchEvents(); }})
                     .catch(function() {{ calShowStatus('Save failed', true); }});
               }} }}
@@ -1643,16 +1653,24 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
         var dateStr = info.dateStr;
         var newId   = 'note-' + dateStr + '-' + Date.now();
         calModalOpen(
-          'Add Note \u2014 ' + dateStr,
-          '<textarea id="cal-modal-input" class="cal-modal-textarea" rows="4" placeholder="Enter note\u2026"></textarea>',
+          'Add Note',
+          '<div style="display:flex;gap:10px;margin-bottom:8px;">'
+            + '<label style="flex:1;font-size:12px;color:var(--muted);">Start<br>'
+            + '<input type="date" id="cal-note-start" value="' + dateStr + '" style="width:100%;padding:4px 6px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:13px;margin-top:2px;"></label>'
+            + '<label style="flex:1;font-size:12px;color:var(--muted);">End (optional)<br>'
+            + '<input type="date" id="cal-note-end" style="width:100%;padding:4px 6px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:13px;margin-top:2px;"></label>'
+            + '</div>'
+            + '<textarea id="cal-modal-input" class="cal-modal-textarea" rows="4" placeholder="Note text\u2026"></textarea>',
           [
             {{ label: 'Cancel', cls: 'cal-modal-btn-secondary', action: function() {{ calModalClose(); }} }},
             {{ label: 'Save Note', cls: 'cal-modal-btn-primary', action: function() {{
-                var txt = (document.getElementById('cal-modal-input') || {{}}).value || '';
+                var txt   = (document.getElementById('cal-modal-input') || {{}}).value || '';
+                var start = (document.getElementById('cal-note-start') || {{}}).value || dateStr;
+                var end   = (document.getElementById('cal-note-end')   || {{}}).value || '';
                 if (!txt.trim()) {{ calModalClose(); return; }}
                 calModalClose();
                 calShowStatus('Saving\u2026');
-                calSaveCustomNote(newId, txt.slice(0, 60), dateStr, txt)
+                calSaveCustomNote(newId, txt.slice(0, 60), start, end || null, txt)
                   .then(function() {{ calShowStatus('Saved'); calendar.refetchEvents(); }})
                   .catch(function() {{ calShowStatus('Save failed', true); }});
             }} }}
