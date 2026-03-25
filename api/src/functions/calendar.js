@@ -9,16 +9,18 @@
  * DELETE /api/calendar/{id}     — delete an event
  */
 
-const { app }         = require('@azure/functions');
-const { TableClient } = require('@azure/data-tables');
+const { app }                                    = require('@azure/functions');
+const { TableClient, AzureNamedKeyCredential }   = require('@azure/data-tables');
 
 const TABLE_NAME   = 'fleetCalendarEvents';
 const PARTITION    = 'events';
 
 function getClient() {
-  const connStr = process.env.AZURE_STORAGE_CONNECTION_STRING;
-  if (!connStr) throw new Error('AZURE_STORAGE_CONNECTION_STRING is not set');
-  return TableClient.fromConnectionString(connStr, TABLE_NAME);
+  const account = process.env.AZURE_STORAGE_ACCOUNT;
+  const key     = process.env.AZURE_STORAGE_KEY;
+  if (!account || !key) throw new Error('AZURE_STORAGE_ACCOUNT and AZURE_STORAGE_KEY must be set');
+  const url = `https://${account}.table.core.windows.net`;
+  return new TableClient(url, TABLE_NAME, new AzureNamedKeyCredential(account, key));
 }
 
 async function ensureTable(client) {
