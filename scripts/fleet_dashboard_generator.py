@@ -974,6 +974,8 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
   #cal-shell {{ grid-template-columns: 1fr; }}
 }}
 #calendar-wrap {{
+  min-width: 0;
+  overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--surface);
