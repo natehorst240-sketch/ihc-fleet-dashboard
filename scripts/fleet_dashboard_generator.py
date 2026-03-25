@@ -1612,6 +1612,11 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
             fetch(CAL_API + '?t=' + Date.now())
               .then(function(r) {{ return r.json(); }})
               .then(function(saved) {{
+                if (!Array.isArray(saved)) {{
+                  console.warn('Azure calendar fetch: unexpected response', saved);
+                  successCb([]);
+                  return;
+                }}
                 // Apply saved overrides to maintenance events
                 saved.forEach(function(s) {{
                   if (s.type === 'override') {{
