@@ -58,6 +58,7 @@ jobs:
           api_location: 'api'
           # Static files are served from the repo root (index.html, data/, etc.)
           output_location: '/'
+          azure_app_settings: AZURE_STORAGE_CONNECTION_STRING=${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
 
   close_pull_request:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'

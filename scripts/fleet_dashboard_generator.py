@@ -1308,7 +1308,7 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
 
 <!-- Calendar modal -->
 <div id="cal-modal-overlay" onclick="calModalClose()"></div>
-<div id="cal-modal" role="dialog" aria-modal="true">
+<div id="cal-modal" class="cal-modal" role="dialog" aria-modal="true">
   <div class="cal-modal-title" id="cal-modal-title"></div>
   <div class="cal-modal-body" id="cal-modal-body"></div>
   <div class="cal-modal-footer" id="cal-modal-footer"></div>
