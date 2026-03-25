@@ -65,7 +65,12 @@ app.http('GetCalendarEvents', {
       return { status: 200, headers: corsHeaders(), body: JSON.stringify(events) };
     } catch (err) {
       context.error('GetCalendarEvents error:', err);
-      return { status: 500, headers: corsHeaders(), body: JSON.stringify({ error: err.message }) };
+      const acct = process.env.AZURE_STORAGE_ACCOUNT || '(not set)';
+      return { status: 500, headers: corsHeaders(), body: JSON.stringify({
+        error: err.message,
+        account: acct,
+        url: `https://${acct}.table.core.windows.net`
+      }) };
     }
   }
 });
