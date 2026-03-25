@@ -1384,9 +1384,21 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
     hoverEl = document.createElement('div');
     hoverEl.className = 'fc-maint-hover';
     hoverEl.innerHTML =
-      '<div class="fc-hover-title">' + ev.tail + ' · ' + ev.intervalLabel + '</div>' +
+      '<div class="fc-hover-title">' + ev.tail + ' \u00b7 ' + ev.intervalLabel + '</div>' +
       '<div class="fc-hover-sub">' + (ev.remLabel || 'Projected maintenance event') + '</div>' +
       '<div class="fc-hover-chart"><span style="width:' + pct + '%;background:' + (ev.color || '#4a5568') + ';"></span></div>';
+    document.body.appendChild(hoverEl);
+    moveHover(e);
+  }}
+
+  function showNoteHover(ev, e) {{
+    removeHover();
+    hoverEl = document.createElement('div');
+    hoverEl.className = 'fc-maint-hover';
+    hoverEl.innerHTML =
+      '<div class="fc-hover-title" style="color:#f59e0b;">&#128196; Note</div>' +
+      '<div class="fc-hover-sub" style="color:#e8edf2;margin-top:6px;white-space:pre-wrap;max-width:220px;line-height:1.4;">'
+        + (ev.note || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>';
     document.body.appendChild(hoverEl);
     moveHover(e);
   }}
@@ -1457,6 +1469,49 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
     }}).then(function(r) {{ if (!r.ok) throw new Error('Save failed: ' + r.status); }});
   }}
 
+  function calOpenNewNoteModal(dateStr) {{
+    var newId = 'note-' + dateStr + '-' + Date.now();
+    var inputHtml =
+      '<div style="display:flex;gap:10px;margin-bottom:8px;">'
+      + '<label style="flex:1;font-size:12px;color:var(--muted);">Start<br>'
+      + '<input type="date" id="cal-note-start" value="' + dateStr + '" style="width:100%;padding:4px 6px;'
+      + 'background:var(--surface2);border:1px solid var(--border);border-radius:4px;'
+      + 'color:var(--text);font-size:13px;margin-top:2px;"></label>'
+      + '<label style="flex:1;font-size:12px;color:var(--muted);">End (optional)<br>'
+      + '<input type="date" id="cal-note-end" style="width:100%;padding:4px 6px;'
+      + 'background:var(--surface2);border:1px solid var(--border);border-radius:4px;'
+      + 'color:var(--text);font-size:13px;margin-top:2px;"></label>'
+      + '</div>'
+      + '<textarea id="cal-modal-input" class="cal-modal-textarea" rows="4" placeholder="Note text\u2026"></textarea>';
+    calModalOpen(
+      'Add Note',
+      inputHtml,
+      [
+        {{ label: 'Cancel', cls: 'cal-modal-btn-secondary', action: function() {{ calModalClose(); }} }},
+        {{ label: 'Save Note', cls: 'cal-modal-btn-primary', action: function() {{
+            var txt   = (document.getElementById('cal-modal-input') || {{}}).value || '';
+            var start = (document.getElementById('cal-note-start') || {{}}).value || dateStr;
+            var end   = (document.getElementById('cal-note-end')   || {{}}).value || '';
+            if (!txt.trim()) {{ calModalClose(); return; }}
+            calModalClose();
+            calShowStatus('Saving\u2026');
+            calSaveCustomNote(newId, txt.slice(0, 60), start, end || null, txt)
+              .then(function() {{
+                calShowStatus('Saved');
+                calendar.addEvent({{
+                  id: newId, title: txt.slice(0, 60),
+                  start: start, end: end || null, allDay: true,
+                  backgroundColor: '#f59e0b', borderColor: '#f59e0b',
+                  extendedProps: {{ type: 'custom', note: txt, _azId: newId, tail: null,
+                                   intervalLabel: txt.slice(0, 60), endDate: end || null, color: '#f59e0b' }}
+                }});
+              }})
+              .catch(function() {{ calShowStatus('Save failed', true); }});
+        }} }}
+      ]
+    );
+  }}
+
   function calDeleteFromAzure(id) {{
     return fetch(CAL_API + '/' + encodeURIComponent(id), {{ method: 'DELETE' }})
       .then(function(r) {{ if (!r.ok && r.status !== 404) throw new Error('Delete failed: ' + r.status); }});
@@ -1506,6 +1561,7 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
       height: 680,
       editable: true,
       eventStartEditable: true,
+      navLinks: true,
       dayMaxEvents: 4,
       headerToolbar: {{ left: 'prev,next today', center: 'title', right: 'dayGridMonth,listMonth' }},
       windowResize: function() {{
@@ -1565,9 +1621,11 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
         return {{ domNodes: [node] }};
       }},
       eventMouseEnter: function(info) {{
-        var t = (info.event.extendedProps || {{}}).type;
+        var props = info.event.extendedProps || {{}};
+        var t = props.type;
         if (t === 'note' || t === 'teams' || t === 'sharepoint') return;
-        showHover(info.event.extendedProps || {{}}, info.jsEvent);
+        if (t === 'custom' && !props.tail) {{ showNoteHover(props, info.jsEvent); return; }}
+        showHover(props, info.jsEvent);
       }},
       eventMouseLeave: function() {{ removeHover(); }},
       eventDragStart: function() {{ removeHover(); }},
@@ -1613,7 +1671,15 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
                   calModalClose();
                   calShowStatus('Saving\u2026');
                   calSaveCustomNote(azId, txt.slice(0, 60), start, end || null, txt)
-                    .then(function() {{ calShowStatus('Saved'); calendar.refetchEvents(); }})
+                    .then(function() {{
+                      calShowStatus('Saved');
+                      var ev = calendar.getEventById(azId);
+                      if (ev) {{
+                        ev.setStart(start); ev.setEnd(end || null);
+                        ev.setExtendedProp('note', txt);
+                        ev.setExtendedProp('intervalLabel', txt.slice(0, 60));
+                      }} else {{ calendar.refetchEvents(); }}
+                    }})
                     .catch(function() {{ calShowStatus('Save failed', true); }});
               }} }}
             ]
@@ -1649,33 +1715,13 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
           ]
         );
       }},
-      dateClick: function(info) {{
-        var dateStr = info.dateStr;
-        var newId   = 'note-' + dateStr + '-' + Date.now();
-        calModalOpen(
-          'Add Note',
-          '<div style="display:flex;gap:10px;margin-bottom:8px;">'
-            + '<label style="flex:1;font-size:12px;color:var(--muted);">Start<br>'
-            + '<input type="date" id="cal-note-start" value="' + dateStr + '" style="width:100%;padding:4px 6px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:13px;margin-top:2px;"></label>'
-            + '<label style="flex:1;font-size:12px;color:var(--muted);">End (optional)<br>'
-            + '<input type="date" id="cal-note-end" style="width:100%;padding:4px 6px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:13px;margin-top:2px;"></label>'
-            + '</div>'
-            + '<textarea id="cal-modal-input" class="cal-modal-textarea" rows="4" placeholder="Note text\u2026"></textarea>',
-          [
-            {{ label: 'Cancel', cls: 'cal-modal-btn-secondary', action: function() {{ calModalClose(); }} }},
-            {{ label: 'Save Note', cls: 'cal-modal-btn-primary', action: function() {{
-                var txt   = (document.getElementById('cal-modal-input') || {{}}).value || '';
-                var start = (document.getElementById('cal-note-start') || {{}}).value || dateStr;
-                var end   = (document.getElementById('cal-note-end')   || {{}}).value || '';
-                if (!txt.trim()) {{ calModalClose(); return; }}
-                calModalClose();
-                calShowStatus('Saving\u2026');
-                calSaveCustomNote(newId, txt.slice(0, 60), start, end || null, txt)
-                  .then(function() {{ calShowStatus('Saved'); calendar.refetchEvents(); }})
-                  .catch(function() {{ calShowStatus('Save failed', true); }});
-            }} }}
-          ]
-        );
+      dateClick: function(info) {{ calOpenNewNoteModal(info.dateStr); }},
+      navLinkDayClick: function(date, jsEvent) {{
+        jsEvent.preventDefault();
+        var y = date.getFullYear();
+        var m = String(date.getMonth() + 1).padStart(2, '0');
+        var d = String(date.getDate()).padStart(2, '0');
+        calOpenNewNoteModal(y + '-' + m + '-' + d);
       }}
     }});
 
