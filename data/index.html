@@ -219,7 +219,7 @@
   </div>
   <div class="header-meta">
     <div class="date">REPORT DATE: 20 FEB 2026</div>
-    <div>FLEET: 9 AIRCRAFT &nbsp;|&nbsp; 0 AIRBORNE &nbsp;|&nbsp; 6 AT BASE &nbsp;|&nbsp; GENERATED: 25 MAR 2026 12:09</div>
+    <div>FLEET: 9 AIRCRAFT &nbsp;|&nbsp; 0 AIRBORNE &nbsp;|&nbsp; 6 AT BASE &nbsp;|&nbsp; GENERATED: 25 MAR 2026 12:36</div>
     <button id="pwa-install-btn" style="display:none;margin-top:6px;font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;padding:5px 12px;background:transparent;border:1px solid var(--blue);color:var(--blue);border-radius:2px;cursor:pointer;align-items:center;gap:6px;" title="Install as app on your device">
       &#x2B07; ADD TO HOME SCREEN
     </button>
@@ -925,7 +925,11 @@
 <div id="cal-shell">
   <div id="calendar-wrap">
     <div class="fc-edit-note">Drag pills to adjust dates &mdash; click a pill to add a note. Changes sync across all devices.
-      <span id="cal-sync-status" style="margin-left:10px;font-size:10px;color:var(--muted);opacity:0;transition:opacity 0.4s;"></span>
+      <span id="cal-sync-status" style="margin-left:10px;font-size:10px;color:var(--muted);opacity:0;transition:opacity 0.4s;max-width:600px;display:inline-block;vertical-align:middle;word-break:break-all;"></span>
+      <span onclick="document.getElementById('cal-debug-panel').style.display=document.getElementById('cal-debug-panel').style.display==='none'?'block':'none'" style="margin-left:10px;font-size:10px;color:#4a5568;cursor:pointer;text-decoration:underline;user-select:none;">debug</span>
+    </div>
+    <div id="cal-debug-panel" style="display:none;margin-top:6px;background:#060d14;border:1px solid #1e2a38;border-radius:4px;padding:8px 10px;">
+      <pre id="cal-debug-log" style="margin:0;font-family:'Share Tech Mono',monospace;font-size:10px;color:#4a9eca;white-space:pre-wrap;max-height:150px;overflow-y:auto;">(no requests yet)</pre>
     </div>
     <div id="maint-calendar"></div>
   </div>
@@ -1094,26 +1098,41 @@
     if (e.key === 'Escape' && _calModal && _calModal.style.display === 'flex') calModalClose();
   });
 
+  // ── Debug logger ─────────────────────────────────────────────────────────────
+  var _calDebugLog = [];
+  function calDebugLog(method, url, status, body) {
+    var ts = new Date().toLocaleTimeString();
+    _calDebugLog.unshift('[' + ts + '] ' + method + ' ' + url + ' → ' + status + (body ? ': ' + body : ''));
+    if (_calDebugLog.length > 20) _calDebugLog.pop();
+    var el = document.getElementById('cal-debug-log');
+    if (el) el.textContent = _calDebugLog.join('
+');
+  }
+
   // ── Azure calendar storage helpers ──────────────────────────────────────────
   var CAL_API = '/api/calendar';
 
+  function calApiFetch(method, url, body) {
+    var opts = { method: method, headers: { 'Content-Type': 'application/json' } };
+    if (body !== undefined) opts.body = JSON.stringify(body);
+    return fetch(url, opts).then(function(r) {
+      return r.text().then(function(txt) {
+        calDebugLog(method, url, r.status, txt);
+        if (!r.ok) throw new Error('HTTP ' + r.status + ': ' + txt);
+        return r.ok;
+      });
+    });
+  }
+
   function calSaveToAzure(id, tail, intervalLabel, dueDate, color, note) {
-    return fetch(CAL_API, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: id, tail: tail, intervalLabel: intervalLabel,
-                              dueDate: dueDate, color: color, note: note || '', type: 'override' })
-    }).then(function(r) { if (!r.ok) throw new Error('Save failed: ' + r.status); });
+    return calApiFetch('POST', CAL_API, { id: id, tail: tail, intervalLabel: intervalLabel,
+                                          dueDate: dueDate, color: color, note: note || '', type: 'override' });
   }
 
   function calSaveCustomNote(id, title, dueDate, endDate, note) {
-    return fetch(CAL_API, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: id, tail: '', intervalLabel: title || 'Note',
-                              dueDate: dueDate, endDate: endDate || null,
-                              color: '#f59e0b', note: note || '', type: 'custom' })
-    }).then(function(r) { if (!r.ok) throw new Error('Save failed: ' + r.status); });
+    return calApiFetch('POST', CAL_API, { id: id, tail: '', intervalLabel: title || 'Note',
+                                          dueDate: dueDate, endDate: endDate || '',
+                                          color: '#f59e0b', note: note || '', type: 'custom' });
   }
 
   function calOpenNewNoteModal(dateStr) {
@@ -1153,15 +1172,14 @@
                                    intervalLabel: txt.slice(0, 60), endDate: end || null, color: '#f59e0b' }
                 });
               })
-              .catch(function() { calShowStatus('Save failed', true); });
+              .catch(function(err) { calShowStatus('Save failed: ' + (err.message || err), true); });
         } }
       ]
     );
   }
 
   function calDeleteFromAzure(id) {
-    return fetch(CAL_API + '/' + encodeURIComponent(id), { method: 'DELETE' })
-      .then(function(r) { if (!r.ok && r.status !== 404) throw new Error('Delete failed: ' + r.status); });
+    return calApiFetch('DELETE', CAL_API + '/' + encodeURIComponent(id));
   }
 
   function calShowStatus(msg, isErr) {
@@ -1171,7 +1189,8 @@
     el.style.color = isErr ? 'var(--red)' : 'var(--muted)';
     el.style.opacity = '1';
     clearTimeout(el._t);
-    el._t = setTimeout(function() { el.style.opacity = '0'; }, 3000);
+    // Errors stay visible for 15s so the full message can be read
+    el._t = setTimeout(function() { el.style.opacity = '0'; }, isErr ? 15000 : 3000);
   }
 
   function renderCalendar() {
@@ -1298,7 +1317,7 @@
           : calSaveToAzure(azId, props.tail, props.intervalLabel, info.event.startStr, props.color, props.note || '');
         saveReq
           .then(function() { calShowStatus('Saved'); })
-          .catch(function() { calShowStatus('Save failed', true); info.revert(); });
+          .catch(function(err) { calShowStatus('Save failed: ' + (err.message || err), true); info.revert(); });
       },
       eventClick: function(info) {
         var props = info.event.extendedProps || {};
@@ -1323,7 +1342,7 @@
                   calShowStatus('Deleting…');
                   calDeleteFromAzure(azId)
                     .then(function() { calShowStatus('Deleted'); calendar.refetchEvents(); })
-                    .catch(function() { calShowStatus('Delete failed', true); });
+                    .catch(function(err) { calShowStatus('Delete failed: ' + (err.message || err), true); });
               } },
               { label: 'Save Note', cls: 'cal-modal-btn-primary', action: function() {
                   var txt   = (document.getElementById('cal-modal-input') || {}).value || '';
@@ -1342,7 +1361,7 @@
                         ev.setExtendedProp('endDate', end || null);
                       } else { calendar.refetchEvents(); }
                     })
-                    .catch(function() { calShowStatus('Save failed', true); });
+                    .catch(function(err) { calShowStatus('Save failed: ' + (err.message || err), true); });
               } }
             ]
           );
@@ -1362,7 +1381,7 @@
                 calShowStatus('Clearing…');
                 calSaveToAzure(azId, props.tail, props.intervalLabel, info.event.startStr, props.color, '')
                   .then(function() { calShowStatus('Cleared'); })
-                  .catch(function() { calShowStatus('Failed', true); });
+                  .catch(function(err) { calShowStatus('Failed: ' + (err.message || err), true); });
             } },
             { label: 'Save Note', cls: 'cal-modal-btn-primary', action: function() {
                 var txt = (document.getElementById('cal-modal-input') || {}).value || '';
@@ -1372,7 +1391,7 @@
                 calShowStatus('Saving…');
                 calSaveToAzure(azId, props.tail, props.intervalLabel, info.event.startStr, props.color, txt)
                   .then(function() { calShowStatus('Saved'); })
-                  .catch(function() { calShowStatus('Save failed', true); });
+                  .catch(function(err) { calShowStatus('Save failed: ' + (err.message || err), true); });
             } }
           ]
         );
@@ -1407,7 +1426,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 <script>
-  const DASHBOARD_VERSION = "20260325120954";
+  const DASHBOARD_VERSION = "20260325123615";
 
   // Auto-reload when a newer build is deployed
   (function() {
