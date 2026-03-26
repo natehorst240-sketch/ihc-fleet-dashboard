@@ -1312,6 +1312,13 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
   </div>
 </div>
 
+<!-- Watch List modal -->
+<div id="wl-modal-overlay" class="cal-modal-overlay" onclick="wlModalClose()"></div>
+<div id="wl-modal" class="cal-modal" role="dialog" aria-modal="true" style="max-width:520px;width:92%;">
+  <div class="cal-modal-title" id="wl-modal-title"></div>
+  <div class="cal-modal-body" id="wl-modal-body" style="max-height:55vh;overflow-y:auto;"></div>
+  <div class="cal-modal-footer" id="wl-modal-footer"></div>
+</div>
 <!-- Calendar modal -->
 <div id="cal-modal-overlay" onclick="calModalClose()"></div>
 <div id="cal-modal" class="cal-modal" role="dialog" aria-modal="true">
@@ -1563,6 +1570,94 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
     clearTimeout(el._t);
     // Errors stay visible for 15s so the full message can be read
     el._t = setTimeout(function() {{ el.style.opacity = '0'; }}, isErr ? 15000 : 3000);
+  }}
+
+  // ── Watch List ──────────────────────────────────────────────────────────────
+  var WL_API = '/api/watchlist';
+
+  function wlEsc(s) {{
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }}
+
+  function wlApiFetch(method, url, body) {{
+    var opts = {{ method: method, headers: {{ 'Content-Type': 'application/json' }} }};
+    if (body !== undefined) opts.body = JSON.stringify(body);
+    return fetch(url, opts).then(function(r) {{
+      return r.json().then(function(data) {{
+        if (!r.ok) throw new Error('HTTP ' + r.status + ': ' + (data.error || JSON.stringify(data)));
+        return data;
+      }});
+    }});
+  }}
+
+  function wlOpenModal(tail) {{
+    document.getElementById('wl-modal-overlay').style.display = 'block';
+    var modal = document.getElementById('wl-modal');
+    modal.style.display = 'flex';
+    document.getElementById('wl-modal-title').innerHTML =
+      '<span style="color:var(--amber);letter-spacing:2px;">WATCH LIST</span>' +
+      '<span style="color:var(--muted);margin:0 8px;">|</span>' + wlEsc(tail);
+    document.getElementById('wl-modal-body').innerHTML =
+      '<div style="color:var(--muted);font-size:12px;">Loading\u2026</div>';
+    document.getElementById('wl-modal-footer').innerHTML = '';
+    wlApiFetch('GET', WL_API + '?tail=' + encodeURIComponent(tail))
+      .then(function(notes) {{ wlRenderNotes(tail, notes); }})
+      .catch(function(err) {{
+        document.getElementById('wl-modal-body').innerHTML =
+          '<div style="color:var(--red);font-size:12px;">Error: ' + wlEsc(err.message) + '</div>';
+      }});
+  }}
+
+  function wlRenderNotes(tail, notes) {{
+    var noteRows = notes.length ? notes.map(function(n) {{
+      return '<div style="border:1px solid var(--border);border-radius:4px;padding:8px 32px 8px 10px;margin-bottom:6px;position:relative;">' +
+        '<div style="color:var(--text);font-size:12px;line-height:1.5;white-space:pre-wrap;">' + wlEsc(n.note) + '</div>' +
+        '<div style="color:var(--muted);font-size:10px;margin-top:4px;">' + new Date(n.timestamp).toLocaleString() + '</div>' +
+        '<button onclick="wlDeleteNote(\'' + n.id + '\',\'' + wlEsc(tail) + '\')" ' +
+          'style="position:absolute;top:5px;right:8px;background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;line-height:1;" ' +
+          'title="Delete note">\u00d7</button>' +
+        '</div>';
+    }}).join('') : '<div style="color:var(--muted);font-size:12px;margin-bottom:10px;">No notes yet for ' + wlEsc(tail) + '.</div>';
+
+    document.getElementById('wl-modal-body').innerHTML =
+      noteRows +
+      '<textarea id="wl-note-input" rows="3" placeholder="Add a note\u2026" ' +
+        'style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:4px;' +
+        'color:var(--text);padding:8px;font-family:var(--mono);font-size:12px;resize:vertical;box-sizing:border-box;margin-top:4px;"></textarea>';
+
+    document.getElementById('wl-modal-footer').innerHTML =
+      '<button class="cal-modal-btn" onclick="wlModalClose()">Close</button>' +
+      '<button class="cal-modal-btn cal-modal-btn-primary" onclick="wlSaveNote(\'' + wlEsc(tail) + '\')">Add Note</button>';
+  }}
+
+  function wlSaveNote(tail) {{
+    var el = document.getElementById('wl-note-input');
+    var note = (el ? el.value : '').trim();
+    if (!note) return;
+    var id = 'wl-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+    document.getElementById('wl-modal-footer').innerHTML =
+      '<span style="color:var(--muted);font-size:11px;">Saving\u2026</span>';
+    wlApiFetch('POST', WL_API, {{ id: id, tail: tail, note: note }})
+      .then(function() {{ return wlApiFetch('GET', WL_API + '?tail=' + encodeURIComponent(tail)); }})
+      .then(function(notes) {{ wlRenderNotes(tail, notes); }})
+      .catch(function(err) {{
+        document.getElementById('wl-modal-footer').innerHTML =
+          '<span style="color:var(--red);font-size:11px;">Save failed: ' + wlEsc(err.message) + '</span>' +
+          '<button class="cal-modal-btn" onclick="wlModalClose()">Close</button>';
+      }});
+  }}
+
+  function wlDeleteNote(id, tail) {{
+    if (!confirm('Delete this note?')) return;
+    wlApiFetch('DELETE', WL_API + '/' + encodeURIComponent(id))
+      .then(function() {{ return wlApiFetch('GET', WL_API + '?tail=' + encodeURIComponent(tail)); }})
+      .then(function(notes) {{ wlRenderNotes(tail, notes); }})
+      .catch(function(err) {{ alert('Delete failed: ' + err.message); }});
+  }}
+
+  function wlModalClose() {{
+    document.getElementById('wl-modal-overlay').style.display = 'none';
+    document.getElementById('wl-modal').style.display = 'none';
   }}
 
   var calendar; // outer scope so calOpenNewNoteModal can call calendar.addEvent()
@@ -2100,7 +2195,7 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
         tail = ac['tail']
         ah   = f"{ac['airframe_hrs']:,.1f}" if ac['airframe_hrs'] else 'N/A'
         loc_badge = get_location_badge(tail, positions)
-        cells = f'<td><div class="tail-number">{tail}{loc_badge}</div><div class="airframe-hrs">{ah} TT</div></td>'
+        cells = f'<td onclick="wlOpenModal(\'{tail}\')" style="cursor:pointer;" title="Open watch list for {tail}"><div class="tail-number">{tail}{loc_badge}</div><div class="airframe-hrs">{ah} TT</div></td>'
         for i in _target:
             cells += f'<td class="hr-cell">{fmt_hrs(ac["intervals"].get(i))}</td>'
         table_rows_html += f'<tr data-tail="{tail}">{cells}</tr>\n'
