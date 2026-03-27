@@ -1613,7 +1613,7 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
       return '<div style="border:1px solid var(--border);border-radius:4px;padding:8px 32px 8px 10px;margin-bottom:6px;position:relative;">' +
         '<div style="color:var(--text);font-size:12px;line-height:1.5;white-space:pre-wrap;">' + wlEsc(n.note) + '</div>' +
         '<div style="color:var(--muted);font-size:10px;margin-top:4px;">' + new Date(n.timestamp).toLocaleString() + '</div>' +
-        '<button onclick="wlDeleteNote(\'' + n.id + '\',\'' + wlEsc(tail) + '\')" ' +
+        '<button onclick="wlDeleteNote(\\'' + n.id + '\\',\\'' + wlEsc(tail) + '\\')" ' +
           'style="position:absolute;top:5px;right:8px;background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;line-height:1;" ' +
           'title="Delete note">\u00d7</button>' +
         '</div>';
@@ -1627,7 +1627,7 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
 
     document.getElementById('wl-modal-footer').innerHTML =
       '<button class="cal-modal-btn" onclick="wlModalClose()">Close</button>' +
-      '<button class="cal-modal-btn cal-modal-btn-primary" onclick="wlSaveNote(\'' + wlEsc(tail) + '\')">Add Note</button>';
+      '<button class="cal-modal-btn cal-modal-btn-primary" onclick="wlSaveNote(\\'' + wlEsc(tail) + '\\')">Add Note</button>';
   }}
 
   function wlSaveNote(tail) {{
