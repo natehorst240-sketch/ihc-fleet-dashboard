@@ -219,7 +219,7 @@
   </div>
   <div class="header-meta">
     <div class="date">REPORT DATE: 20 FEB 2026</div>
-    <div>FLEET: 9 AIRCRAFT &nbsp;|&nbsp; 1 AIRBORNE &nbsp;|&nbsp; 5 AT BASE &nbsp;|&nbsp; GENERATED: 30 MAR 2026 10:55</div>
+    <div>FLEET: 9 AIRCRAFT &nbsp;|&nbsp; 0 AIRBORNE &nbsp;|&nbsp; 6 AT BASE &nbsp;|&nbsp; GENERATED: 30 MAR 2026 11:07</div>
     <button id="pwa-install-btn" style="display:none;margin-top:6px;font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;padding:5px 12px;background:transparent;border:1px solid var(--blue);color:var(--blue);border-radius:2px;cursor:pointer;align-items:center;gap:6px;" title="Install as app on your device">
       &#x2B07; ADD TO HOME SCREEN
     </button>
@@ -254,10 +254,10 @@
   <div id="tab-maintenance" class="tab-content active">
     <div class="summary-bar">
       <div class="summary-stat"><div class="stat-value" style="color:var(--blue)">9</div><div class="divider-line" style="background:var(--blue)"></div><div class="stat-label">Aircraft</div></div>
-      <div class="summary-stat"><div class="stat-value" style="color:var(--blue)">1</div><div class="divider-line" style="background:var(--blue)"></div><div class="stat-label">Airborne</div></div>
-      <div class="summary-stat"><div class="stat-value" style="color:var(--green)">5</div><div class="divider-line" style="background:var(--green)"></div><div class="stat-label">At Base</div></div>
-      <div class="summary-stat stat-clickable" title="Click to filter Critical &amp; Overdue" onclick="applyFilterCriticalOD()"><div class="stat-value" style="color:var(--red)">4</div><div class="divider-line" style="background:var(--red)"></div><div class="stat-label">Insp. Critical / OD</div></div>
-      <div class="summary-stat stat-clickable" title="Click to filter Coming Due" onclick="applyFilter('coming')"><div class="stat-value" style="color:var(--amber)">20</div><div class="divider-line" style="background:var(--amber)"></div><div class="stat-label">Insp. Coming Due</div></div>
+      <div class="summary-stat"><div class="stat-value" style="color:var(--blue)">0</div><div class="divider-line" style="background:var(--blue)"></div><div class="stat-label">Airborne</div></div>
+      <div class="summary-stat"><div class="stat-value" style="color:var(--green)">6</div><div class="divider-line" style="background:var(--green)"></div><div class="stat-label">At Base</div></div>
+      <div class="summary-stat stat-clickable" title="Click to filter Critical &amp; Overdue" onclick="applyFilterCriticalOD()"><div class="stat-value" style="color:var(--red)">5</div><div class="divider-line" style="background:var(--red)"></div><div class="stat-label">Insp. Critical / OD</div></div>
+      <div class="summary-stat stat-clickable" title="Click to filter Coming Due" onclick="applyFilter('coming')"><div class="stat-value" style="color:var(--amber)">19</div><div class="divider-line" style="background:var(--amber)"></div><div class="stat-label">Insp. Coming Due</div></div>
       <div class="summary-stat"><div class="stat-value" style="color:var(--overdue)">1</div><div class="divider-line" style="background:var(--overdue)"></div><div class="stat-label">Components Overdue</div></div>
     </div>
     <div class="chart-card">
@@ -281,13 +281,13 @@
           </tr>
         </thead>
         <tbody id="insp-tbody">
-<tr data-tail="N251HC"><td onclick="wlOpenModal('N251HC')" style="cursor:pointer;" title="Open watch list for N251HC"><div class="tail-number">N251HC<span class="location-badge location-at-base">At St. George base</span></div><div class="airframe-hrs">6,097.2 TT</div></td><td class="hr-cell"><span class="hr-badge hr-overdue">OVRD 7</span></td><td class="hr-cell"><span class="hr-badge hr-amber">43.4</span></td><td class="hr-cell"><span class="hr-badge hr-amber">46.0</span></td><td class="hr-cell"><span class="hr-badge hr-green">246.0</span></td><td class="hr-cell"><span class="hr-badge hr-green">256.7</span></td><td class="hr-cell"><span class="hr-badge hr-green">1058.9</span></td><td class="hr-cell"><span class="hr-badge hr-green">238.4</span></td></tr>
-<tr data-tail="N261HC"><td onclick="wlOpenModal('N261HC')" style="cursor:pointer;" title="Open watch list for N261HC"><div class="tail-number">N261HC<span class="location-badge location-active">airborne 6030.0ft</span></div><div class="airframe-hrs">6,103.9 TT</div></td><td class="hr-cell"><span class="hr-badge hr-amber">33.5</span></td><td class="hr-cell"><span class="hr-badge hr-amber">33.5</span></td><td class="hr-cell"><span class="hr-badge hr-amber">32.0</span></td><td class="hr-cell"><span class="hr-badge hr-green">232.0</span></td><td class="hr-cell"><span class="hr-badge hr-green">227.3</span></td><td class="hr-cell"><span class="hr-badge hr-green">1036.3</span></td><td class="hr-cell"><span class="hr-badge hr-green">270.4</span></td></tr>
-<tr data-tail="N271HC"><td onclick="wlOpenModal('N271HC')" style="cursor:pointer;" title="Open watch list for N271HC"><div class="tail-number">N271HC<span class="location-badge location-at-base">At Roosevelt base</span></div><div class="airframe-hrs">6,989.5 TT</div></td><td class="hr-cell"><span class="hr-badge hr-amber">25.3</span></td><td class="hr-cell"><span class="hr-badge hr-amber">25.4</span></td><td class="hr-cell"><span class="hr-badge hr-green">125.4</span></td><td class="hr-cell"><span class="hr-badge hr-green">153.4</span></td><td class="hr-cell"><span class="hr-badge hr-green">162.7</span></td><td class="hr-cell"><span class="hr-badge hr-green">148.2</span></td><td class="hr-cell"><span class="hr-badge hr-green">2562.7</span></td></tr>
-<tr data-tail="N281HC"><td onclick="wlOpenModal('N281HC')" style="cursor:pointer;" title="Open watch list for N281HC"><div class="tail-number">N281HC<span class="location-badge location-at-base">At IMED base</span></div><div class="airframe-hrs">6,552.5 TT</div></td><td class="hr-cell"><span class="hr-badge hr-red">17.4</span></td><td class="hr-cell"><span class="hr-badge hr-amber">67.4</span></td><td class="hr-cell"><span class="hr-badge hr-green">167.4</span></td><td class="hr-cell"><span class="hr-badge hr-green">167.8</span></td><td class="hr-cell"><span class="hr-badge hr-green">567.8</span></td><td class="hr-cell"><span class="hr-badge hr-green">171.3</span></td><td class="hr-cell"><span class="hr-badge hr-green">2967.8</span></td></tr>
-<tr data-tail="N291HC"><td onclick="wlOpenModal('N291HC')" style="cursor:pointer;" title="Open watch list for N291HC"><div class="tail-number">N291HC<span class="location-badge location-at-base">At Mckay base</span></div><div class="airframe-hrs">5,922.8 TT</div></td><td class="hr-cell"><span class="hr-badge hr-amber">32.9</span></td><td class="hr-cell"><span class="hr-badge hr-amber">32.7</span></td><td class="hr-cell"><span class="hr-badge hr-amber">33.4</span></td><td class="hr-cell"><span class="hr-badge hr-amber">37.8</span></td><td class="hr-cell"><span class="hr-badge hr-green">437.8</span></td><td class="hr-cell"><span class="hr-badge hr-green">1242.3</span></td><td class="hr-cell"><span class="hr-badge hr-green">449.4</span></td></tr>
-<tr data-tail="N431HC"><td onclick="wlOpenModal('N431HC')" style="cursor:pointer;" title="Open watch list for N431HC"><div class="tail-number">N431HC<span class="location-badge location-at-base">At Logan base</span></div><div class="airframe-hrs">2,028.7 TT</div></td><td class="hr-cell"><span class="hr-badge hr-red">3.2</span></td><td class="hr-cell"><span class="hr-badge hr-amber">53.2</span></td><td class="hr-cell"><span class="hr-badge hr-green">153.2</span></td><td class="hr-cell"><span class="hr-badge hr-green">353.2</span></td><td class="hr-cell"><span class="hr-badge hr-green">360.0</span></td><td class="hr-cell"><span class="hr-badge hr-green">371.3</span></td><td class="hr-cell"><span class="hr-badge hr-green">1171.3</span></td></tr>
-<tr data-tail="N531HC"><td onclick="wlOpenModal('N531HC')" style="cursor:pointer;" title="Open watch list for N531HC"><div class="tail-number">N531HC</div><div class="airframe-hrs">3,359.8 TT</div></td><td class="hr-cell"><span class="hr-badge hr-red">16.3</span></td><td class="hr-cell"><span class="hr-badge hr-amber">66.3</span></td><td class="hr-cell"><span class="hr-badge hr-amber">68.7</span></td><td class="hr-cell"><span class="hr-badge hr-amber">71.1</span></td><td class="hr-cell"><span class="hr-badge hr-green">471.1</span></td><td class="hr-cell"><span class="hr-badge hr-green">1362.9</span></td><td class="hr-cell"><span class="hr-badge hr-green">2871.1</span></td></tr>
+<tr data-tail="N251HC"><td onclick="wlOpenModal('N251HC')" style="cursor:pointer;" title="Open watch list for N251HC"><div class="tail-number">N251HC<span class="location-badge location-at-base">At St. George base</span></div><div class="airframe-hrs">6,098.9 TT</div></td><td class="hr-cell"><span class="hr-badge hr-amber">48.4</span></td><td class="hr-cell"><span class="hr-badge hr-amber">41.7</span></td><td class="hr-cell"><span class="hr-badge hr-amber">44.3</span></td><td class="hr-cell"><span class="hr-badge hr-green">244.3</span></td><td class="hr-cell"><span class="hr-badge hr-green">255.0</span></td><td class="hr-cell"><span class="hr-badge hr-green">1057.2</span></td><td class="hr-cell"><span class="hr-badge hr-green">236.7</span></td></tr>
+<tr data-tail="N261HC"><td onclick="wlOpenModal('N261HC')" style="cursor:pointer;" title="Open watch list for N261HC"><div class="tail-number">N261HC<span class="location-badge location-at-base">At St. George base</span></div><div class="airframe-hrs">6,108.7 TT</div></td><td class="hr-cell"><span class="hr-badge hr-amber">28.7</span></td><td class="hr-cell"><span class="hr-badge hr-amber">28.7</span></td><td class="hr-cell"><span class="hr-badge hr-amber">27.2</span></td><td class="hr-cell"><span class="hr-badge hr-green">227.2</span></td><td class="hr-cell"><span class="hr-badge hr-green">222.5</span></td><td class="hr-cell"><span class="hr-badge hr-green">1031.5</span></td><td class="hr-cell"><span class="hr-badge hr-green">265.6</span></td></tr>
+<tr data-tail="N271HC"><td onclick="wlOpenModal('N271HC')" style="cursor:pointer;" title="Open watch list for N271HC"><div class="tail-number">N271HC<span class="location-badge location-at-base">At Roosevelt base</span></div><div class="airframe-hrs">6,993.1 TT</div></td><td class="hr-cell"><span class="hr-badge hr-red">21.7</span></td><td class="hr-cell"><span class="hr-badge hr-red">21.8</span></td><td class="hr-cell"><span class="hr-badge hr-green">121.8</span></td><td class="hr-cell"><span class="hr-badge hr-green">149.8</span></td><td class="hr-cell"><span class="hr-badge hr-green">159.1</span></td><td class="hr-cell"><span class="hr-badge hr-green">144.6</span></td><td class="hr-cell"><span class="hr-badge hr-green">2559.1</span></td></tr>
+<tr data-tail="N281HC"><td onclick="wlOpenModal('N281HC')" style="cursor:pointer;" title="Open watch list for N281HC"><div class="tail-number">N281HC<span class="location-badge location-at-base">At IMED base</span></div><div class="airframe-hrs">6,553.6 TT</div></td><td class="hr-cell"><span class="hr-badge hr-red">16.3</span></td><td class="hr-cell"><span class="hr-badge hr-amber">66.3</span></td><td class="hr-cell"><span class="hr-badge hr-green">166.3</span></td><td class="hr-cell"><span class="hr-badge hr-green">166.7</span></td><td class="hr-cell"><span class="hr-badge hr-green">566.7</span></td><td class="hr-cell"><span class="hr-badge hr-green">170.2</span></td><td class="hr-cell"><span class="hr-badge hr-green">2966.7</span></td></tr>
+<tr data-tail="N291HC"><td onclick="wlOpenModal('N291HC')" style="cursor:pointer;" title="Open watch list for N291HC"><div class="tail-number">N291HC<span class="location-badge location-at-base">At Mckay base</span></div><div class="airframe-hrs">5,923.4 TT</div></td><td class="hr-cell"><span class="hr-badge hr-amber">32.3</span></td><td class="hr-cell"><span class="hr-badge hr-amber">32.1</span></td><td class="hr-cell"><span class="hr-badge hr-amber">32.8</span></td><td class="hr-cell"><span class="hr-badge hr-amber">37.2</span></td><td class="hr-cell"><span class="hr-badge hr-green">437.2</span></td><td class="hr-cell"><span class="hr-badge hr-green">1241.7</span></td><td class="hr-cell"><span class="hr-badge hr-green">448.8</span></td></tr>
+<tr data-tail="N431HC"><td onclick="wlOpenModal('N431HC')" style="cursor:pointer;" title="Open watch list for N431HC"><div class="tail-number">N431HC<span class="location-badge location-at-base">At Logan base</span></div><div class="airframe-hrs">2,029.0 TT</div></td><td class="hr-cell"><span class="hr-badge hr-red">2.9</span></td><td class="hr-cell"><span class="hr-badge hr-amber">52.9</span></td><td class="hr-cell"><span class="hr-badge hr-green">152.9</span></td><td class="hr-cell"><span class="hr-badge hr-green">352.9</span></td><td class="hr-cell"><span class="hr-badge hr-green">359.7</span></td><td class="hr-cell"><span class="hr-badge hr-green">371.0</span></td><td class="hr-cell"><span class="hr-badge hr-green">1171.0</span></td></tr>
+<tr data-tail="N531HC"><td onclick="wlOpenModal('N531HC')" style="cursor:pointer;" title="Open watch list for N531HC"><div class="tail-number">N531HC</div><div class="airframe-hrs">3,361.8 TT</div></td><td class="hr-cell"><span class="hr-badge hr-red">14.3</span></td><td class="hr-cell"><span class="hr-badge hr-amber">64.3</span></td><td class="hr-cell"><span class="hr-badge hr-amber">66.7</span></td><td class="hr-cell"><span class="hr-badge hr-amber">69.1</span></td><td class="hr-cell"><span class="hr-badge hr-green">469.1</span></td><td class="hr-cell"><span class="hr-badge hr-green">1360.9</span></td><td class="hr-cell"><span class="hr-badge hr-green">2869.1</span></td></tr>
 <tr data-tail="N631HC"><td onclick="wlOpenModal('N631HC')" style="cursor:pointer;" title="Open watch list for N631HC"><div class="tail-number">N631HC</div><div class="airframe-hrs">1,850.8 TT</div></td><td class="hr-cell"><span class="hr-badge hr-amber">46.3</span></td><td class="hr-cell"><span class="hr-badge hr-amber">79.1</span></td><td class="hr-cell"><span class="hr-badge hr-green">147.6</span></td><td class="hr-cell"><span class="hr-badge hr-green">148.2</span></td><td class="hr-cell"><span class="hr-badge hr-green">548.2</span></td><td class="hr-cell"><span class="hr-badge hr-green">549.2</span></td><td class="hr-cell"><span class="hr-badge hr-green">1349.2</span></td></tr>
 <tr data-tail="N731HC"><td onclick="wlOpenModal('N731HC')" style="cursor:pointer;" title="Open watch list for N731HC"><div class="tail-number">N731HC</div><div class="airframe-hrs">20.6 TT</div></td><td class="hr-cell"><span class="hr-badge hr-amber">29.4</span></td><td class="hr-cell"><span class="hr-badge hr-amber">79.4</span></td><td class="hr-cell"><span class="hr-badge hr-green">179.4</span></td><td class="hr-cell"><span class="hr-badge hr-green">379.4</span></td><td class="hr-cell"><span class="hr-badge hr-green">779.4</span></td><td class="hr-cell"><span class="hr-badge hr-green">2379.4</span></td><td class="hr-cell"><span class="hr-badge hr-green">3179.4</span></td></tr>
 
@@ -298,133 +298,133 @@
     <div class="components-grid"><div class="aircraft-panel">
   <div class="panel-header">
     <div class="panel-tail">N251HC</div>
-    <div class="panel-hours">6097.2 TT</div>
+    <div class="panel-hours">6098.9 TT</div>
   </div>
   <div class="component-row">
   <div class="comp-indicator comp-amber"></div>
   <div class="comp-info">
     <div class="comp-name" title="Main Rotor Dampers Overhaul - #2">Main Rotor Dampers Overhaul - #2 <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--amber)">51.2 hrs remaining</div>
+    <div class="comp-hrs" style="color:var(--amber)">49.5 hrs remaining</div>
   </div>
 </div>
 </div><div class="aircraft-panel">
   <div class="panel-header">
     <div class="panel-tail">N261HC</div>
-    <div class="panel-hours">6103.9 TT</div>
+    <div class="panel-hours">6108.7 TT</div>
   </div>
   <div class="component-row">
   <div class="comp-indicator comp-amber"></div>
   <div class="comp-info">
     <div class="comp-name" title="Tail Rotor Servo Actuator Assembly - Overhaul [67-04]">Tail Rotor Servo Actuator Assembly - Overhaul [67-04] <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--amber)">38.1 hrs remaining</div>
+    <div class="comp-hrs" style="color:var(--amber)">33.3 hrs remaining</div>
   </div>
 </div>
 </div><div class="aircraft-panel">
   <div class="panel-header">
     <div class="panel-tail">N271HC</div>
-    <div class="panel-hours">6989.5 TT</div>
+    <div class="panel-hours">6993.1 TT</div>
   </div>
   <div class="component-row">
   <div class="comp-indicator comp-green"></div>
   <div class="comp-info">
     <div class="comp-name" title="Main Rotor Dampers Overhaul - #4">Main Rotor Dampers Overhaul - #4 <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--green)">124.2 hrs remaining</div>
+    <div class="comp-hrs" style="color:var(--green)">120.6 hrs remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-green"></div>
   <div class="comp-info">
     <div class="comp-name" title="Fuel Filter Element - Discard [28-01] - #1">Fuel Filter Element - Discard [28-01] - #1 <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--green)">153.4 hrs remaining</div>
+    <div class="comp-hrs" style="color:var(--green)">149.8 hrs remaining</div>
   </div>
 </div>
 </div><div class="aircraft-panel">
   <div class="panel-header">
     <div class="panel-tail">N281HC</div>
-    <div class="panel-hours">6552.5 TT</div>
+    <div class="panel-hours">6553.6 TT</div>
   </div>
   <div class="component-row">
   <div class="comp-indicator comp-green"></div>
   <div class="comp-info">
     <div class="comp-name" title="Efis Cooling Fan - Overhaul [21-03] - #3">Efis Cooling Fan - Overhaul [21-03] - #3</div>
-    <div class="comp-hrs" style="color:var(--green)">128.4 hrs remaining</div>
+    <div class="comp-hrs" style="color:var(--green)">127.3 hrs remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-green"></div>
   <div class="comp-info">
     <div class="comp-name" title="Fuel Filter Element - Discard [28-01] - #1">Fuel Filter Element - Discard [28-01] - #1 <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--green)">167.8 hrs remaining</div>
+    <div class="comp-hrs" style="color:var(--green)">166.7 hrs remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-green"></div>
   <div class="comp-info">
     <div class="comp-name" title="Torque Tube Clamp Assembly Left - Retirement">Torque Tube Clamp Assembly Left - Retirement <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--green)">186.2 hrs remaining</div>
+    <div class="comp-hrs" style="color:var(--green)">185.1 hrs remaining</div>
   </div>
 </div>
 </div><div class="aircraft-panel">
   <div class="panel-header">
     <div class="panel-tail">N291HC</div>
-    <div class="panel-hours">5922.8 TT</div>
+    <div class="panel-hours">5923.4 TT</div>
   </div>
   <div class="component-row">
   <div class="comp-indicator comp-red"></div>
   <div class="comp-info">
     <div class="comp-name" title="Rescue Hoist Assy - Drain And Replace Gearbox Lube Oil Mil - Prf-23699">Rescue Hoist Assy - Drain And Replace Gearbox Lube Oil Mil - Prf-23699 <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--red)">1 days remaining</div>
+    <div class="comp-hrs" style="color:var(--red)">0 days remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-amber"></div>
   <div class="comp-info">
     <div class="comp-name" title="Fuel Filter Element - Discard [28-01] - #1">Fuel Filter Element - Discard [28-01] - #1 <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--amber)">37.8 hrs remaining</div>
+    <div class="comp-hrs" style="color:var(--amber)">37.2 hrs remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-amber"></div>
   <div class="comp-info">
     <div class="comp-name" title="Efis Cooling Fan - Overhaul [21-03] - #1">Efis Cooling Fan - Overhaul [21-03] - #1</div>
-    <div class="comp-hrs" style="color:var(--amber)">48.7 hrs remaining</div>
+    <div class="comp-hrs" style="color:var(--amber)">48.1 hrs remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-amber"></div>
   <div class="comp-info">
     <div class="comp-name" title="Efis Cooling Fan - Overhaul [21-03] - #2">Efis Cooling Fan - Overhaul [21-03] - #2</div>
-    <div class="comp-hrs" style="color:var(--amber)">48.7 hrs remaining</div>
+    <div class="comp-hrs" style="color:var(--amber)">48.1 hrs remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-amber"></div>
   <div class="comp-info">
     <div class="comp-name" title="Overhaul Of Rescue Hoist S/N 40336">Overhaul Of Rescue Hoist S/N 40336 <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--amber)">79.9 hrs remaining</div>
+    <div class="comp-hrs" style="color:var(--amber)">79.8 hrs remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-green"></div>
   <div class="comp-info">
     <div class="comp-name" title="Main Rotor Dampers Overhaul - #4">Main Rotor Dampers Overhaul - #4 <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--green)">137.1 hrs remaining</div>
+    <div class="comp-hrs" style="color:var(--green)">136.5 hrs remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-green"></div>
   <div class="comp-info">
     <div class="comp-name" title="Starter Generator - Overhaul [24-01] - #2 (Pn 200Sgl147Q-3, - 4)">Starter Generator - Overhaul [24-01] - #2 (Pn 200Sgl147Q-3, - 4) <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--green)">138.2 hrs remaining</div>
+    <div class="comp-hrs" style="color:var(--green)">137.6 hrs remaining</div>
   </div>
 </div>
 </div><div class="aircraft-panel">
   <div class="panel-header">
     <div class="panel-tail">N431HC</div>
-    <div class="panel-hours">2028.7 TT</div>
+    <div class="panel-hours">2029.0 TT</div>
   </div>
   <div class="component-row">
   <div class="comp-indicator comp-green"></div>
   <div class="comp-info">
     <div class="comp-name" title="Fuel Filter Element - Discard [28-01]- #1">Fuel Filter Element - Discard [28-01]- #1 <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--green)">165.4 hrs remaining</div>
+    <div class="comp-hrs" style="color:var(--green)">165.1 hrs remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-green"></div>
   <div class="comp-info">
     <div class="comp-name" title="Fuel Filter Element - Discard [28-01] #2">Fuel Filter Element - Discard [28-01] #2 <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--green)">165.4 hrs remaining</div>
+    <div class="comp-hrs" style="color:var(--green)">165.1 hrs remaining</div>
   </div>
 </div>
 </div><div class="aircraft-panel">
@@ -466,13 +466,13 @@
   <div class="comp-indicator comp-overdue"></div>
   <div class="comp-info">
     <div class="comp-name" title="24 Month Replacement Of Digital Pilot/Co-Pilot Clock Battery "Aaa" Size Akaline Battery Commercial Available">24 Month Replacement Of Digital Pilot/Co-Pilot Clock Battery "Aaa" Size Akaline Battery Commercial Available</div>
-    <div class="comp-hrs" style="color:var(--overdue)">OVERDUE - 29 days past limit</div>
+    <div class="comp-hrs" style="color:var(--overdue)">OVERDUE - 30 days past limit</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-red"></div>
   <div class="comp-info">
     <div class="comp-name" title="Fire Extinguishing Cartridges - Discard [26-02] - #3">Fire Extinguishing Cartridges - Discard [26-02] - #3 <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--red)">2 days remaining</div>
+    <div class="comp-hrs" style="color:var(--red)">1 days remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-overdue"></div>
@@ -494,72 +494,72 @@
     <div class="hours-grid"><div class="hours-card">
   <div class="hours-card-header">
     <div class="hours-card-tail">N251HC</div>
-    <div class="hours-card-current">6,097.2 TT</div>
+    <div class="hours-card-current">6,098.9 TT</div>
   </div>
   <div class="hours-card-body">
-    <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div><div class="hours-stat-value">1.78 hrs</div></div>
-    <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div><div class="hours-stat-value">12.4 hrs</div></div>
-    <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div><div class="hours-stat-value">53.3 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div><div class="hours-stat-value">1.83 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div><div class="hours-stat-value">12.8 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div><div class="hours-stat-value">55.0 hrs</div></div>
   </div>
 </div><div class="hours-card">
   <div class="hours-card-header">
     <div class="hours-card-tail">N261HC</div>
-    <div class="hours-card-current">6,103.9 TT</div>
+    <div class="hours-card-current">6,108.7 TT</div>
   </div>
   <div class="hours-card-body">
-    <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div><div class="hours-stat-value">1.01 hrs</div></div>
-    <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div><div class="hours-stat-value">7.0 hrs</div></div>
-    <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div><div class="hours-stat-value">30.2 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div><div class="hours-stat-value">1.17 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div><div class="hours-stat-value">8.2 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div><div class="hours-stat-value">35.0 hrs</div></div>
   </div>
 </div><div class="hours-card">
   <div class="hours-card-header">
     <div class="hours-card-tail">N271HC</div>
-    <div class="hours-card-current">6,989.5 TT</div>
+    <div class="hours-card-current">6,993.1 TT</div>
   </div>
   <div class="hours-card-body">
-    <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div><div class="hours-stat-value">0.68 hrs</div></div>
-    <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div><div class="hours-stat-value">4.8 hrs</div></div>
-    <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div><div class="hours-stat-value">20.5 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div><div class="hours-stat-value">0.80 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div><div class="hours-stat-value">5.6 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div><div class="hours-stat-value">24.1 hrs</div></div>
   </div>
 </div><div class="hours-card">
   <div class="hours-card-header">
     <div class="hours-card-tail">N281HC</div>
-    <div class="hours-card-current">6,552.5 TT</div>
+    <div class="hours-card-current">6,553.6 TT</div>
   </div>
   <div class="hours-card-body">
-    <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div><div class="hours-stat-value">1.93 hrs</div></div>
-    <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div><div class="hours-stat-value">13.5 hrs</div></div>
-    <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div><div class="hours-stat-value">57.8 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div><div class="hours-stat-value">1.96 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div><div class="hours-stat-value">13.7 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div><div class="hours-stat-value">58.9 hrs</div></div>
   </div>
 </div><div class="hours-card">
   <div class="hours-card-header">
     <div class="hours-card-tail">N291HC</div>
-    <div class="hours-card-current">5,922.8 TT</div>
+    <div class="hours-card-current">5,923.4 TT</div>
   </div>
   <div class="hours-card-body">
-    <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div><div class="hours-stat-value">1.14 hrs</div></div>
-    <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div><div class="hours-stat-value">8.0 hrs</div></div>
-    <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div><div class="hours-stat-value">34.3 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div><div class="hours-stat-value">1.16 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div><div class="hours-stat-value">8.1 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div><div class="hours-stat-value">34.9 hrs</div></div>
   </div>
 </div><div class="hours-card">
   <div class="hours-card-header">
     <div class="hours-card-tail">N431HC</div>
-    <div class="hours-card-current">2,028.7 TT</div>
+    <div class="hours-card-current">2,029.0 TT</div>
   </div>
   <div class="hours-card-body">
-    <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div><div class="hours-stat-value">1.00 hrs</div></div>
-    <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div><div class="hours-stat-value">7.0 hrs</div></div>
-    <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div><div class="hours-stat-value">30.0 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div><div class="hours-stat-value">1.01 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div><div class="hours-stat-value">7.1 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div><div class="hours-stat-value">30.3 hrs</div></div>
   </div>
 </div><div class="hours-card">
   <div class="hours-card-header">
     <div class="hours-card-tail">N531HC</div>
-    <div class="hours-card-current">3,359.8 TT</div>
+    <div class="hours-card-current">3,361.8 TT</div>
   </div>
   <div class="hours-card-body">
-    <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div><div class="hours-stat-value">1.34 hrs</div></div>
-    <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div><div class="hours-stat-value">9.4 hrs</div></div>
-    <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div><div class="hours-stat-value">40.1 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div><div class="hours-stat-value">1.40 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div><div class="hours-stat-value">9.8 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div><div class="hours-stat-value">42.1 hrs</div></div>
   </div>
 </div><div class="hours-card">
   <div class="hours-card-header">
@@ -964,7 +964,7 @@
 
 <script>
 (function () {
-  var MAINT = [{"tail": "N251HC", "interval": 50, "intervalLabel": "50 HR", "dueDate": "2026-03-30", "durationDays": 1, "remLabel": "6.6 hrs PAST LIMIT", "color": "#00897b"}, {"tail": "N251HC", "interval": 100, "intervalLabel": "100 HR", "dueDate": "2026-04-23", "durationDays": 1, "remLabel": "43.4 hrs remaining (~24.4 days)", "color": "#1e88e5"}, {"tail": "N251HC", "interval": 200, "intervalLabel": "200 HR", "dueDate": "2026-04-24", "durationDays": 3, "remLabel": "46.0 hrs remaining (~25.9 days)", "color": "#8e24aa"}, {"tail": "N251HC", "interval": 400, "intervalLabel": "400 HR", "dueDate": "2026-08-15", "durationDays": 4, "remLabel": "246.0 hrs remaining (~138.5 days)", "color": "#e53935"}, {"tail": "N251HC", "interval": 800, "intervalLabel": "800 HR", "dueDate": "2026-08-21", "durationDays": 4, "remLabel": "256.7 hrs remaining (~144.5 days)", "color": "#fb8c00"}, {"tail": "N251HC", "interval": 2400, "intervalLabel": "2400 HR", "dueDate": "2027-11-16", "durationDays": 7, "remLabel": "1058.9 hrs remaining (~596.0 days)", "color": "#43a047"}, {"tail": "N251HC", "interval": 3200, "intervalLabel": "3200 HR", "dueDate": "2026-08-11", "durationDays": 21, "remLabel": "238.4 hrs remaining (~134.2 days)", "color": "#6d4c41"}, {"tail": "N261HC", "interval": 50, "intervalLabel": "50 HR", "dueDate": "2026-05-02", "durationDays": 1, "remLabel": "33.5 hrs remaining (~33.3 days) \u00b7 earlier than ~1 mo 18 days remaining", "color": "#00897b"}, {"tail": "N261HC", "interval": 100, "intervalLabel": "100 HR", "dueDate": "2026-05-02", "durationDays": 1, "remLabel": "33.5 hrs remaining (~33.3 days)", "color": "#1e88e5"}, {"tail": "N261HC", "interval": 200, "intervalLabel": "200 HR", "dueDate": "2026-04-30", "durationDays": 3, "remLabel": "32.0 hrs remaining (~31.8 days)", "color": "#8e24aa"}, {"tail": "N261HC", "interval": 400, "intervalLabel": "400 HR", "dueDate": "2026-11-15", "durationDays": 4, "remLabel": "232.0 hrs remaining (~230.5 days)", "color": "#e53935"}, {"tail": "N261HC", "interval": 800, "intervalLabel": "800 HR", "dueDate": "2026-11-10", "durationDays": 4, "remLabel": "227.3 hrs remaining (~225.8 days)", "color": "#fb8c00"}, {"tail": "N261HC", "interval": 2400, "intervalLabel": "2400 HR", "dueDate": "2029-01-22", "durationDays": 7, "remLabel": "1036.3 hrs remaining (~1029.4 days)", "color": "#43a047"}, {"tail": "N261HC", "interval": 3200, "intervalLabel": "3200 HR", "dueDate": "2026-12-23", "durationDays": 21, "remLabel": "270.4 hrs remaining (~268.6 days)", "color": "#6d4c41"}, {"tail": "N271HC", "interval": 50, "intervalLabel": "50 HR", "dueDate": "2026-04-25", "durationDays": 1, "remLabel": "~26 days remaining \u00b7 25.3 hrs remaining", "color": "#00897b"}, {"tail": "N271HC", "interval": 100, "intervalLabel": "100 HR", "dueDate": "2026-05-06", "durationDays": 1, "remLabel": "25.4 hrs remaining (~37.2 days)", "color": "#1e88e5"}, {"tail": "N271HC", "interval": 200, "intervalLabel": "200 HR", "dueDate": "2026-09-29", "durationDays": 3, "remLabel": "125.4 hrs remaining (~183.5 days)", "color": "#8e24aa"}, {"tail": "N271HC", "interval": 400, "intervalLabel": "400 HR", "dueDate": "2026-11-09", "durationDays": 4, "remLabel": "153.4 hrs remaining (~224.5 days)", "color": "#e53935"}, {"tail": "N271HC", "interval": 800, "intervalLabel": "800 HR", "dueDate": "2026-11-23", "durationDays": 4, "remLabel": "162.7 hrs remaining (~238.1 days)", "color": "#fb8c00"}, {"tail": "N271HC", "interval": 2400, "intervalLabel": "2400 HR", "dueDate": "2026-11-01", "durationDays": 7, "remLabel": "148.2 hrs remaining (~216.9 days)", "color": "#43a047"}, {"tail": "N271HC", "interval": 3200, "intervalLabel": "3200 HR", "dueDate": "2036-07-05", "durationDays": 21, "remLabel": "2562.7 hrs remaining (~3750.3 days)", "color": "#6d4c41"}, {"tail": "N281HC", "interval": 50, "intervalLabel": "50 HR", "dueDate": "2026-04-08", "durationDays": 1, "remLabel": "17.4 hrs remaining (~9.0 days) \u00b7 earlier than ~1 mo 18 days remaining", "color": "#00897b"}, {"tail": "N281HC", "interval": 100, "intervalLabel": "100 HR", "dueDate": "2026-05-03", "durationDays": 1, "remLabel": "67.4 hrs remaining (~35.0 days)", "color": "#1e88e5"}, {"tail": "N281HC", "interval": 200, "intervalLabel": "200 HR", "dueDate": "2026-06-24", "durationDays": 3, "remLabel": "167.4 hrs remaining (~86.9 days)", "color": "#8e24aa"}, {"tail": "N281HC", "interval": 400, "intervalLabel": "400 HR", "dueDate": "2026-06-25", "durationDays": 4, "remLabel": "167.8 hrs remaining (~87.1 days)", "color": "#e53935"}, {"tail": "N281HC", "interval": 800, "intervalLabel": "800 HR", "dueDate": "2027-01-18", "durationDays": 4, "remLabel": "567.8 hrs remaining (~294.7 days)", "color": "#fb8c00"}, {"tail": "N281HC", "interval": 2400, "intervalLabel": "2400 HR", "dueDate": "2026-06-26", "durationDays": 7, "remLabel": "171.3 hrs remaining (~88.9 days)", "color": "#43a047"}, {"tail": "N281HC", "interval": 3200, "intervalLabel": "3200 HR", "dueDate": "2030-06-17", "durationDays": 21, "remLabel": "2967.8 hrs remaining (~1540.4 days)", "color": "#6d4c41"}, {"tail": "N291HC", "interval": 50, "intervalLabel": "50 HR", "dueDate": "2026-04-27", "durationDays": 1, "remLabel": "32.9 hrs remaining (~28.8 days) \u00b7 earlier than ~1 mo 19 days remaining", "color": "#00897b"}, {"tail": "N291HC", "interval": 100, "intervalLabel": "100 HR", "dueDate": "2026-04-27", "durationDays": 1, "remLabel": "32.7 hrs remaining (~28.6 days)", "color": "#1e88e5"}, {"tail": "N291HC", "interval": 200, "intervalLabel": "200 HR", "dueDate": "2026-04-28", "durationDays": 3, "remLabel": "33.4 hrs remaining (~29.2 days)", "color": "#8e24aa"}, {"tail": "N291HC", "interval": 400, "intervalLabel": "400 HR", "dueDate": "2026-05-02", "durationDays": 4, "remLabel": "37.8 hrs remaining (~33.1 days)", "color": "#e53935"}, {"tail": "N291HC", "interval": 800, "intervalLabel": "800 HR", "dueDate": "2027-04-16", "durationDays": 4, "remLabel": "437.8 hrs remaining (~382.9 days)", "color": "#fb8c00"}, {"tail": "N291HC", "interval": 2400, "intervalLabel": "2400 HR", "dueDate": "2029-03-20", "durationDays": 7, "remLabel": "1242.3 hrs remaining (~1086.6 days)", "color": "#43a047"}, {"tail": "N291HC", "interval": 3200, "intervalLabel": "3200 HR", "dueDate": "2027-04-27", "durationDays": 21, "remLabel": "449.4 hrs remaining (~393.1 days)", "color": "#6d4c41"}, {"tail": "N431HC", "interval": 50, "intervalLabel": "50 HR", "dueDate": "2026-04-02", "durationDays": 1, "remLabel": "3.2 hrs remaining (~3.2 days) \u00b7 earlier than ~15 days remaining", "color": "#00897b"}, {"tail": "N431HC", "interval": 100, "intervalLabel": "100 HR", "dueDate": "2026-05-22", "durationDays": 1, "remLabel": "53.2 hrs remaining (~53.2 days)", "color": "#1e88e5"}, {"tail": "N431HC", "interval": 200, "intervalLabel": "200 HR", "dueDate": "2026-08-30", "durationDays": 3, "remLabel": "153.2 hrs remaining (~153.2 days)", "color": "#8e24aa"}, {"tail": "N431HC", "interval": 400, "intervalLabel": "400 HR", "dueDate": "2027-03-18", "durationDays": 4, "remLabel": "353.2 hrs remaining (~353.2 days)", "color": "#e53935"}, {"tail": "N431HC", "interval": 800, "intervalLabel": "800 HR", "dueDate": "2027-03-25", "durationDays": 4, "remLabel": "360.0 hrs remaining (~360.0 days)", "color": "#fb8c00"}, {"tail": "N431HC", "interval": 2400, "intervalLabel": "2400 HR", "dueDate": "2027-04-05", "durationDays": 7, "remLabel": "371.3 hrs remaining (~371.3 days)", "color": "#43a047"}, {"tail": "N431HC", "interval": 3200, "intervalLabel": "3200 HR", "dueDate": "2029-06-13", "durationDays": 21, "remLabel": "1171.3 hrs remaining (~1171.3 days)", "color": "#6d4c41"}, {"tail": "N531HC", "interval": 50, "intervalLabel": "50 HR", "dueDate": "2026-04-11", "durationDays": 1, "remLabel": "16.3 hrs remaining (~12.2 days) \u00b7 earlier than ~1 mo 12 days remaining", "color": "#00897b"}, {"tail": "N531HC", "interval": 100, "intervalLabel": "100 HR", "dueDate": "2026-05-18", "durationDays": 1, "remLabel": "66.3 hrs remaining (~49.6 days)", "color": "#1e88e5"}, {"tail": "N531HC", "interval": 200, "intervalLabel": "200 HR", "dueDate": "2026-05-20", "durationDays": 3, "remLabel": "68.7 hrs remaining (~51.4 days)", "color": "#8e24aa"}, {"tail": "N531HC", "interval": 400, "intervalLabel": "400 HR", "dueDate": "2026-05-22", "durationDays": 4, "remLabel": "71.1 hrs remaining (~53.2 days)", "color": "#e53935"}, {"tail": "N531HC", "interval": 800, "intervalLabel": "800 HR", "dueDate": "2027-03-17", "durationDays": 4, "remLabel": "471.1 hrs remaining (~352.4 days)", "color": "#fb8c00"}, {"tail": "N531HC", "interval": 2400, "intervalLabel": "2400 HR", "dueDate": "2029-01-12", "durationDays": 7, "remLabel": "1362.9 hrs remaining (~1019.6 days)", "color": "#43a047"}, {"tail": "N531HC", "interval": 3200, "intervalLabel": "3200 HR", "dueDate": "2032-02-14", "durationDays": 21, "remLabel": "2871.1 hrs remaining (~2148.0 days)", "color": "#6d4c41"}, {"tail": "N631HC", "interval": 50, "intervalLabel": "50 HR", "dueDate": "2026-04-21", "durationDays": 1, "remLabel": "~22 days remaining \u00b7 46.3 hrs remaining", "color": "#00897b"}, {"tail": "N631HC", "interval": 100, "intervalLabel": "100 HR", "dueDate": "2027-12-31", "durationDays": 1, "remLabel": "79.1 hrs remaining (~641.4 days)", "color": "#1e88e5"}, {"tail": "N631HC", "interval": 200, "intervalLabel": "200 HR", "dueDate": "2029-07-08", "durationDays": 3, "remLabel": "147.6 hrs remaining (~1196.8 days)", "color": "#8e24aa"}, {"tail": "N631HC", "interval": 400, "intervalLabel": "400 HR", "dueDate": "2029-07-13", "durationDays": 4, "remLabel": "148.2 hrs remaining (~1201.6 days)", "color": "#e53935"}, {"tail": "N631HC", "interval": 800, "intervalLabel": "800 HR", "dueDate": "2038-05-30", "durationDays": 4, "remLabel": "548.2 hrs remaining (~4444.9 days)", "color": "#fb8c00"}, {"tail": "N631HC", "interval": 2400, "intervalLabel": "2400 HR", "dueDate": "2038-06-07", "durationDays": 7, "remLabel": "549.2 hrs remaining (~4453.0 days)", "color": "#43a047"}, {"tail": "N631HC", "interval": 3200, "intervalLabel": "3200 HR", "dueDate": "2056-03-11", "durationDays": 21, "remLabel": "1349.2 hrs remaining (~10939.5 days)", "color": "#6d4c41"}, {"tail": "N731HC", "interval": 50, "intervalLabel": "50 HR", "dueDate": "2026-03-29", "durationDays": 1, "remLabel": "1 days PAST LIMIT \u00b7 29.4 hrs remaining", "color": "#00897b"}, {"tail": "N731HC", "interval": 100, "intervalLabel": "100 HR", "dueDate": "2026-12-05", "durationDays": 1, "remLabel": "79.4 hrs remaining (~250.7 days)", "color": "#1e88e5"}, {"tail": "N731HC", "interval": 200, "intervalLabel": "200 HR", "dueDate": "2027-10-17", "durationDays": 3, "remLabel": "179.4 hrs remaining (~566.5 days)", "color": "#8e24aa"}, {"tail": "N731HC", "interval": 400, "intervalLabel": "400 HR", "dueDate": "2029-07-10", "durationDays": 4, "remLabel": "379.4 hrs remaining (~1198.1 days)", "color": "#e53935"}, {"tail": "N731HC", "interval": 800, "intervalLabel": "800 HR", "dueDate": "2032-12-24", "durationDays": 4, "remLabel": "779.4 hrs remaining (~2461.3 days)", "color": "#fb8c00"}, {"tail": "N731HC", "interval": 2400, "intervalLabel": "2400 HR", "dueDate": "2046-10-24", "durationDays": 7, "remLabel": "2379.4 hrs remaining (~7513.9 days)", "color": "#43a047"}, {"tail": "N731HC", "interval": 3200, "intervalLabel": "3200 HR", "dueDate": "2053-09-24", "durationDays": 21, "remLabel": "3179.4 hrs remaining (~10040.2 days)", "color": "#6d4c41"}];
+  var MAINT = [{"tail": "N251HC", "interval": 50, "intervalLabel": "50 HR", "dueDate": "2026-04-25", "durationDays": 1, "remLabel": "48.4 hrs remaining (~26.4 days) \u00b7 earlier than ~1 mo 28 days remaining", "color": "#00897b"}, {"tail": "N251HC", "interval": 100, "intervalLabel": "100 HR", "dueDate": "2026-04-21", "durationDays": 1, "remLabel": "41.7 hrs remaining (~22.7 days)", "color": "#1e88e5"}, {"tail": "N251HC", "interval": 200, "intervalLabel": "200 HR", "dueDate": "2026-04-23", "durationDays": 3, "remLabel": "44.3 hrs remaining (~24.2 days)", "color": "#8e24aa"}, {"tail": "N251HC", "interval": 400, "intervalLabel": "400 HR", "dueDate": "2026-08-10", "durationDays": 4, "remLabel": "244.3 hrs remaining (~133.3 days)", "color": "#e53935"}, {"tail": "N251HC", "interval": 800, "intervalLabel": "800 HR", "dueDate": "2026-08-16", "durationDays": 4, "remLabel": "255.0 hrs remaining (~139.1 days)", "color": "#fb8c00"}, {"tail": "N251HC", "interval": 2400, "intervalLabel": "2400 HR", "dueDate": "2027-10-27", "durationDays": 7, "remLabel": "1057.2 hrs remaining (~576.7 days)", "color": "#43a047"}, {"tail": "N251HC", "interval": 3200, "intervalLabel": "3200 HR", "dueDate": "2026-08-06", "durationDays": 21, "remLabel": "236.7 hrs remaining (~129.1 days)", "color": "#6d4c41"}, {"tail": "N261HC", "interval": 50, "intervalLabel": "50 HR", "dueDate": "2026-04-23", "durationDays": 1, "remLabel": "28.7 hrs remaining (~24.6 days) \u00b7 earlier than ~1 mo 17 days remaining", "color": "#00897b"}, {"tail": "N261HC", "interval": 100, "intervalLabel": "100 HR", "dueDate": "2026-04-23", "durationDays": 1, "remLabel": "28.7 hrs remaining (~24.6 days)", "color": "#1e88e5"}, {"tail": "N261HC", "interval": 200, "intervalLabel": "200 HR", "dueDate": "2026-04-22", "durationDays": 3, "remLabel": "27.2 hrs remaining (~23.3 days)", "color": "#8e24aa"}, {"tail": "N261HC", "interval": 400, "intervalLabel": "400 HR", "dueDate": "2026-10-10", "durationDays": 4, "remLabel": "227.2 hrs remaining (~194.7 days)", "color": "#e53935"}, {"tail": "N261HC", "interval": 800, "intervalLabel": "800 HR", "dueDate": "2026-10-06", "durationDays": 4, "remLabel": "222.5 hrs remaining (~190.7 days)", "color": "#fb8c00"}, {"tail": "N261HC", "interval": 2400, "intervalLabel": "2400 HR", "dueDate": "2028-08-30", "durationDays": 7, "remLabel": "1031.5 hrs remaining (~884.1 days)", "color": "#43a047"}, {"tail": "N261HC", "interval": 3200, "intervalLabel": "3200 HR", "dueDate": "2026-11-12", "durationDays": 21, "remLabel": "265.6 hrs remaining (~227.7 days)", "color": "#6d4c41"}, {"tail": "N271HC", "interval": 50, "intervalLabel": "50 HR", "dueDate": "2026-04-24", "durationDays": 1, "remLabel": "~25 days remaining \u00b7 21.7 hrs remaining", "color": "#00897b"}, {"tail": "N271HC", "interval": 100, "intervalLabel": "100 HR", "dueDate": "2026-04-26", "durationDays": 1, "remLabel": "21.8 hrs remaining (~27.1 days)", "color": "#1e88e5"}, {"tail": "N271HC", "interval": 200, "intervalLabel": "200 HR", "dueDate": "2026-08-28", "durationDays": 3, "remLabel": "121.8 hrs remaining (~151.6 days)", "color": "#8e24aa"}, {"tail": "N271HC", "interval": 400, "intervalLabel": "400 HR", "dueDate": "2026-10-02", "durationDays": 4, "remLabel": "149.8 hrs remaining (~186.5 days)", "color": "#e53935"}, {"tail": "N271HC", "interval": 800, "intervalLabel": "800 HR", "dueDate": "2026-10-14", "durationDays": 4, "remLabel": "159.1 hrs remaining (~198.0 days)", "color": "#fb8c00"}, {"tail": "N271HC", "interval": 2400, "intervalLabel": "2400 HR", "dueDate": "2026-09-26", "durationDays": 7, "remLabel": "144.6 hrs remaining (~180.0 days)", "color": "#43a047"}, {"tail": "N271HC", "interval": 3200, "intervalLabel": "3200 HR", "dueDate": "2034-12-18", "durationDays": 21, "remLabel": "2559.1 hrs remaining (~3185.6 days)", "color": "#6d4c41"}, {"tail": "N281HC", "interval": 50, "intervalLabel": "50 HR", "dueDate": "2026-04-07", "durationDays": 1, "remLabel": "16.3 hrs remaining (~8.3 days) \u00b7 earlier than ~1 mo 17 days remaining", "color": "#00897b"}, {"tail": "N281HC", "interval": 100, "intervalLabel": "100 HR", "dueDate": "2026-05-02", "durationDays": 1, "remLabel": "66.3 hrs remaining (~33.8 days)", "color": "#1e88e5"}, {"tail": "N281HC", "interval": 200, "intervalLabel": "200 HR", "dueDate": "2026-06-22", "durationDays": 3, "remLabel": "166.3 hrs remaining (~84.7 days)", "color": "#8e24aa"}, {"tail": "N281HC", "interval": 400, "intervalLabel": "400 HR", "dueDate": "2026-06-22", "durationDays": 4, "remLabel": "166.7 hrs remaining (~84.9 days)", "color": "#e53935"}, {"tail": "N281HC", "interval": 800, "intervalLabel": "800 HR", "dueDate": "2027-01-12", "durationDays": 4, "remLabel": "566.7 hrs remaining (~288.6 days)", "color": "#fb8c00"}, {"tail": "N281HC", "interval": 2400, "intervalLabel": "2400 HR", "dueDate": "2026-06-24", "durationDays": 7, "remLabel": "170.2 hrs remaining (~86.7 days)", "color": "#43a047"}, {"tail": "N281HC", "interval": 3200, "intervalLabel": "3200 HR", "dueDate": "2030-05-19", "durationDays": 21, "remLabel": "2966.7 hrs remaining (~1511.1 days)", "color": "#6d4c41"}, {"tail": "N291HC", "interval": 50, "intervalLabel": "50 HR", "dueDate": "2026-04-26", "durationDays": 1, "remLabel": "32.3 hrs remaining (~27.8 days) \u00b7 earlier than ~1 mo 18 days remaining", "color": "#00897b"}, {"tail": "N291HC", "interval": 100, "intervalLabel": "100 HR", "dueDate": "2026-04-26", "durationDays": 1, "remLabel": "32.1 hrs remaining (~27.6 days)", "color": "#1e88e5"}, {"tail": "N291HC", "interval": 200, "intervalLabel": "200 HR", "dueDate": "2026-04-27", "durationDays": 3, "remLabel": "32.8 hrs remaining (~28.2 days)", "color": "#8e24aa"}, {"tail": "N291HC", "interval": 400, "intervalLabel": "400 HR", "dueDate": "2026-04-30", "durationDays": 4, "remLabel": "37.2 hrs remaining (~32.0 days)", "color": "#e53935"}, {"tail": "N291HC", "interval": 800, "intervalLabel": "800 HR", "dueDate": "2027-04-09", "durationDays": 4, "remLabel": "437.2 hrs remaining (~375.8 days)", "color": "#fb8c00"}, {"tail": "N291HC", "interval": 2400, "intervalLabel": "2400 HR", "dueDate": "2029-03-01", "durationDays": 7, "remLabel": "1241.7 hrs remaining (~1067.4 days)", "color": "#43a047"}, {"tail": "N291HC", "interval": 3200, "intervalLabel": "3200 HR", "dueDate": "2027-04-19", "durationDays": 21, "remLabel": "448.8 hrs remaining (~385.8 days)", "color": "#6d4c41"}, {"tail": "N431HC", "interval": 50, "intervalLabel": "50 HR", "dueDate": "2026-04-01", "durationDays": 1, "remLabel": "2.9 hrs remaining (~2.9 days) \u00b7 earlier than ~14 days remaining", "color": "#00897b"}, {"tail": "N431HC", "interval": 100, "intervalLabel": "100 HR", "dueDate": "2026-05-21", "durationDays": 1, "remLabel": "52.9 hrs remaining (~52.4 days)", "color": "#1e88e5"}, {"tail": "N431HC", "interval": 200, "intervalLabel": "200 HR", "dueDate": "2026-08-28", "durationDays": 3, "remLabel": "152.9 hrs remaining (~151.4 days)", "color": "#8e24aa"}, {"tail": "N431HC", "interval": 400, "intervalLabel": "400 HR", "dueDate": "2027-03-14", "durationDays": 4, "remLabel": "352.9 hrs remaining (~349.4 days)", "color": "#e53935"}, {"tail": "N431HC", "interval": 800, "intervalLabel": "800 HR", "dueDate": "2027-03-21", "durationDays": 4, "remLabel": "359.7 hrs remaining (~356.1 days)", "color": "#fb8c00"}, {"tail": "N431HC", "interval": 2400, "intervalLabel": "2400 HR", "dueDate": "2027-04-01", "durationDays": 7, "remLabel": "371.0 hrs remaining (~367.3 days)", "color": "#43a047"}, {"tail": "N431HC", "interval": 3200, "intervalLabel": "3200 HR", "dueDate": "2029-06-01", "durationDays": 21, "remLabel": "1171.0 hrs remaining (~1159.4 days)", "color": "#6d4c41"}, {"tail": "N531HC", "interval": 50, "intervalLabel": "50 HR", "dueDate": "2026-04-09", "durationDays": 1, "remLabel": "14.3 hrs remaining (~10.2 days) \u00b7 earlier than ~1 mo 11 days remaining", "color": "#00897b"}, {"tail": "N531HC", "interval": 100, "intervalLabel": "100 HR", "dueDate": "2026-05-14", "durationDays": 1, "remLabel": "64.3 hrs remaining (~45.8 days)", "color": "#1e88e5"}, {"tail": "N531HC", "interval": 200, "intervalLabel": "200 HR", "dueDate": "2026-05-16", "durationDays": 3, "remLabel": "66.7 hrs remaining (~47.5 days)", "color": "#8e24aa"}, {"tail": "N531HC", "interval": 400, "intervalLabel": "400 HR", "dueDate": "2026-05-18", "durationDays": 4, "remLabel": "69.1 hrs remaining (~49.2 days)", "color": "#e53935"}, {"tail": "N531HC", "interval": 800, "intervalLabel": "800 HR", "dueDate": "2027-02-27", "durationDays": 4, "remLabel": "469.1 hrs remaining (~334.3 days)", "color": "#fb8c00"}, {"tail": "N531HC", "interval": 2400, "intervalLabel": "2400 HR", "dueDate": "2028-11-23", "durationDays": 7, "remLabel": "1360.9 hrs remaining (~969.8 days)", "color": "#43a047"}, {"tail": "N531HC", "interval": 3200, "intervalLabel": "3200 HR", "dueDate": "2031-11-03", "durationDays": 21, "remLabel": "2869.1 hrs remaining (~2044.5 days)", "color": "#6d4c41"}, {"tail": "N631HC", "interval": 50, "intervalLabel": "50 HR", "dueDate": "2026-04-20", "durationDays": 1, "remLabel": "~21 days remaining \u00b7 46.3 hrs remaining", "color": "#00897b"}, {"tail": "N631HC", "interval": 100, "intervalLabel": "100 HR", "dueDate": "2027-12-31", "durationDays": 1, "remLabel": "79.1 hrs remaining (~641.4 days)", "color": "#1e88e5"}, {"tail": "N631HC", "interval": 200, "intervalLabel": "200 HR", "dueDate": "2029-07-08", "durationDays": 3, "remLabel": "147.6 hrs remaining (~1196.8 days)", "color": "#8e24aa"}, {"tail": "N631HC", "interval": 400, "intervalLabel": "400 HR", "dueDate": "2029-07-13", "durationDays": 4, "remLabel": "148.2 hrs remaining (~1201.6 days)", "color": "#e53935"}, {"tail": "N631HC", "interval": 800, "intervalLabel": "800 HR", "dueDate": "2038-05-30", "durationDays": 4, "remLabel": "548.2 hrs remaining (~4444.9 days)", "color": "#fb8c00"}, {"tail": "N631HC", "interval": 2400, "intervalLabel": "2400 HR", "dueDate": "2038-06-07", "durationDays": 7, "remLabel": "549.2 hrs remaining (~4453.0 days)", "color": "#43a047"}, {"tail": "N631HC", "interval": 3200, "intervalLabel": "3200 HR", "dueDate": "2056-03-11", "durationDays": 21, "remLabel": "1349.2 hrs remaining (~10939.5 days)", "color": "#6d4c41"}, {"tail": "N731HC", "interval": 50, "intervalLabel": "50 HR", "dueDate": "2026-03-29", "durationDays": 1, "remLabel": "1 days PAST LIMIT \u00b7 29.4 hrs remaining", "color": "#00897b"}, {"tail": "N731HC", "interval": 100, "intervalLabel": "100 HR", "dueDate": "2026-12-05", "durationDays": 1, "remLabel": "79.4 hrs remaining (~250.7 days)", "color": "#1e88e5"}, {"tail": "N731HC", "interval": 200, "intervalLabel": "200 HR", "dueDate": "2027-10-17", "durationDays": 3, "remLabel": "179.4 hrs remaining (~566.5 days)", "color": "#8e24aa"}, {"tail": "N731HC", "interval": 400, "intervalLabel": "400 HR", "dueDate": "2029-07-10", "durationDays": 4, "remLabel": "379.4 hrs remaining (~1198.1 days)", "color": "#e53935"}, {"tail": "N731HC", "interval": 800, "intervalLabel": "800 HR", "dueDate": "2032-12-24", "durationDays": 4, "remLabel": "779.4 hrs remaining (~2461.3 days)", "color": "#fb8c00"}, {"tail": "N731HC", "interval": 2400, "intervalLabel": "2400 HR", "dueDate": "2046-10-24", "durationDays": 7, "remLabel": "2379.4 hrs remaining (~7513.9 days)", "color": "#43a047"}, {"tail": "N731HC", "interval": 3200, "intervalLabel": "3200 HR", "dueDate": "2053-09-24", "durationDays": 21, "remLabel": "3179.4 hrs remaining (~10040.2 days)", "color": "#6d4c41"}];
   var calEl = document.getElementById('maint-calendar');
   var listEl = document.getElementById('estimated-inspection-list');
   var hoverEl = null;
@@ -1535,7 +1535,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 <script>
-  const DASHBOARD_VERSION = "20260330105526";
+  const DASHBOARD_VERSION = "20260330110711";
 
   // Auto-reload when a newer build is deployed
   (function() {
@@ -1653,7 +1653,7 @@
 
   // 200hr bar chart
   var labels200 = ['N261HC','N291HC','N251HC','N531HC','N271HC','N631HC','N431HC','N281HC','N731HC'];
-  var values200 = [32.00,33.40,46.00,68.70,125.40,147.60,153.20,167.40,179.40];
+  var values200 = [27.20,32.80,44.30,66.70,121.80,147.60,152.90,166.30,179.40];
   if (labels200.length === 0) {
     document.getElementById('bar200').parentElement.innerHTML =
       "<div style='font-family:var(--mono);font-size:12px;color:var(--muted);padding:10px;'>No numeric 200-hr data found.</div>";
@@ -1687,10 +1687,10 @@
     new Chart(ctx, {
       type: 'bar',
       data: {
-        labels: ["N281HC","N251HC","N531HC","N291HC","N261HC","N431HC","N271HC","N731HC","N631HC"],
+        labels: ["N281HC","N251HC","N531HC","N261HC","N291HC","N431HC","N271HC","N731HC","N631HC"],
         datasets: [
-          { label: 'Avg Daily (hrs)', data: [1.93,1.78,1.34,1.14,1.01,1.0,0.68,0.32,0.12], backgroundColor: 'rgba(41,182,246,0.8)', borderColor: '#29b6f6', borderWidth: 1, yAxisID: 'yDaily' },
-          { label: 'Avg Weekly (hrs)', data: [13.49,12.44,9.36,8.0,7.05,7.0,4.78,2.22,0.86], backgroundColor: 'rgba(246,173,85,0.8)', borderColor: '#f6ad55', borderWidth: 1, yAxisID: 'yWeekly' }
+          { label: 'Avg Daily (hrs)', data: [1.96,1.83,1.4,1.17,1.16,1.01,0.8,0.32,0.12], backgroundColor: 'rgba(41,182,246,0.8)', borderColor: '#29b6f6', borderWidth: 1, yAxisID: 'yDaily' },
+          { label: 'Avg Weekly (hrs)', data: [13.74,12.83,9.82,8.17,8.14,7.07,5.62,2.22,0.86], backgroundColor: 'rgba(246,173,85,0.8)', borderColor: '#f6ad55', borderWidth: 1, yAxisID: 'yWeekly' }
         ]
       },
       options: {
