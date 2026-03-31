@@ -1580,8 +1580,11 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
   }}
 
   function wlApiFetch(method, url, body) {{
-    var opts = {{ method: method, headers: {{ 'Content-Type': 'application/json' }} }};
-    if (body !== undefined) opts.body = JSON.stringify(body);
+    var opts = {{ method: method, headers: {{}} }};
+    if (body !== undefined) {{
+      opts.headers['Content-Type'] = 'application/json';
+      opts.body = JSON.stringify(body);
+    }}
     return fetch(url, opts).then(function(r) {{
       return r.json().then(function(data) {{
         if (!r.ok) throw new Error('HTTP ' + r.status + ': ' + (data.error || JSON.stringify(data)));

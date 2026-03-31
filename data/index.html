@@ -219,7 +219,7 @@
   </div>
   <div class="header-meta">
     <div class="date">REPORT DATE: 20 FEB 2026</div>
-    <div>FLEET: 9 AIRCRAFT &nbsp;|&nbsp; 0 AIRBORNE &nbsp;|&nbsp; 6 AT BASE &nbsp;|&nbsp; GENERATED: 31 MAR 2026 09:38</div>
+    <div>FLEET: 9 AIRCRAFT &nbsp;|&nbsp; 0 AIRBORNE &nbsp;|&nbsp; 6 AT BASE &nbsp;|&nbsp; GENERATED: 31 MAR 2026 09:52</div>
     <button id="pwa-install-btn" style="display:none;margin-top:6px;font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;padding:5px 12px;background:transparent;border:1px solid var(--blue);color:var(--blue);border-radius:2px;cursor:pointer;align-items:center;gap:6px;" title="Install as app on your device">
       &#x2B07; ADD TO HOME SCREEN
     </button>
@@ -1215,8 +1215,11 @@
   }
 
   function wlApiFetch(method, url, body) {
-    var opts = { method: method, headers: { 'Content-Type': 'application/json' } };
-    if (body !== undefined) opts.body = JSON.stringify(body);
+    var opts = { method: method, headers: {} };
+    if (body !== undefined) {
+      opts.headers['Content-Type'] = 'application/json';
+      opts.body = JSON.stringify(body);
+    }
     return fetch(url, opts).then(function(r) {
       return r.json().then(function(data) {
         if (!r.ok) throw new Error('HTTP ' + r.status + ': ' + (data.error || JSON.stringify(data)));
@@ -1541,7 +1544,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 <script>
-  const DASHBOARD_VERSION = "20260331093854";
+  const DASHBOARD_VERSION = "20260331095213";
 
   // Auto-reload when a newer build is deployed
   (function() {
