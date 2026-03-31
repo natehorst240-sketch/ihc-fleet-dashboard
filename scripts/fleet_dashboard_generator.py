@@ -1312,13 +1312,6 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
   </div>
 </div>
 
-<!-- Watch List modal -->
-<div id="wl-modal-overlay" class="cal-modal-overlay" onclick="wlModalClose()"></div>
-<div id="wl-modal" class="cal-modal" role="dialog" aria-modal="true" style="max-width:520px;width:92%;">
-  <div class="cal-modal-title" id="wl-modal-title"></div>
-  <div class="cal-modal-body" id="wl-modal-body" style="max-height:55vh;overflow-y:auto;"></div>
-  <div class="cal-modal-footer" id="wl-modal-footer"></div>
-</div>
 <!-- Calendar modal -->
 <div id="cal-modal-overlay" onclick="calModalClose()"></div>
 <div id="cal-modal" class="cal-modal" role="dialog" aria-modal="true">
@@ -2647,6 +2640,13 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
 {calendar_tab_html}
   </div>
 
+<!-- Watch List modal (outside all tabs so it works from any tab) -->
+<div id="wl-modal-overlay" class="cal-modal-overlay" onclick="wlModalClose()"></div>
+<div id="wl-modal" class="cal-modal" role="dialog" aria-modal="true" style="max-width:520px;width:92%;">
+  <div class="cal-modal-title" id="wl-modal-title"></div>
+  <div class="cal-modal-body" id="wl-modal-body" style="max-height:55vh;overflow-y:auto;"></div>
+  <div class="cal-modal-footer" id="wl-modal-footer"></div>
+</div>
 </main>
 <footer>
   <span>SOURCE: VERYON MAINTENANCE TRACKING &nbsp;|&nbsp; {source_filename}</span>
