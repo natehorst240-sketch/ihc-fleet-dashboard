@@ -1660,6 +1660,12 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
     document.getElementById('wl-modal').style.display = 'none';
   }}
 
+  // Expose watch list functions to global scope (onclick handlers need them)
+  window.wlOpenModal  = wlOpenModal;
+  window.wlModalClose = wlModalClose;
+  window.wlSaveNote   = wlSaveNote;
+  window.wlDeleteNote = wlDeleteNote;
+
   var calendar; // outer scope so calOpenNewNoteModal can call calendar.addEvent()
 
   function renderCalendar() {{
