@@ -1579,10 +1579,14 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
       opts.body = JSON.stringify(body);
     }}
     return fetch(url, opts).then(function(r) {{
-      return r.json().then(function(data) {{
-        if (!r.ok) throw new Error('HTTP ' + r.status + ': ' + (data.error || JSON.stringify(data)));
-        return data;
-      }});
+      if (!r.ok) {{
+        return r.text().then(function(t) {{
+          var msg = t.slice(0, 300);
+          try {{ msg = JSON.parse(t).error || msg; }} catch(e) {{}}
+          throw new Error('HTTP ' + r.status + ': ' + msg);
+        }});
+      }}
+      return r.json();
     }});
   }}
 
@@ -1635,11 +1639,30 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
       '<span style="color:var(--muted);font-size:11px;">Saving\u2026</span>';
     wlApiFetch('POST', WL_API, {{ id: id, tail: tail, note: note }})
       .then(function() {{ return wlApiFetch('GET', WL_API + '?tail=' + encodeURIComponent(tail)); }})
-      .then(function(notes) {{ wlRenderNotes(tail, notes); }})
+      .then(function(notes) {{
+        wlRenderNotes(tail, notes);
+        var footer = document.getElementById('wl-modal-footer');
+        if (footer) {{
+          var ok = document.createElement('span');
+          ok.style.cssText = 'color:var(--green);font-size:11px;margin-right:auto;';
+          ok.textContent = 'Saved \u2713';
+          footer.insertBefore(ok, footer.firstChild);
+          setTimeout(function() {{ if (ok.parentNode) ok.parentNode.removeChild(ok); }}, 2000);
+        }}
+      }})
       .catch(function(err) {{
+        var noteText = note;
         document.getElementById('wl-modal-footer').innerHTML =
-          '<span style="color:var(--red);font-size:11px;">Save failed: ' + wlEsc(err.message) + '</span>' +
+          '<span style="color:var(--red);font-size:11px;margin-right:auto;">Error: ' + wlEsc(err.message) + '</span>' +
           '<button class="cal-modal-btn" onclick="wlModalClose()">Close</button>';
+        var ta = document.getElementById('wl-note-input');
+        if (!ta) {{
+          ta = document.createElement('textarea');
+          ta.id = 'wl-note-input'; ta.rows = 3;
+          ta.style.cssText = 'width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);padding:8px;font-family:var(--mono);font-size:12px;resize:vertical;box-sizing:border-box;margin-top:4px;';
+          document.getElementById('wl-modal-body').appendChild(ta);
+        }}
+        ta.value = noteText;
       }});
   }}
 
