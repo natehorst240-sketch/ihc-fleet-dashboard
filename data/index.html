@@ -219,7 +219,7 @@
   </div>
   <div class="header-meta">
     <div class="date">REPORT DATE: 20 FEB 2026</div>
-    <div>FLEET: 9 AIRCRAFT &nbsp;|&nbsp; 0 AIRBORNE &nbsp;|&nbsp; 6 AT BASE &nbsp;|&nbsp; GENERATED: 01 APR 2026 17:58</div>
+    <div>FLEET: 9 AIRCRAFT &nbsp;|&nbsp; 0 AIRBORNE &nbsp;|&nbsp; 6 AT BASE &nbsp;|&nbsp; GENERATED: 01 APR 2026 18:01</div>
     <button id="pwa-install-btn" style="display:none;margin-top:6px;font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;padding:5px 12px;background:transparent;border:1px solid var(--blue);color:var(--blue);border-radius:2px;cursor:pointer;align-items:center;gap:6px;" title="Install as app on your device">
       &#x2B07; ADD TO HOME SCREEN
     </button>
@@ -1238,6 +1238,17 @@
     document.getElementById('wl-modal-title').innerHTML =
       '<span style="color:var(--amber);letter-spacing:2px;">WATCH LIST</span>' +
       '<span style="color:var(--muted);margin:0 8px;">|</span>' + wlEsc(tail);
+    if (window.location.hostname.indexOf('github.io') !== -1) {
+      document.getElementById('wl-modal-body').innerHTML =
+        '<div style="color:var(--muted);font-size:12px;line-height:1.6;">' +
+        'Watch List notes require the live site.<br>' +
+        '<a href="https://white-mud-028c6491e.2.azurestaticapps.net" ' +
+        'style="color:var(--blue);" target="_blank">Open live dashboard</a>' +
+        '</div>';
+      document.getElementById('wl-modal-footer').innerHTML =
+        '<button class="cal-modal-btn" onclick="wlModalClose()">Close</button>';
+      return;
+    }
     document.getElementById('wl-modal-body').innerHTML =
       '<div style="color:var(--muted);font-size:12px;">Loading…</div>';
     document.getElementById('wl-modal-footer').innerHTML = '';
@@ -1582,7 +1593,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 <script>
-  const DASHBOARD_VERSION = "20260401175852";
+  const DASHBOARD_VERSION = "20260401180109";
 
   // Auto-reload when a newer build is deployed
   (function() {

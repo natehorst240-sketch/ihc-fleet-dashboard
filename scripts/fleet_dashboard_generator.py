@@ -1597,6 +1597,17 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
     document.getElementById('wl-modal-title').innerHTML =
       '<span style="color:var(--amber);letter-spacing:2px;">WATCH LIST</span>' +
       '<span style="color:var(--muted);margin:0 8px;">|</span>' + wlEsc(tail);
+    if (window.location.hostname.indexOf('github.io') !== -1) {{
+      document.getElementById('wl-modal-body').innerHTML =
+        '<div style="color:var(--muted);font-size:12px;line-height:1.6;">' +
+        'Watch List notes require the live site.<br>' +
+        '<a href="https://white-mud-028c6491e.2.azurestaticapps.net" ' +
+        'style="color:var(--blue);" target="_blank">Open live dashboard</a>' +
+        '</div>';
+      document.getElementById('wl-modal-footer').innerHTML =
+        '<button class="cal-modal-btn" onclick="wlModalClose()">Close</button>';
+      return;
+    }}
     document.getElementById('wl-modal-body').innerHTML =
       '<div style="color:var(--muted);font-size:12px;">Loading\u2026</div>';
     document.getElementById('wl-modal-footer').innerHTML = '';
