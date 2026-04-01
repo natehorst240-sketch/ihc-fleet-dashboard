@@ -1635,12 +1635,22 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
     var note = (el ? el.value : '').trim();
     if (!note) return;
     var id = 'wl-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+    var ts = new Date().toISOString();
     document.getElementById('wl-modal-footer').innerHTML =
       '<span style="color:var(--muted);font-size:11px;">Saving\u2026</span>';
     wlApiFetch('POST', WL_API, {{ id: id, tail: tail, note: note }})
-      .then(function() {{ return wlApiFetch('GET', WL_API + '?tail=' + encodeURIComponent(tail)); }})
-      .then(function(notes) {{
-        wlRenderNotes(tail, notes);
+      .then(function() {{
+        // Show the new note immediately (don't wait for GET — Gist cache may be stale)
+        wlApiFetch('GET', WL_API + '?tail=' + encodeURIComponent(tail))
+          .then(function(notes) {{
+            if (!notes.some(function(n) {{ return n.id === id; }})) {{
+              notes.push({{ id: id, tail: tail, note: note, timestamp: ts }});
+            }}
+            wlRenderNotes(tail, notes);
+          }})
+          .catch(function() {{
+            wlRenderNotes(tail, [{{ id: id, tail: tail, note: note, timestamp: ts }}]);
+          }});
         var footer = document.getElementById('wl-modal-footer');
         if (footer) {{
           var ok = document.createElement('span');
@@ -1665,7 +1675,6 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
         ta.value = noteText;
       }});
   }}
-
   function wlDeleteNote(id, tail) {{
     if (!confirm('Delete this note?')) return;
     wlApiFetch('DELETE', WL_API + '/' + encodeURIComponent(id))
