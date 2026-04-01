@@ -106,7 +106,8 @@ app.http('AddWatchlistNote', {
       const all = await readAll(token, gistId);
       all.push({ id, tail, note: note.slice(0, 1000), timestamp: new Date().toISOString() });
       await writeAll(token, gistId, all);
-      return { status: 200, headers: cors(), body: JSON.stringify({ ok: true, id }) };
+      const notes = all.filter(n => n.tail === tail);
+      return { status: 200, headers: cors(), body: JSON.stringify({ ok: true, id, notes }) };
     } catch (err) {
       context.error('AddWatchlistNote error:', err);
       return { status: 500, headers: cors(), body: JSON.stringify({ error: err.message }) };
@@ -126,12 +127,14 @@ app.http('DeleteWatchlistNote', {
     try {
       const { token, gistId } = getConfig();
       const all = await readAll(token, gistId);
-      const filtered = all.filter(n => n.id !== id);
-      if (filtered.length === all.length) {
+      const target = all.find(n => n.id === id);
+      if (!target) {
         return { status: 404, headers: cors(), body: JSON.stringify({ error: 'Not found' }) };
       }
+      const filtered = all.filter(n => n.id !== id);
       await writeAll(token, gistId, filtered);
-      return { status: 200, headers: cors(), body: JSON.stringify({ ok: true }) };
+      const notes = filtered.filter(n => n.tail === target.tail);
+      return { status: 200, headers: cors(), body: JSON.stringify({ ok: true, notes }) };
     } catch (err) {
       context.error('DeleteWatchlistNote error:', err);
       return { status: 500, headers: cors(), body: JSON.stringify({ error: err.message }) };

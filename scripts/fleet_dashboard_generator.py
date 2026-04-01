@@ -1611,7 +1611,7 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
     document.getElementById('wl-modal-body').innerHTML =
       '<div style="color:var(--muted);font-size:12px;">Loading\u2026</div>';
     document.getElementById('wl-modal-footer').innerHTML = '';
-    wlApiFetch('GET', WL_API + '?tail=' + encodeURIComponent(tail))
+    wlApiFetch('GET', WL_API + '?tail=' + encodeURIComponent(tail) + '&_t=' + Date.now())
       .then(function(notes) {{ wlRenderNotes(tail, notes); }})
       .catch(function(err) {{
         document.getElementById('wl-modal-body').innerHTML =
@@ -1650,18 +1650,13 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
     document.getElementById('wl-modal-footer').innerHTML =
       '<span style="color:var(--muted);font-size:11px;">Saving\u2026</span>';
     wlApiFetch('POST', WL_API, {{ id: id, tail: tail, note: note }})
-      .then(function() {{
-        // Show the new note immediately (don't wait for GET — Gist cache may be stale)
-        wlApiFetch('GET', WL_API + '?tail=' + encodeURIComponent(tail))
-          .then(function(notes) {{
-            if (!notes.some(function(n) {{ return n.id === id; }})) {{
-              notes.push({{ id: id, tail: tail, note: note, timestamp: ts }});
-            }}
-            wlRenderNotes(tail, notes);
-          }})
-          .catch(function() {{
-            wlRenderNotes(tail, [{{ id: id, tail: tail, note: note, timestamp: ts }}]);
-          }});
+      .then(function(data) {{
+        // POST returns the saved notes list — use it directly (no stale GET needed)
+        var notes = (data && Array.isArray(data.notes)) ? data.notes : [{{ id: id, tail: tail, note: note, timestamp: ts }}];
+        if (!notes.some(function(n) {{ return n.id === id; }})) {{
+          notes.push({{ id: id, tail: tail, note: note, timestamp: ts }});
+        }}
+        wlRenderNotes(tail, notes);
         var footer = document.getElementById('wl-modal-footer');
         if (footer) {{
           var ok = document.createElement('span');
@@ -1689,8 +1684,10 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
   function wlDeleteNote(id, tail) {{
     if (!confirm('Delete this note?')) return;
     wlApiFetch('DELETE', WL_API + '/' + encodeURIComponent(id))
-      .then(function() {{ return wlApiFetch('GET', WL_API + '?tail=' + encodeURIComponent(tail)); }})
-      .then(function(notes) {{ wlRenderNotes(tail, notes); }})
+      .then(function(data) {{
+        var notes = (data && Array.isArray(data.notes)) ? data.notes : [];
+        wlRenderNotes(tail, notes);
+      }})
       .catch(function(err) {{ alert('Delete failed: ' + err.message); }});
   }}
 
