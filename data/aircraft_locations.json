@@ -1,5 +1,41 @@
 [
   {
+    "vin": "N251HC",
+    "asset_id": 31608,
+    "state": "Stationary",
+    "speed": 0,
+    "latitude": 37.098667,
+    "longitude": -113.551667,
+    "heading": 359,
+    "altitude": 2789.0,
+    "odometer": 63806.5,
+    "last_ping": "2026-04-01T13:38:40Z"
+  },
+  {
+    "vin": "N261HC",
+    "asset_id": 31755,
+    "state": "Stationary",
+    "speed": 0,
+    "latitude": 37.034667,
+    "longitude": -113.504167,
+    "heading": 359,
+    "altitude": 2848.0,
+    "odometer": 71415.4,
+    "last_ping": "2026-04-01T13:29:14Z"
+  },
+  {
+    "vin": "N431HC",
+    "asset_id": 31570,
+    "state": "Stationary",
+    "speed": 0,
+    "latitude": 41.755167,
+    "longitude": -111.8205,
+    "heading": 0,
+    "altitude": 4596.0,
+    "odometer": 83485.8,
+    "last_ping": "2026-04-01T13:10:31Z"
+  },
+  {
     "vin": "N281HC",
     "asset_id": 31576,
     "state": "Stationary",
@@ -10,18 +46,6 @@
     "altitude": 4337.0,
     "odometer": 70561.9,
     "last_ping": "2026-04-01T10:10:29Z"
-  },
-  {
-    "vin": "N261HC",
-    "asset_id": 31755,
-    "state": "Stationary",
-    "speed": 0,
-    "latitude": 37.6995,
-    "longitude": -113.066667,
-    "heading": 359,
-    "altitude": 5712.0,
-    "odometer": 71369.9,
-    "last_ping": "2026-04-01T06:11:49Z"
   },
   {
     "vin": "N271HC",
@@ -36,18 +60,6 @@
     "last_ping": "2026-04-01T03:41:21Z"
   },
   {
-    "vin": "N251HC",
-    "asset_id": 31608,
-    "state": "Stationary",
-    "speed": 0,
-    "latitude": 37.098667,
-    "longitude": -113.5515,
-    "heading": 359,
-    "altitude": 2756.0,
-    "odometer": 63806.5,
-    "last_ping": "2026-04-01T01:45:37Z"
-  },
-  {
     "vin": "N291HC",
     "asset_id": 31585,
     "state": "Stationary",
@@ -58,18 +70,6 @@
     "altitude": 4652.0,
     "odometer": 68834.7,
     "last_ping": "2026-04-01T01:41:21Z"
-  },
-  {
-    "vin": "N431HC",
-    "asset_id": 31570,
-    "state": "Stationary",
-    "speed": 0,
-    "latitude": 41.755167,
-    "longitude": -111.8205,
-    "heading": 0,
-    "altitude": 4603.0,
-    "odometer": 83485.8,
-    "last_ping": "2026-03-31T13:29:29Z"
   },
   {
     "vin": "N681HC",
