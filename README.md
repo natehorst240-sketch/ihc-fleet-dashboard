@@ -1,140 +1,72 @@
-# IHC Health Services — Fleet Maintenance Dashboard
+# IHC Fleet Maintenance Dashboard
 
-A lightweight, automated web dashboard that turns CAMP CSV exports into a
-live, interactive maintenance-tracking page hosted on GitHub Pages. Push a
-new CSV and the dashboard rebuilds itself — no server required.
+An automated web dashboard that tracks helicopter fleet maintenance for IHC Health Services. Upload a new CSV from CAMP and the dashboard rebuilds itself — no server required.
+
+Live site: deployed on Azure Static Web Apps ("white-mud").
 
 ---
-## If this breaks last good commit was 1 parent be376f5 commit 19958e8
 
 ## How It Works
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                        DATA SOURCES                             │
-│                                                                 │
-│  Veryon Export                   Component Change Report        │
-│  (Due-List CSV)                (ComponentChangeReport CSV)      │
-└────────────┬───────────────────────────────┬────────────────────┘
-             │  bot CSV commit or schedule       │
-             ▼                               ▼
-┌─────────────────────────────────────────────────────────────────┐
-│               GitHub Actions  (build_dashboard.yml)             │
-│                                                                 │
-│  1. Checkout repo                                               │
-│  2. pip install Pillow                                          │
-│  3. python scripts/fleet_dashboard_generator.py                 │
-│     ├─ Parse Due-List CSV  ──────────────────────────────────┐  │
-│     ├─ Parse Component Change CSV                            │  │
-│     ├─ Load / update flight_hours_history.json               │  │
-│     ├─ Load base_assignments.json (GPS positions)            │  │
-│     └─ Embed fleet photo (IMG_9250.jpeg, base64)             │  │
-│  4. Commit generated files back to repo                      │  │
-│     • data/index.html                ◄──────────────────────┘  │
-│     • data/flight_hours_history.json                            │
-│     • data/dashboard_version.json                               │
-└────────────────────────────┬────────────────────────────────────┘
-                             │
-                             ▼
-┌─────────────────────────────────────────────────────────────────┐
-│              GitHub Actions  (deploy-pages.yml)                 │
-│                                                                 │
-│  Deploys data/ folder → GitHub Pages                            │
-└────────────────────────────┬────────────────────────────────────┘
-                             │
-                             ▼
-┌─────────────────────────────────────────────────────────────────┐
-│   https://natehorst240-sketch.github.io/ihc-fleet-dashboard/    │
-│                                                                 │
-│  Tab 1 │ Maintenance Due List   — phase inspections, urgency    │
-│  Tab 2 │ Components             — per-aircraft component status │
-│  Tab 3 │ Flight Hours           — utilization trends & charts   │
-│  Tab 4 │ Calendar               — FullCalendar maintenance view │
-│  Tab 5 │ Base Location          — GPS assignment & AT BASE/AWAY │
-│  Tab 6 │ Component Changes      — monthly parts-replaced log    │
-└─────────────────────────────────────────────────────────────────┘
+CAMP (Veryon) CSV export
+        │
+        ▼
+  data/ folder in this repo
+        │
+        ▼
+GitHub Actions (build_dashboard.yml)
+  • Runs every 6 hours, and immediately when a CSV is pushed
+  • Fetches real-time aircraft locations from Trootrax
+  • Runs scripts/fleet_dashboard_generator.py
+  • Commits generated data/index.html back to main
+        │
+        ▼
+GitHub Actions (azure-static-web-apps.yml)
+  • Triggered by every push to main
+  • Publishes the repo to Azure Static Web Apps
+        │
+        ▼
+Live dashboard at your Azure SWA URL
+
+(Aircraft location data also refreshes every 15 minutes via
+ update_aircraft_locations.yml, which commits and triggers a redeploy.)
 ```
 
 ---
 
-## Features
+## Dashboard Tabs
 
 | Tab | What it shows |
 |-----|--------------|
-| **Maintenance Due List** | All phase inspections (50 hr – 3 200 hr). Color-coded: green / amber / red / overdue. Filterable table + 200 hr bar chart. |
+| **Maintenance Due List** | All phase inspections (50 hr – 3,200 hr). Color-coded green / amber / red / overdue. Filterable table + 200-hr bar chart. |
 | **Components** | Per-aircraft component tracking with remaining hours and retirement flags. |
-| **Flight Hours** | Daily, 7-day, and 30-day utilization averages. Per-aircraft trend charts powered by Chart.js. |
-| **Calendar** | Interactive FullCalendar projection of estimated inspection dates with editable event pills, hover detail cards, and a synchronized estimated inspection list. |
-| **Base Location** | AT BASE / AIRBORNE / AWAY status based on GPS distance from assigned base. |
+| **Flight Hours** | Daily, 7-day, and 30-day utilization averages. Per-aircraft trend charts. |
+| **Calendar** | FullCalendar view of estimated inspection dates with editable events and hover detail cards. |
+| **Base Location** | AT BASE / AIRBORNE / AWAY status based on GPS distance from each aircraft's assigned base. |
 | **Component Changes** | Monthly breakdown of installed/removed parts from the Component Change Report. |
-
----
-
-
-## Trootrax Live Tablet Map Feed
-
-The **Aircraft Location** tab now includes a **Google Maps** panel that reads
-`data/aircraft_locations.json` and plots each aircraft as helicopter markers with
-registration labels.
-
-To enable map rendering, define your API key before opening the dashboard:
-
-```html
-<script>window.GOOGLE_MAPS_API_KEY = "YOUR_API_KEY";</script>
-```
-
-(You can place this in a small local wrapper page or inject it with your hosting
-platform's template system.)
-
-Generate that feed with:
-
-```bash
-export TROOTRAX_USER='your_user'
-export TROOTRAX_PASS='your_pass'
-python scripts/trootrax.py
-```
-
-Optional: set `TROOTRAX_CUSTOMER_ID` if you need a customer ID other than `312`.
-
-
-## Quick Start
-
-```bash
-# 1. Install the only runtime dependency
-pip install Pillow
-
-# 2. Drop your CAMP exports into data/
-cp path/to/Due-List_BIG_WEEKLY_aw109sp.csv data/
-cp path/to/ComponentChangeReport_109SP.csv  data/   # optional
-
-# 3. Generate the dashboard locally
-python scripts/fleet_dashboard_generator.py
-
-# 4. Open in browser
-open data/index.html
-```
-
-For full GitHub Pages setup see [SETUP_GUIDE.md](SETUP_GUIDE.md).
 
 ---
 
 ## Updating the Dashboard
 
-Upload new CSVs to `data/` on GitHub (drag-and-drop or via the web UI) and
-the Actions pipeline rebuilds and redeploys automatically.
-
-`build_dashboard.yml` runs every 6 hours and rebuilds from the latest committed
-`Due-List_BIG_WEEKLY_aw109sp.csv` in the repo. If your export bot commits that file to
-`main`, the push trigger will also rebuild immediately.
-
-
-Or via the command line:
+Upload a new CSV to `data/` on GitHub (drag-and-drop in the web UI or via git push) and the pipeline rebuilds and redeploys automatically within a few minutes.
 
 ```bash
-cp path/to/Due-List_Latest.csv data/Due-List_BIG_WEEKLY_aw109sp.csv
-git add data/
+cp path/to/latest-export.csv data/Due-List_BIG_WEEKLY_aw109sp.csv
+git add data/Due-List_BIG_WEEKLY_aw109sp.csv
 git commit -m "Update maintenance data"
 git push
+```
+
+---
+
+## Running Locally
+
+```bash
+pip install Pillow requests
+python scripts/fleet_dashboard_generator.py
+open data/index.html
 ```
 
 ---
@@ -144,44 +76,57 @@ git push
 ```
 ihc-fleet-dashboard/
 ├── .github/workflows/
-│   ├── build_dashboard.yml      # Builds index.html on CSV push
-│   └── deploy-pages.yml         # Deploys data/ to GitHub Pages
-├── data/
-│   ├── Due-List_BIG_WEEKLY_aw109sp.csv   # CAMP due-list export (input)
-│   ├── ComponentChangeReport_109SP.csv   # Component change export (input)
-│   ├── IMG_9250.jpeg                     # Fleet photo (embedded in dashboard)
-│   ├── flight_hours_history.json         # 90-day rolling flight hours log
-│   ├── base_assignments.json             # GPS aircraft positions
-│   ├── dashboard_version.json            # Auto-refresh version token
-│   └── index.html                        # Generated dashboard (output)
+│   ├── build_dashboard.yml             # Rebuilds dashboard every 6h + on CSV push
+│   ├── update_aircraft_locations.yml   # Refreshes Trootrax locations every 15 min
+│   └── azure-static-web-apps.yml       # Deploys to Azure SWA on every push to main
 ├── scripts/
-│   └── fleet_dashboard_generator.py      # Main generator (2 000 lines)
-├── requirements.txt                      # Pillow only
-├── quick-start.sh                        # Local setup helper
-└── SETUP_GUIDE.md                        # Full GitHub Pages setup guide
+│   ├── fleet_dashboard_generator.py    # Main generator (~2,000 lines) — produces data/index.html
+│   ├── trootrax.py                     # Fetches real-time aircraft GPS from Trootrax API
+│   ├── fleet_builder.py                # Interactive wizard for setting up a new fleet config
+│   └── generate_pwa_icons.py           # Regenerates PWA icons (192px, 512px)
+├── api/
+│   └── src/functions/
+│       ├── calendar.js                 # Azure Function: calendar event CRUD (stored in GitHub Gist)
+│       └── watchlist.js                # Azure Function: per-aircraft notes (stored in GitHub Gist)
+├── configs/
+│   └── aw109sp.json                    # AW109SP aircraft config (intervals, CSV columns, ATA patterns)
+├── data/
+│   ├── Due-List_BIG_WEEKLY_aw109sp.csv # INPUT: CAMP due-list export
+│   ├── ComponentChangeReport_109SP.csv # INPUT: component change history
+│   ├── base_locations.json             # 8 IHC base GPS coordinates
+│   ├── base_assignments.json           # Aircraft-to-base assignments
+│   ├── aircraft_locations.json         # Real-time Trootrax positions (auto-updated)
+│   ├── flight_hours_history.json       # 90-day rolling flight hours log (auto-generated)
+│   ├── dashboard_version.json          # Version token for client-side auto-refresh (auto-generated)
+│   ├── aog_status.json                 # Aircraft on Ground status
+│   ├── manifest.json                   # PWA manifest
+│   ├── sw.js                           # Service Worker (offline support)
+│   └── index.html                      # GENERATED dashboard output — do not edit by hand
+├── staticwebapp.config.json            # Azure SWA routing and security headers
+└── requirements.txt                    # Python dependency: Pillow
 ```
 
 ---
 
-## Configuration
+## Required GitHub Secrets
 
-Key constants at the top of `scripts/fleet_dashboard_generator.py`:
-
-| Constant | Default | Purpose |
-|----------|---------|---------|
-| `INPUT_FILENAME` | `Due-List_BIG_WEEKLY_aw109sp.csv` | Primary CSV source |
-| `TARGET_INTERVALS` | `[50,100,200,400,800,2400,3200]` | Tracked inspection intervals (hours) |
-| `COMPONENT_WINDOW_HRS` | `200` | Hours window for component status |
-| `PHOTO_FILENAME` | `IMG_9250.jpeg` | Fleet photo shown in header |
+| Secret | Purpose |
+|--------|---------|
+| `AZURE_STATIC_WEB_APPS_API_TOKEN_WHITE_MUD_028C6491E` | Azure SWA deployment token |
+| `TROOTRAX_USER` | Trootrax API username |
+| `TROOTRAX_PASS` | Trootrax API password |
+| `TROOTRAX_CUSTOMER_ID` | Trootrax customer ID (default: 312) |
+| `GOOGLE_MAPS_API_KEY` | Google Maps API key for live location rendering |
+| `CALENDAR_GITHUB_TOKEN` | GitHub PAT with `gist` scope — stores calendar notes |
+| `CALENDAR_GIST_ID` | ID of the private Gist used for calendar/watchlist storage |
 
 ---
 
 ## Security
 
-- Keep the repository **private** — the dashboard embeds aircraft tail numbers and maintenance data.
-- Store any API credentials (SkyRouter, etc.) in **GitHub Secrets**, never in committed files.
+Keep this repository **private** — it contains aircraft tail numbers, maintenance schedules, and GPS data. All credentials are stored as GitHub Secrets and never committed to the repo.
 
 ---
 
-**License:** Private — IHC Health Services Internal Use Only
+**License:** Private — IHC Health Services Internal Use Only  
 **Maintained by:** IHC Aviation Maintenance Team
