@@ -1,10 +1,5 @@
 name: Azure Static Web Apps CI/CD
 
-# Deploys to Azure Static Web Apps on every push to main.
-# build_dashboard.yml and update_aircraft_locations.yml handle dashboard
-# generation and commit data/index.html to the repo; this workflow
-# just publishes what is already in the repo to Azure SWA.
-
 on:
   push:
     branches:
@@ -16,15 +11,35 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy:
+  build_and_deploy:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action != 'closed')
     runs-on: ubuntu-latest
-    name: Deploy to Azure SWA
+    name: Build and Deploy
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: true
           lfs: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        run: pip install Pillow requests
+
+      - name: Fetch aircraft locations
+        env:
+          TROOTRAX_USER: ${{ secrets.TROOTRAX_USER }}
+          TROOTRAX_PASS: ${{ secrets.TROOTRAX_PASS }}
+          TROOTRAX_CUSTOMER_ID: ${{ secrets.TROOTRAX_CUSTOMER_ID }}
+        run: python scripts/trootrax.py || true
+
+      - name: Generate dashboard
+        env:
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+        run: python scripts/fleet_dashboard_generator.py
 
       - name: Deploy to Azure Static Web Apps
         id: deploy
