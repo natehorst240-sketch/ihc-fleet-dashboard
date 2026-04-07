@@ -1,5 +1,17 @@
 [
   {
+    "vin": "N431HC",
+    "asset_id": 31570,
+    "state": "Stationary",
+    "speed": 1.0,
+    "latitude": 41.755333,
+    "longitude": -111.820667,
+    "heading": 318,
+    "altitude": 4619.0,
+    "odometer": 84103.4,
+    "last_ping": "2026-04-07T21:00:10Z"
+  },
+  {
     "vin": "N271HC",
     "asset_id": 31622,
     "state": "Stationary",
@@ -22,18 +34,6 @@
     "altitude": 4659.0,
     "odometer": 70812.6,
     "last_ping": "2026-04-07T20:05:31Z"
-  },
-  {
-    "vin": "N431HC",
-    "asset_id": 31570,
-    "state": "Stationary",
-    "speed": 0,
-    "latitude": 41.182833,
-    "longitude": -111.954833,
-    "heading": 0,
-    "altitude": 4675.0,
-    "odometer": 84064.6,
-    "last_ping": "2026-04-07T19:39:42Z"
   },
   {
     "vin": "N281HC",
