@@ -2697,19 +2697,23 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
 <script>
   const DASHBOARD_VERSION = "{version}";
 
-  // Auto-reload when a newer build is deployed
+  // Auto-reload when a newer build is deployed — polls every 3 minutes
   (function() {{
-    var versionUrl = 'dashboard_version.json?ts=' + Date.now();
-    fetch(versionUrl, {{cache:'no-store'}})
-      .then(function(r){{ return r.ok ? r.json() : null; }})
-      .then(function(data) {{
-        if (!data || !data.version || data.version === DASHBOARD_VERSION) return;
-        var next = new URL(window.location.href);
-        if (next.searchParams.get('v') === data.version) return;
-        next.searchParams.set('v', data.version);
-        window.location.replace(next.toString());
-      }})
-      .catch(function(){{}});
+    function checkVersion() {{
+      var versionUrl = 'dashboard_version.json?ts=' + Date.now();
+      fetch(versionUrl, {{cache:'no-store'}})
+        .then(function(r){{ return r.ok ? r.json() : null; }})
+        .then(function(data) {{
+          if (!data || !data.version || data.version === DASHBOARD_VERSION) return;
+          var next = new URL(window.location.href);
+          if (next.searchParams.get('v') === data.version) return;
+          next.searchParams.set('v', data.version);
+          window.location.replace(next.toString());
+        }})
+        .catch(function(){{}});
+    }}
+    checkVersion();
+    setInterval(checkVersion, 3 * 60 * 1000);
   }})();
 
   function switchTab(tabName, btn) {{
