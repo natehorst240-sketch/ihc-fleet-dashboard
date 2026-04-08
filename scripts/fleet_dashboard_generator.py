@@ -973,6 +973,20 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
 @media (max-width: 1100px) {{
   #cal-shell {{ grid-template-columns: 1fr; }}
 }}
+@media (max-width: 760px) {{
+  #calendar-wrap {{ padding: 4px 2px; min-height: 0; }}
+  #maint-calendar {{ min-height: 0; }}
+  .fc .fc-daygrid-body,
+  .fc .fc-scrollgrid-sync-table,
+  .fc table {{ width: 100% !important; min-width: 0 !important; }}
+  .fc .fc-col-header-cell-cushion {{ font-size: 9px; padding: 2px 1px; }}
+  .fc .fc-daygrid-day-number {{ font-size: 10px; padding: 2px 3px; }}
+  .fc .fc-daygrid-event {{ padding: 1px 3px; }}
+  .fc-maint-pill {{ gap: 2px; font-size: 8px; }}
+  .fc-maint-pill strong, .fc-maint-pill span {{ max-width: 34px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }}
+  .fc .fc-toolbar-title {{ font-size: 16px; }}
+  .fc .fc-button {{ font-size: 9px; padding: 3px 5px; }}
+}}
 #calendar-wrap {{
   min-width: 0;
   overflow: hidden;
@@ -984,6 +998,7 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
 }}
 #maint-calendar {{
   min-height: 680px;
+  max-width: 100%;
 }}
 .fc .fc-toolbar-title {{
   font-family: 'Barlow Condensed', sans-serif;
@@ -1779,16 +1794,12 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
     }});
 
     calendar = new FullCalendar.Calendar(calEl, {{
-      initialView: window.innerWidth < 900 ? 'listMonth' : 'dayGridMonth',
-      height: 680,
+      initialView: 'dayGridMonth',
+      height: 'auto',
       editable: false,
       navLinks: true,
-      dayMaxEvents: 4,
+      dayMaxEvents: 3,
       headerToolbar: {{ left: 'prev,next today', center: 'title', right: 'dayGridMonth,listMonth' }},
-      windowResize: function() {{
-        var target = window.innerWidth < 900 ? 'listMonth' : 'dayGridMonth';
-        if (calendar.view.type !== target) calendar.changeView(target);
-      }},
       eventSources: [
         {{ events: maintEvents, id: 'maintenance' }},
         {{
