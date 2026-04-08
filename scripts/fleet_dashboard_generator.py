@@ -1016,6 +1016,13 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
   font-family: 'Share Tech Mono', monospace;
   font-size: 10px;
 }}
+.fc-projected {{
+  opacity: 0.38;
+  cursor: default !important;
+}}
+.fc-projected * {{
+  pointer-events: none;
+}}
 .fc-note-pill {{
   display: inline-flex;
   align-items: center;
@@ -1297,7 +1304,7 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
 
 <div id="cal-shell">
   <div id="calendar-wrap">
-    <div class="fc-edit-note">Drag pills to adjust dates &mdash; click a pill to add a note. Changes sync across all devices.
+    <div class="fc-edit-note">Faded pills are CSV projections (read-only). Click a date to schedule an inspection &mdash; saved inspections sync across all devices.
       <span id="cal-sync-status" style="margin-left:10px;font-size:10px;color:var(--muted);opacity:0;transition:opacity 0.4s;max-width:600px;display:inline-block;vertical-align:middle;word-break:break-all;"></span>
       <span onclick="document.getElementById('cal-debug-panel').style.display=document.getElementById('cal-debug-panel').style.display==='none'?'block':'none'" style="margin-left:10px;font-size:10px;color:#4a5568;cursor:pointer;text-decoration:underline;user-select:none;">debug</span>
     </div>
@@ -1481,77 +1488,139 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
     if (el) el.textContent = _calDebugLog.join('\\n');
   }}
 
-  // ── Azure calendar storage helpers ──────────────────────────────────────────
-  var CAL_API = '/api/calendar';
+  // ── Supabase config ──────────────────────────────────────────────────────────
+  var SUPA_URL = 'https://oubibyrctlqxweckuhow.supabase.co';
+  var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im91YmlieXJjdGxxeHdlY2t1aG93Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2MTQxNDgsImV4cCI6MjA5MTE5MDE0OH0.MyX6zzQ0KlxwBcHPcd2jmn6sGK-oxJzFe7-ha4qhf4o';
 
-  function calApiFetch(method, url, body) {{
-    var opts = {{ method: method, headers: {{ 'Content-Type': 'application/json' }} }};
+  var INSPECTION_TYPES = [
+    {{ label: '50 Hr',   color: '#00897b', defaultDays: 1  }},
+    {{ label: '100 Hr',  color: '#1e88e5', defaultDays: 1  }},
+    {{ label: '200 Hr',  color: '#8e24aa', defaultDays: 3  }},
+    {{ label: '400 Hr',  color: '#e53935', defaultDays: 4  }},
+    {{ label: '800 Hr',  color: '#fb8c00', defaultDays: 4  }},
+    {{ label: '2400 Hr', color: '#43a047', defaultDays: 7  }},
+    {{ label: '3200 Hr', color: '#6d4c41', defaultDays: 21 }},
+  ];
+
+  var AIRCRAFT_TAILS = {TRACKED_AIRCRAFT_TAILS_JS};
+
+  function supaFetch(path, method, body, extraHdrs) {{
+    var url = SUPA_URL + '/rest/v1/' + path;
+    var opts = {{
+      method: method || 'GET',
+      headers: Object.assign({{
+        'apikey': SUPA_KEY,
+        'Authorization': 'Bearer ' + SUPA_KEY,
+        'Content-Type': 'application/json'
+      }}, extraHdrs || {{}})
+    }};
     if (body !== undefined) opts.body = JSON.stringify(body);
     return fetch(url, opts).then(function(r) {{
       return r.text().then(function(txt) {{
-        calDebugLog(method, url, r.status, txt);
-        if (!r.ok) throw new Error('HTTP ' + r.status + ': ' + txt);
-        return r.ok;
+        calDebugLog(method || 'GET', url, r.status, txt.slice(0, 200));
+        if (!r.ok) throw new Error('HTTP ' + r.status + ': ' + txt.slice(0, 300));
+        return txt ? JSON.parse(txt) : null;
       }});
     }});
   }}
 
-  function calSaveToAzure(id, tail, intervalLabel, dueDate, color, note) {{
-    return calApiFetch('POST', CAL_API, {{ id: id, tail: tail, intervalLabel: intervalLabel,
-                                          dueDate: dueDate, color: color, note: note || '', type: 'override' }});
+  function supaUpsertInspection(rec) {{
+    return supaFetch('scheduled_inspections', 'POST', rec,
+      {{ 'Prefer': 'resolution=merge-duplicates,return=minimal' }});
   }}
 
-  function calSaveCustomNote(id, title, dueDate, endDate, note) {{
-    return calApiFetch('POST', CAL_API, {{ id: id, tail: '', intervalLabel: title || 'Note',
-                                          dueDate: dueDate, endDate: endDate || '',
-                                          color: '#f59e0b', note: note || '', type: 'custom' }});
+  function supaDeleteInspection(id) {{
+    return supaFetch('scheduled_inspections?id=eq.' + encodeURIComponent(id), 'DELETE',
+      undefined, {{ 'Prefer': 'return=minimal' }});
   }}
 
-  function calOpenNewNoteModal(dateStr) {{
-    var newId = 'note-' + dateStr + '-' + Date.now();
+  function calOpenAddInspectionModal(dateStr) {{
+    var tailOpts = AIRCRAFT_TAILS.map(function(t) {{
+      return '<option value="' + t + '">' + t + '</option>';
+    }}).join('');
+    var typeOpts = INSPECTION_TYPES.map(function(iv) {{
+      return '<option value="' + iv.label + '" data-color="' + iv.color
+        + '" data-days="' + iv.defaultDays + '">' + iv.label + '</option>';
+    }}).join('');
     var inputHtml =
-      '<div style="display:flex;gap:10px;margin-bottom:8px;">'
-      + '<label style="flex:1;font-size:12px;color:var(--muted);">Start<br>'
-      + '<input type="date" id="cal-note-start" value="' + dateStr + '" style="width:100%;padding:4px 6px;'
-      + 'background:var(--surface2);border:1px solid var(--border);border-radius:4px;'
-      + 'color:var(--text);font-size:13px;margin-top:2px;"></label>'
-      + '<label style="flex:1;font-size:12px;color:var(--muted);">End (optional)<br>'
-      + '<input type="date" id="cal-note-end" style="width:100%;padding:4px 6px;'
-      + 'background:var(--surface2);border:1px solid var(--border);border-radius:4px;'
-      + 'color:var(--text);font-size:13px;margin-top:2px;"></label>'
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">'
+      + '<label style="font-size:12px;color:var(--muted);">Aircraft<br>'
+      + '<select id="insp-tail" style="width:100%;padding:5px 8px;background:var(--surface2);'
+      + 'border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:13px;margin-top:2px;">'
+      + tailOpts + '</select></label>'
+      + '<label style="font-size:12px;color:var(--muted);">Inspection Type<br>'
+      + '<select id="insp-type" style="width:100%;padding:5px 8px;background:var(--surface2);'
+      + 'border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:13px;margin-top:2px;">'
+      + typeOpts + '</select></label>'
+      + '<label style="font-size:12px;color:var(--muted);">Start Date<br>'
+      + '<input type="date" id="insp-start" value="' + dateStr + '" '
+      + 'style="width:100%;padding:5px 8px;background:var(--surface2);border:1px solid var(--border);'
+      + 'border-radius:4px;color:var(--text);font-size:13px;margin-top:2px;"></label>'
+      + '<label style="font-size:12px;color:var(--muted);">End Date<br>'
+      + '<input type="date" id="insp-end" '
+      + 'style="width:100%;padding:5px 8px;background:var(--surface2);border:1px solid var(--border);'
+      + 'border-radius:4px;color:var(--text);font-size:13px;margin-top:2px;"></label>'
       + '</div>'
-      + '<textarea id="cal-modal-input" class="cal-modal-textarea" rows="4" placeholder="Note text\u2026"></textarea>';
+      + '<label style="font-size:12px;color:var(--muted);">Notes<br>'
+      + '<textarea id="insp-note" class="cal-modal-textarea" rows="3" '
+      + 'placeholder="Optional notes\u2026" style="margin-top:4px;"></textarea></label>';
+    // Pre-fill end date based on selected type's default duration
+    setTimeout(function() {{
+      var sel = document.getElementById('insp-type');
+      var startEl = document.getElementById('insp-start');
+      var endEl   = document.getElementById('insp-end');
+      function updateEnd() {{
+        var opt = sel ? sel.options[sel.selectedIndex] : null;
+        var days = opt ? parseInt(opt.dataset.days || '1', 10) : 1;
+        var startVal = startEl ? startEl.value : dateStr;
+        if (!startVal) return;
+        var d = new Date(startVal + 'T00:00:00');
+        d.setDate(d.getDate() + days - 1);
+        if (endEl) endEl.value = d.toISOString().slice(0, 10);
+      }}
+      if (sel) sel.addEventListener('change', updateEnd);
+      if (startEl) startEl.addEventListener('change', updateEnd);
+      updateEnd();
+    }}, 0);
     calModalOpen(
-      'Add Note',
+      'Schedule Inspection',
       inputHtml,
       [
-        {{ label: 'Cancel', cls: 'cal-modal-btn-secondary', action: function() {{ calModalClose(); }} }},
-        {{ label: 'Save Note', cls: 'cal-modal-btn-primary', action: function() {{
-            var txt   = (document.getElementById('cal-modal-input') || {{}}).value || '';
-            var start = (document.getElementById('cal-note-start') || {{}}).value || dateStr;
-            var end   = (document.getElementById('cal-note-end')   || {{}}).value || '';
-            if (!txt.trim()) {{ calModalClose(); return; }}
+        {{ label: 'Cancel', cls: '', action: calModalClose }},
+        {{ label: 'Save', cls: 'cal-modal-btn-primary', action: function() {{
+            var tail  = (document.getElementById('insp-tail') || {{}}).value || '';
+            var sel   = document.getElementById('insp-type');
+            var iType = sel ? sel.value : '';
+            var opt   = sel ? sel.options[sel.selectedIndex] : null;
+            var color = opt ? (opt.dataset.color || '#29b6f6') : '#29b6f6';
+            var start = (document.getElementById('insp-start') || {{}}).value || dateStr;
+            var end   = (document.getElementById('insp-end')   || {{}}).value || '';
+            var note  = (document.getElementById('insp-note')  || {{}}).value || '';
+            if (!tail || !iType || !start) return;
             calModalClose();
             calShowStatus('Saving\u2026');
-            calSaveCustomNote(newId, txt.slice(0, 60), start, end || null, txt)
+            var id = 'insp-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+            supaUpsertInspection({{ id: id, tail: tail, inspection_type: iType, color: color,
+                                    start_date: start, end_date: end || null, note: note }})
               .then(function() {{
                 calShowStatus('Saved');
                 calendar.addEvent({{
-                  id: newId, title: txt.slice(0, 60),
-                  start: start, end: toExclusiveEndDate(end), allDay: true,
-                  backgroundColor: '#f59e0b', borderColor: '#f59e0b',
-                  extendedProps: {{ type: 'custom', note: txt, _azId: newId, tail: null,
-                                   intervalLabel: txt.slice(0, 60), endDate: end || null, color: '#f59e0b' }}
+                  id: id,
+                  title: tail + ' \u2014 ' + iType,
+                  start: start,
+                  end: toExclusiveEndDate(end),
+                  allDay: true,
+                  editable: false,
+                  backgroundColor: color,
+                  borderColor: color,
+                  extendedProps: {{ _scheduled: true, tail: tail, inspType: iType,
+                                   color: color, startDate: start, endDate: end || null, note: note }}
                 }});
               }})
               .catch(function(err) {{ calShowStatus('Save failed: ' + (err.message || err), true); }});
         }} }}
       ]
     );
-  }}
-
-  function calDeleteFromAzure(id) {{
-    return calApiFetch('DELETE', CAL_API + '/' + encodeURIComponent(id));
   }}
 
   function calShowStatus(msg, isErr) {{
@@ -1566,28 +1635,17 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
   }}
 
   // ── Watch List ──────────────────────────────────────────────────────────────
-  var WL_API = '/api/watchlist';
-
   function wlEsc(s) {{
     return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }}
 
-  function wlApiFetch(method, url, body) {{
-    var opts = {{ method: method, headers: {{}} }};
-    if (body !== undefined) {{
-      opts.headers['Content-Type'] = 'application/json';
-      opts.body = JSON.stringify(body);
-    }}
-    return fetch(url, opts).then(function(r) {{
-      if (!r.ok) {{
-        return r.text().then(function(t) {{
-          var msg = t.slice(0, 300);
-          try {{ msg = JSON.parse(t).error || msg; }} catch(e) {{}}
-          throw new Error('HTTP ' + r.status + ': ' + msg);
+  function wlFetchNotes(tail) {{
+    return supaFetch('watchlist_notes?tail=eq.' + encodeURIComponent(tail) + '&order=timestamp.asc&select=*')
+      .then(function(rows) {{
+        return (rows || []).map(function(r) {{
+          return {{ id: r.id, tail: r.tail, note: r.note, timestamp: r.timestamp }};
         }});
-      }}
-      return r.json();
-    }});
+      }});
   }}
 
   function wlOpenModal(tail) {{
@@ -1597,21 +1655,10 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
     document.getElementById('wl-modal-title').innerHTML =
       '<span style="color:var(--amber);letter-spacing:2px;">WATCH LIST</span>' +
       '<span style="color:var(--muted);margin:0 8px;">|</span>' + wlEsc(tail);
-    if (window.location.hostname.indexOf('github.io') !== -1) {{
-      document.getElementById('wl-modal-body').innerHTML =
-        '<div style="color:var(--muted);font-size:12px;line-height:1.6;">' +
-        'Watch List notes require the live site.<br>' +
-        '<a href="https://white-mud-028c6491e.2.azurestaticapps.net" ' +
-        'style="color:var(--blue);" target="_blank">Open live dashboard</a>' +
-        '</div>';
-      document.getElementById('wl-modal-footer').innerHTML =
-        '<button class="cal-modal-btn" onclick="wlModalClose()">Close</button>';
-      return;
-    }}
     document.getElementById('wl-modal-body').innerHTML =
       '<div style="color:var(--muted);font-size:12px;">Loading\u2026</div>';
     document.getElementById('wl-modal-footer').innerHTML = '';
-    wlApiFetch('GET', WL_API + '?tail=' + encodeURIComponent(tail) + '&_t=' + Date.now())
+    wlFetchNotes(tail)
       .then(function(notes) {{ wlRenderNotes(tail, notes); }})
       .catch(function(err) {{
         document.getElementById('wl-modal-body').innerHTML =
@@ -1646,16 +1693,12 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
     var note = (el ? el.value : '').trim();
     if (!note) return;
     var id = 'wl-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
-    var ts = new Date().toISOString();
     document.getElementById('wl-modal-footer').innerHTML =
       '<span style="color:var(--muted);font-size:11px;">Saving\u2026</span>';
-    wlApiFetch('POST', WL_API, {{ id: id, tail: tail, note: note }})
-      .then(function(data) {{
-        // POST returns the saved notes list — use it directly (no stale GET needed)
-        var notes = (data && Array.isArray(data.notes)) ? data.notes : [{{ id: id, tail: tail, note: note, timestamp: ts }}];
-        if (!notes.some(function(n) {{ return n.id === id; }})) {{
-          notes.push({{ id: id, tail: tail, note: note, timestamp: ts }});
-        }}
+    supaFetch('watchlist_notes', 'POST', {{ id: id, tail: tail, note: note }},
+      {{ 'Prefer': 'return=minimal' }})
+      .then(function() {{ return wlFetchNotes(tail); }})
+      .then(function(notes) {{
         wlRenderNotes(tail, notes);
         var footer = document.getElementById('wl-modal-footer');
         if (footer) {{
@@ -1681,13 +1724,13 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
         ta.value = noteText;
       }});
   }}
+
   function wlDeleteNote(id, tail) {{
     if (!confirm('Delete this note?')) return;
-    wlApiFetch('DELETE', WL_API + '/' + encodeURIComponent(id))
-      .then(function(data) {{
-        var notes = (data && Array.isArray(data.notes)) ? data.notes : [];
-        wlRenderNotes(tail, notes);
-      }})
+    supaFetch('watchlist_notes?id=eq.' + encodeURIComponent(id), 'DELETE',
+      undefined, {{ 'Prefer': 'return=minimal' }})
+      .then(function() {{ return wlFetchNotes(tail); }})
+      .then(function(notes) {{ wlRenderNotes(tail, notes); }})
       .catch(function(err) {{ alert('Delete failed: ' + err.message); }});
   }}
 
@@ -1723,21 +1766,22 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
       maintEventMap[azId] = idx;
       return {{
         id: azId,
-        title: ev.tail + ' ' + ev.intervalLabel,
+        title: 'Projected \u2014 ' + ev.tail + ' ' + ev.intervalLabel,
         start: ev.dueDate,
         end: endDate,
         allDay: true,
+        editable: false,
+        classNames: ['fc-projected'],
         backgroundColor: ev.color,
         borderColor: ev.color,
-        extendedProps: Object.assign({{}}, ev, {{ _azId: azId }})
+        extendedProps: Object.assign({{}}, ev, {{ _azId: azId, _projected: true }})
       }};
     }});
 
     calendar = new FullCalendar.Calendar(calEl, {{
       initialView: window.innerWidth < 900 ? 'listMonth' : 'dayGridMonth',
       height: 680,
-      editable: true,
-      eventStartEditable: true,
+      editable: false,
       navLinks: true,
       dayMaxEvents: 4,
       headerToolbar: {{ left: 'prev,next today', center: 'title', right: 'dayGridMonth,listMonth' }},
@@ -1748,41 +1792,29 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
       eventSources: [
         {{ events: maintEvents, id: 'maintenance' }},
         {{
-          id: 'azure',
+          id: 'scheduled',
           events: function(fetchInfo, successCb, failureCb) {{
-            fetch(CAL_API + '?t=' + Date.now())
-              .then(function(r) {{ return r.json(); }})
-              .then(function(saved) {{
-                if (!Array.isArray(saved)) {{
-                  console.warn('Azure calendar fetch: unexpected response', saved);
-                  successCb([]);
-                  return;
-                }}
-                // Apply saved overrides to maintenance events
-                saved.forEach(function(s) {{
-                  if (s.type === 'override') {{
-                    var ev = calendar.getEventById(s.id);
-                    if (ev && s.dueDate) {{
-                      ev.setStart(s.dueDate);
-                      if (ev.extendedProps) ev.extendedProps.dueDate = s.dueDate;
-                      if (ev.extendedProps) ev.extendedProps.note = s.note || '';
-                    }}
-                  }}
-                }});
-                // Return only user-created custom events (not overrides)
-                var custom = saved.filter(function(s) {{ return s.type === 'custom'; }}).map(function(s) {{
+            supaFetch('scheduled_inspections?select=*&order=start_date.asc')
+              .then(function(rows) {{
+                if (!Array.isArray(rows)) {{ successCb([]); return; }}
+                var evs = rows.map(function(r) {{
                   return {{
-                    id: s.id, title: s.tail ? (s.tail + ' ' + s.intervalLabel) : (s.intervalLabel || s.note || 'Note'),
-                    start: s.dueDate, end: toExclusiveEndDate(s.endDate), allDay: true,
-                    backgroundColor: s.color || '#29b6f6', borderColor: s.color || '#29b6f6',
-                    extendedProps: {{ type: 'custom', note: s.note, _azId: s.id,
-                                     tail: s.tail, intervalLabel: s.intervalLabel, endDate: s.endDate, color: s.color }}
+                    id: r.id,
+                    title: r.tail + ' \u2014 ' + r.inspection_type,
+                    start: r.start_date,
+                    end: toExclusiveEndDate(r.end_date),
+                    allDay: true,
+                    editable: false,
+                    backgroundColor: r.color,
+                    borderColor: r.color,
+                    extendedProps: {{ _scheduled: true, tail: r.tail, inspType: r.inspection_type,
+                                     color: r.color, startDate: r.start_date,
+                                     endDate: r.end_date, note: r.note }}
                   }};
                 }});
-                renderInspectionList();
-                successCb(custom);
+                successCb(evs);
               }})
-              .catch(function(err) {{ console.warn('Azure calendar fetch:', err); successCb([]); }});
+              .catch(function(err) {{ console.warn('Supabase load:', err); successCb([]); }});
           }}
         }}
       ],
@@ -1792,133 +1824,78 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
         var hasNote = ev.note && ev.note.trim();
         var node = document.createElement('div');
         node.className = 'fc-maint-pill';
-        if (isDateNote) {{
-          node.innerHTML = '<span style="opacity:0.85;">&#128196;</span>'
-            + '<span style="margin-left:4px;">' + (ev.note || ev.intervalLabel || 'Note').replace(/</g,'&lt;').slice(0,40) + '</span>';
+        if (ev._projected) {{
+          node.innerHTML = '<span style="opacity:0.6;font-style:italic;font-size:10px;">Projected</span>'
+            + ' <strong>' + (ev.tail || '') + '</strong>'
+            + '<span>' + (ev.intervalLabel || '') + '</span>';
         }} else {{
           node.innerHTML = '<strong>' + (ev.tail || '') + '</strong>'
-            + '<span>' + (ev.intervalLabel || '') + '</span>'
+            + '<span>' + (ev.inspType || ev.intervalLabel || '') + '</span>'
             + (hasNote ? '<span style="opacity:0.7;font-size:9px;margin-left:4px;">&#128196;</span>' : '');
         }}
         return {{ domNodes: [node] }};
       }},
       eventMouseEnter: function(info) {{
         var props = info.event.extendedProps || {{}};
-        var t = props.type;
-        if (t === 'note' || t === 'teams' || t === 'sharepoint') return;
-        if (t === 'custom' && !props.tail) {{
-          var start = info.event.startStr || '';
-          var endInclusive = props.endDate || toInclusiveEndDate(info.event.endStr || '');
-          var rangeText = endInclusive ? (start + ' → ' + endInclusive) : start;
-          var noteWithRange = Object.assign({{}}, props, {{ _rangeText: rangeText }});
-          showNoteHover(noteWithRange, info.jsEvent);
+        if (props._projected) {{ showHover(props, info.jsEvent); return; }}
+        if (props._scheduled) {{
+          var rangeText = props.endDate ? (props.startDate + ' \u2192 ' + props.endDate) : props.startDate;
+          showNoteHover(Object.assign({{}}, props, {{ _rangeText: rangeText }}), info.jsEvent);
           return;
         }}
         showHover(props, info.jsEvent);
       }},
       eventMouseLeave: function() {{ removeHover(); }},
-      eventDragStart: function() {{ removeHover(); }},
-      eventDrop: function(info) {{
-        var props = info.event.extendedProps || {{}};
-        var azId  = props._azId || info.event.id;
-        props.dueDate = info.event.startStr;
-        var isDateNote = props.type === 'custom' && !props.tail;
-        if (isDateNote) {{
-          props.endDate = toInclusiveEndDate(info.event.endStr || '');
-        }}
-        renderInspectionList();
-        calShowStatus('Saving\u2026');
-        var saveReq = isDateNote
-          ? calSaveCustomNote(azId, props.intervalLabel || 'Note', info.event.startStr, props.endDate || null, props.note || '')
-          : calSaveToAzure(azId, props.tail, props.intervalLabel, info.event.startStr, props.color, props.note || '');
-        saveReq
-          .then(function() {{ calShowStatus('Saved'); }})
-          .catch(function(err) {{ calShowStatus('Save failed: ' + (err.message || err), true); info.revert(); }});
-      }},
       eventClick: function(info) {{
         var props = info.event.extendedProps || {{}};
-        var azId  = props._azId || info.event.id;
+        if (props._projected) return; // projected pills are read-only
+        if (!props._scheduled) return;
+        var id = info.event.id;
         var currentNote = props.note || '';
-        var isDateNote = props.type === 'custom' && !props.tail;
-        if (isDateNote) {{
-          var endVal = props.endDate || toInclusiveEndDate(info.event.endStr || '');
-          calModalOpen(
-            'Edit Note',
-            '<div style="display:flex;gap:10px;margin-bottom:8px;">'
-              + '<label style="flex:1;font-size:12px;color:var(--muted);">Start<br>'
-              + '<input type="date" id="cal-note-start" value="' + info.event.startStr + '" style="width:100%;padding:4px 6px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:13px;margin-top:2px;"></label>'
-              + '<label style="flex:1;font-size:12px;color:var(--muted);">End (optional)<br>'
-              + '<input type="date" id="cal-note-end" value="' + endVal + '" style="width:100%;padding:4px 6px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:13px;margin-top:2px;"></label>'
-              + '</div>'
-              + '<textarea id="cal-modal-input" class="cal-modal-textarea" rows="4">' + currentNote.replace(/</g,'&lt;') + '</textarea>',
-            [
-              {{ label: 'Cancel', cls: '', action: calModalClose }},
-              {{ label: 'Delete Note', cls: 'cal-modal-btn-danger', action: function() {{
-                  calModalClose();
-                  calShowStatus('Deleting\u2026');
-                  calDeleteFromAzure(azId)
-                    .then(function() {{ calShowStatus('Deleted'); calendar.refetchEvents(); }})
-                    .catch(function(err) {{ calShowStatus('Delete failed: ' + (err.message || err), true); }});
-              }} }},
-              {{ label: 'Save Note', cls: 'cal-modal-btn-primary', action: function() {{
-                  var txt   = (document.getElementById('cal-modal-input') || {{}}).value || '';
-                  var start = (document.getElementById('cal-note-start') || {{}}).value || info.event.startStr;
-                  var end   = (document.getElementById('cal-note-end')   || {{}}).value || '';
-                  calModalClose();
-                  calShowStatus('Saving\u2026');
-                  calSaveCustomNote(azId, txt.slice(0, 60), start, end || null, txt)
-                    .then(function() {{
-                      calShowStatus('Saved');
-                      var ev = calendar.getEventById(azId);
-                      if (ev) {{
-                        ev.setStart(start); ev.setEnd(toExclusiveEndDate(end));
-                        ev.setExtendedProp('note', txt);
-                        ev.setExtendedProp('intervalLabel', txt.slice(0, 60));
-                        ev.setExtendedProp('endDate', end || null);
-                      }} else {{ calendar.refetchEvents(); }}
-                    }})
-                    .catch(function(err) {{ calShowStatus('Save failed: ' + (err.message || err), true); }});
-              }} }}
-            ]
-          );
-          return;
-        }}
         calModalOpen(
-          (props.tail ? props.tail + ' \u2014 ' : '') + (props.intervalLabel || info.event.title),
-          '<p class="cal-modal-desc">' + info.event.startStr + '</p>'
-            + '<p class="cal-modal-note-date">Note (shared across all devices):</p>'
-            + '<textarea id="cal-modal-input" class="cal-modal-textarea" rows="4">' + currentNote.replace(/</g,'&lt;') + '</textarea>',
+          props.tail + ' \u2014 ' + props.inspType,
+          '<p class="cal-modal-desc">' + props.startDate
+            + (props.endDate ? ' \u2192 ' + props.endDate : '') + '</p>'
+            + '<p class="cal-modal-note-date">Notes:</p>'
+            + '<textarea id="cal-modal-input" class="cal-modal-textarea" rows="4">'
+            + currentNote.replace(/</g,'&lt;') + '</textarea>',
           [
             {{ label: 'Cancel', cls: '', action: calModalClose }},
-            {{ label: 'Clear Note', cls: 'cal-modal-btn-danger', action: function() {{
+            {{ label: 'Delete', cls: 'cal-modal-btn-danger', action: function() {{
                 calModalClose();
-                props.note = '';
-                calendar.refetchEvents();
-                calShowStatus('Clearing\u2026');
-                calSaveToAzure(azId, props.tail, props.intervalLabel, info.event.startStr, props.color, '')
-                  .then(function() {{ calShowStatus('Cleared'); }})
-                  .catch(function(err) {{ calShowStatus('Failed: ' + (err.message || err), true); }});
+                calShowStatus('Deleting\u2026');
+                supaDeleteInspection(id)
+                  .then(function() {{
+                    calShowStatus('Deleted');
+                    var ev = calendar.getEventById(id);
+                    if (ev) ev.remove();
+                  }})
+                  .catch(function(err) {{ calShowStatus('Delete failed: ' + (err.message || err), true); }});
             }} }},
             {{ label: 'Save Note', cls: 'cal-modal-btn-primary', action: function() {{
                 var txt = (document.getElementById('cal-modal-input') || {{}}).value || '';
                 calModalClose();
-                props.note = txt;
-                calendar.refetchEvents();
                 calShowStatus('Saving\u2026');
-                calSaveToAzure(azId, props.tail, props.intervalLabel, info.event.startStr, props.color, txt)
-                  .then(function() {{ calShowStatus('Saved'); }})
+                supaUpsertInspection({{ id: id, tail: props.tail, inspection_type: props.inspType,
+                                        color: props.color, start_date: props.startDate,
+                                        end_date: props.endDate || null, note: txt }})
+                  .then(function() {{
+                    calShowStatus('Saved');
+                    var ev = calendar.getEventById(id);
+                    if (ev) ev.setExtendedProp('note', txt);
+                  }})
                   .catch(function(err) {{ calShowStatus('Save failed: ' + (err.message || err), true); }});
             }} }}
           ]
         );
       }},
-      dateClick: function(info) {{ calOpenNewNoteModal(info.dateStr); }},
+      dateClick: function(info) {{ calOpenAddInspectionModal(info.dateStr); }},
       navLinkDayClick: function(date, jsEvent) {{
         jsEvent.preventDefault();
         var y = date.getFullYear();
         var m = String(date.getMonth() + 1).padStart(2, '0');
         var d = String(date.getDate()).padStart(2, '0');
-        calOpenNewNoteModal(y + '-' + m + '-' + d);
+        calOpenAddInspectionModal(y + '-' + m + '-' + d);
       }}
     }});
 
