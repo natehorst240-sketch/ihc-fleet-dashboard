@@ -5,11 +5,11 @@
     "state": "Stationary",
     "speed": 0,
     "latitude": 40.6595,
-    "longitude": -111.889333,
+    "longitude": -111.889167,
     "heading": 359,
-    "altitude": 4055.0,
+    "altitude": 4052.0,
     "odometer": 71861.0,
-    "last_ping": "2026-04-13T13:47:20Z"
+    "last_ping": "2026-04-13T14:00:03Z"
   },
   {
     "vin": "N261HC",
