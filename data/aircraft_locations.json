@@ -4,12 +4,12 @@
     "asset_id": 31570,
     "state": "Stationary",
     "speed": 0,
-    "latitude": 41.755167,
-    "longitude": -111.820667,
+    "latitude": 41.183,
+    "longitude": -111.955,
     "heading": 0,
-    "altitude": 4603.0,
-    "odometer": 84887.0,
-    "last_ping": "2026-04-13T20:10:23Z"
+    "altitude": 4682.0,
+    "odometer": 84922.4,
+    "last_ping": "2026-04-13T21:23:27Z"
   },
   {
     "vin": "N261HC",
