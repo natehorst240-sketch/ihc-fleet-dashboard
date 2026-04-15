@@ -1,5 +1,29 @@
 [
   {
+    "vin": "N271HC",
+    "asset_id": 31622,
+    "state": "Inflight",
+    "speed": 141.0,
+    "latitude": 40.203,
+    "longitude": -111.329,
+    "heading": 262,
+    "altitude": 9446.0,
+    "odometer": 69285.2,
+    "last_ping": "2026-04-15T02:10:17Z"
+  },
+  {
+    "vin": "N431HC",
+    "asset_id": 31570,
+    "state": "Stationary",
+    "speed": 0,
+    "latitude": 41.755167,
+    "longitude": -111.8205,
+    "heading": 0,
+    "altitude": 4593.0,
+    "odometer": 85207.3,
+    "last_ping": "2026-04-15T02:09:58Z"
+  },
+  {
     "vin": "N281HC",
     "asset_id": 31576,
     "state": "Stationary",
@@ -8,20 +32,20 @@
     "longitude": -111.889333,
     "heading": 359,
     "altitude": 4304.0,
-    "odometer": 72287.9,
-    "last_ping": "2026-04-14T23:55:44Z"
+    "odometer": 72305.6,
+    "last_ping": "2026-04-15T01:55:35Z"
   },
   {
-    "vin": "N271HC",
-    "asset_id": 31622,
+    "vin": "N251HC",
+    "asset_id": 31608,
     "state": "Stationary",
     "speed": 0,
-    "latitude": 40.3045,
-    "longitude": -109.995833,
+    "latitude": 37.098667,
+    "longitude": -113.5515,
     "heading": 359,
-    "altitude": 5131.0,
-    "odometer": 69177.8,
-    "last_ping": "2026-04-14T22:00:57Z"
+    "altitude": 2618.0,
+    "odometer": 65247.2,
+    "last_ping": "2026-04-15T01:33:29Z"
   },
   {
     "vin": "N261HC",
@@ -34,30 +58,6 @@
     "altitude": 5663.0,
     "odometer": 73506.0,
     "last_ping": "2026-04-14T20:32:52Z"
-  },
-  {
-    "vin": "N251HC",
-    "asset_id": 31608,
-    "state": "Stationary",
-    "speed": 0,
-    "latitude": 37.098667,
-    "longitude": -113.5515,
-    "heading": 359,
-    "altitude": 2546.0,
-    "odometer": 65247.2,
-    "last_ping": "2026-04-14T19:56:21Z"
-  },
-  {
-    "vin": "N431HC",
-    "asset_id": 31570,
-    "state": "Stationary",
-    "speed": 0,
-    "latitude": 41.755167,
-    "longitude": -111.8205,
-    "heading": 0,
-    "altitude": 4590.0,
-    "odometer": 85207.3,
-    "last_ping": "2026-04-14T14:09:17Z"
   },
   {
     "vin": "N681HC",
