@@ -5,11 +5,11 @@
     "state": "Stationary",
     "speed": 0,
     "latitude": 41.1825,
-    "longitude": -111.954,
+    "longitude": -111.954167,
     "heading": 359,
-    "altitude": 4672.0,
-    "odometer": 73321.1,
-    "last_ping": "2026-04-25T22:25:44Z"
+    "altitude": 4682.0,
+    "odometer": 73321.3,
+    "last_ping": "2026-04-25T23:02:19Z"
   },
   {
     "vin": "N431HC",
