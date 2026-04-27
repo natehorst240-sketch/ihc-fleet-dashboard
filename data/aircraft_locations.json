@@ -1,5 +1,41 @@
 [
   {
+    "vin": "N681HC",
+    "asset_id": 31621,
+    "state": "Inflight",
+    "speed": 464.0,
+    "latitude": 40.211667,
+    "longitude": -117.944167,
+    "heading": 251,
+    "altitude": 33868.0,
+    "odometer": 301106.6,
+    "last_ping": "2026-04-27T19:38:08Z"
+  },
+  {
+    "vin": "N291HC",
+    "asset_id": 31585,
+    "state": "Stationary",
+    "speed": 0,
+    "latitude": 41.1825,
+    "longitude": -111.954167,
+    "heading": 359,
+    "altitude": 4678.0,
+    "odometer": 73539.9,
+    "last_ping": "2026-04-27T19:37:24Z"
+  },
+  {
+    "vin": "N581HC",
+    "asset_id": 31641,
+    "state": "Inflight",
+    "speed": 4.0,
+    "latitude": 40.7745,
+    "longitude": -111.956167,
+    "heading": 48,
+    "altitude": 4226.0,
+    "odometer": 221200.4,
+    "last_ping": "2026-04-27T19:36:29Z"
+  },
+  {
     "vin": "N261HC",
     "asset_id": 31755,
     "state": "Stationary",
@@ -10,18 +46,6 @@
     "altitude": 0,
     "odometer": 75054.5,
     "last_ping": "2026-04-27T17:59:53Z"
-  },
-  {
-    "vin": "N291HC",
-    "asset_id": 31585,
-    "state": "Stationary",
-    "speed": 0,
-    "latitude": 41.1825,
-    "longitude": -111.954167,
-    "heading": 359,
-    "altitude": 4554.0,
-    "odometer": 73483.2,
-    "last_ping": "2026-04-27T17:23:20Z"
   },
   {
     "vin": "N281HC",
@@ -60,18 +84,6 @@
     "last_ping": "2026-04-27T02:50:52Z"
   },
   {
-    "vin": "N681HC",
-    "asset_id": 31621,
-    "state": "Stationary",
-    "speed": 0,
-    "latitude": 40.773833,
-    "longitude": -111.956333,
-    "heading": 0,
-    "altitude": 4268.0,
-    "odometer": 300825.2,
-    "last_ping": "2026-04-26T23:16:45Z"
-  },
-  {
     "vin": "N271HC",
     "asset_id": 31622,
     "state": "Stationary",
@@ -94,18 +106,6 @@
     "altitude": 11430.0,
     "odometer": 212875.5,
     "last_ping": "2026-03-13T04:38:50Z"
-  },
-  {
-    "vin": "N581HC",
-    "asset_id": 31641,
-    "state": "N/A",
-    "speed": 4.0,
-    "latitude": 40.782833,
-    "longitude": -111.96,
-    "heading": 48,
-    "altitude": 4196.0,
-    "odometer": 221199.8,
-    "last_ping": "2025-09-09T13:35:56Z"
   },
   {
     "vin": "N361CR",
