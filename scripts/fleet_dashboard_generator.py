@@ -94,6 +94,9 @@ RETIREMENT_KEYWORDS = [
 ]
 
 # -- COLUMN INDICES (0-based) --------------------------------------------------
+# These are fallbacks. The parser resolves columns by header name first (see
+# COL_HEADERS below) and only uses these integers when a header is missing
+# from the CSV.
 COL_REG          = 0
 COL_AIRFRAME_RPT = 2
 COL_AIRFRAME_HRS = 3
@@ -103,10 +106,28 @@ COL_ITEM_TYPE    = 11
 COL_DISPOSITION  = 13
 COL_DESC         = 15
 COL_INTERVAL_HRS = 30
-COL_REM_DAYS     = 50
-COL_REM_MONTHS   = 52
-COL_REM_HRS      = 54
-COL_STATUS       = 63
+COL_REM_DAYS     = 51
+COL_REM_MONTHS   = 53
+COL_REM_HRS      = 55
+COL_STATUS       = 64
+
+# Canonical Veryon due-list header names. Resolving by header makes the parser
+# resilient to Veryon adding/reordering columns (e.g. the "Number of Instance"
+# column inserted between "Tolerance RIN" and "Next Due Date" in 2026 shifted
+# every later column by +1).
+COL_HEADERS = {
+    'COL_REG':          'Registration Number',
+    'COL_AIRFRAME_RPT': 'Airframe Report Date',
+    'COL_AIRFRAME_HRS': 'Airframe Hours',
+    'COL_ATA':          'ATA and Code',
+    'COL_ITEM_TYPE':    'Item Type',
+    'COL_DISPOSITION':  'Disposition',
+    'COL_DESC':         'Description',
+    'COL_REM_DAYS':     'Remaining Days',
+    'COL_REM_MONTHS':   'Remaining Months',
+    'COL_REM_HRS':      'Remaining Hours',
+    'COL_STATUS':       'Next Due Status',
+}
 
 # Org / display name (can be overridden by config)
 ORGANIZATION  = "IHC Health Services"
@@ -167,6 +188,26 @@ def load_config(path):
 
 
 # -- HELPERS -------------------------------------------------------------------
+
+def _normalize_header(s):
+    return ' '.join(str(s).split()).lower()
+
+
+def _resolve_columns(header_row, gcfg):
+    """Map logical column names to indices using the CSV header row.
+
+    Falls back to the integer index in gcfg (or the module default) when a
+    header name isn't found in the CSV.
+    """
+    name_to_idx = {_normalize_header(h): i for i, h in enumerate(header_row)}
+    resolved = {}
+    for logical_name, header_text in COL_HEADERS.items():
+        idx = name_to_idx.get(_normalize_header(header_text))
+        if idx is None:
+            idx = (gcfg or {}).get(logical_name, globals()[logical_name])
+        resolved[logical_name] = idx
+    return resolved
+
 
 def safe_float(val):
     if val is None:
@@ -582,18 +623,6 @@ def parse_due_list_parts(filepath, gcfg=None):
     _win_days = (gcfg or {}).get('COMPONENT_WINDOW_DAYS', COMPONENT_WINDOW_DAYS)
     _ret_kw   = (gcfg or {}).get('RETIREMENT_KEYWORDS',   RETIREMENT_KEYWORDS)
 
-    _col_reg  = (gcfg or {}).get('COL_REG',          COL_REG)
-    _col_rpt  = (gcfg or {}).get('COL_AIRFRAME_RPT', COL_AIRFRAME_RPT)
-    _col_ah   = (gcfg or {}).get('COL_AIRFRAME_HRS', COL_AIRFRAME_HRS)
-    _col_ata  = (gcfg or {}).get('COL_ATA',          COL_ATA)
-    _col_it   = (gcfg or {}).get('COL_ITEM_TYPE',    COL_ITEM_TYPE)
-    _col_dis  = (gcfg or {}).get('COL_DISPOSITION',  COL_DISPOSITION)
-    _col_desc = (gcfg or {}).get('COL_DESC',         COL_DESC)
-    _col_rd   = (gcfg or {}).get('COL_REM_DAYS',     COL_REM_DAYS)
-    _col_rm   = (gcfg or {}).get('COL_REM_MONTHS',   COL_REM_MONTHS)
-    _col_rh   = (gcfg or {}).get('COL_REM_HRS',      COL_REM_HRS)
-    _col_st   = (gcfg or {}).get('COL_STATUS',       COL_STATUS)
-
     def _has_ret_kw(desc):
         d = str(desc).upper()
         return any(kw in d for kw in _ret_kw)
@@ -608,6 +637,19 @@ def parse_due_list_parts(filepath, gcfg=None):
 
     if not rows or len(rows) < 2:
         raise ValueError(f"CSV appears empty or missing data rows: {filepath}")
+
+    cols = _resolve_columns(rows[0], gcfg)
+    _col_reg  = cols['COL_REG']
+    _col_rpt  = cols['COL_AIRFRAME_RPT']
+    _col_ah   = cols['COL_AIRFRAME_HRS']
+    _col_ata  = cols['COL_ATA']
+    _col_it   = cols['COL_ITEM_TYPE']
+    _col_dis  = cols['COL_DISPOSITION']
+    _col_desc = cols['COL_DESC']
+    _col_rd   = cols['COL_REM_DAYS']
+    _col_rm   = cols['COL_REM_MONTHS']
+    _col_rh   = cols['COL_REM_HRS']
+    _col_st   = cols['COL_STATUS']
 
     data_rows = rows[1:]
     aircraft_raw  = {}

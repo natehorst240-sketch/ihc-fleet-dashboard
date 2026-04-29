@@ -30,10 +30,10 @@
     "disposition": 13,
     "desc": 15,
     "interval_hrs": 30,
-    "rem_days": 50,
-    "rem_months": 52,
-    "rem_hrs": 54,
-    "status": 63
+    "rem_days": 51,
+    "rem_months": 53,
+    "rem_hrs": 55,
+    "status": 64
   },
 
   "_interval_comment": "Each inspection interval. 'hours' is the interval size in flight hours (null = date-only). 'days' is the calendar interval in days (null = hours-only). 'track_by' controls display: 'hours', 'days', or 'both'. 'ata_patterns' are Python regexes matched against the ATA column.",
