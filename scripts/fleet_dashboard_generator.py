@@ -196,15 +196,24 @@ def _normalize_header(s):
 def _resolve_columns(header_row, gcfg):
     """Map logical column names to indices using the CSV header row.
 
-    Falls back to the integer index in gcfg (or the module default) when a
-    header name isn't found in the CSV.
+    Resolution order:
+    1. Canonical header text from COL_HEADERS (primary, name-based).
+    2. Config override from col_indices — if a string, look it up as a header
+       name; if an int, use it directly as a 0-based index.
+    3. Module-level integer constant as last resort.
     """
     name_to_idx = {_normalize_header(h): i for i, h in enumerate(header_row)}
     resolved = {}
     for logical_name, header_text in COL_HEADERS.items():
         idx = name_to_idx.get(_normalize_header(header_text))
         if idx is None:
-            idx = (gcfg or {}).get(logical_name, globals()[logical_name])
+            override = (gcfg or {}).get(logical_name)
+            if isinstance(override, str):
+                idx = name_to_idx.get(_normalize_header(override))
+            elif isinstance(override, int):
+                idx = override
+            if idx is None:
+                idx = globals()[logical_name]
         resolved[logical_name] = idx
     return resolved
 

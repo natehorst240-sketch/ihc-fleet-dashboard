@@ -251,33 +251,30 @@ def run_wizard():
         })
         idx += 1
 
-    # ── Column Indices (Veryon CSV) ───────────────────────────────────────
-    section("Veryon CSV Column Indices")
-    print(dim("  The default indices match the standard Veryon due-list export."))
-    print(dim("  Press Enter to accept defaults, or type a new 0-based column number."))
+    # ── Column Names (Veryon CSV) ─────────────────────────────────────────
+    section("Veryon CSV Column Names")
+    print(dim("  The defaults match the standard Veryon due-list export headers."))
+    print(dim("  Press Enter to accept defaults, or type the exact column header name."))
 
     defaults = {
-        "reg":          0,
-        "airframe_rpt": 2,
-        "airframe_hrs": 3,
-        "ata":          5,
-        "equip_hrs":    7,
-        "item_type":    11,
-        "disposition":  13,
-        "desc":         15,
-        "interval_hrs": 30,
-        "rem_days":     50,
-        "rem_months":   52,
-        "rem_hrs":      54,
-        "status":       63,
+        "reg":          "Registration Number",
+        "airframe_rpt": "Airframe Report Date",
+        "airframe_hrs": "Airframe Hours",
+        "ata":          "ATA and Code",
+        "equip_hrs":    "Equipment Hours",
+        "item_type":    "Item Type",
+        "disposition":  "Disposition",
+        "desc":         "Description",
+        "interval_hrs": "Interval Hours",
+        "rem_days":     "Remaining Days",
+        "rem_months":   "Remaining Months",
+        "rem_hrs":      "Remaining Hours",
+        "status":       "Next Due Status",
     }
     col_indices = {}
     for name, default_val in defaults.items():
-        raw = ask_optional(f"  Column '{name}'", str(default_val))
-        try:
-            col_indices[name] = int(raw)
-        except ValueError:
-            col_indices[name] = default_val
+        raw = ask_optional(f"  Column '{name}'", default_val)
+        col_indices[name] = raw or default_val
 
     # ── GitHub Target ────────────────────────────────────────────────────
     section("Target GitHub Repository")
@@ -335,7 +332,7 @@ def build_config(answers):
             "REPLACEMENT", "REPLACE", "CHANGE OIL", "NOZZLE"
         ],
 
-        "_col_comment": "0-based column indices in the due-list CSV export from Veryon.",
+        "_col_comment": "Column header names in the due-list CSV export from Veryon.",
         "col_indices":  answers["col_indices"],
 
         "_interval_comment": (

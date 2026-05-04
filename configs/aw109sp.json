@@ -19,21 +19,21 @@
     "REPLACEMENT", "REPLACE", "CHANGE OIL", "NOZZLE"
   ],
 
-  "_col_comment": "0-based column indices in the due-list CSV export from CAMP/Veryon.",
+  "_col_comment": "Column header names in the due-list CSV export from CAMP/Veryon.",
   "col_indices": {
-    "reg": 0,
-    "airframe_rpt": 2,
-    "airframe_hrs": 3,
-    "ata": 5,
-    "equip_hrs": 7,
-    "item_type": 11,
-    "disposition": 13,
-    "desc": 15,
-    "interval_hrs": 30,
-    "rem_days": 51,
-    "rem_months": 53,
-    "rem_hrs": 55,
-    "status": 64
+    "reg":          "Registration Number",
+    "airframe_rpt": "Airframe Report Date",
+    "airframe_hrs": "Airframe Hours",
+    "ata":          "ATA and Code",
+    "equip_hrs":    "Equipment Hours",
+    "item_type":    "Item Type",
+    "disposition":  "Disposition",
+    "desc":         "Description",
+    "interval_hrs": "Interval Hours",
+    "rem_days":     "Remaining Days",
+    "rem_months":   "Remaining Months",
+    "rem_hrs":      "Remaining Hours",
+    "status":       "Next Due Status"
   },
 
   "_interval_comment": "Each inspection interval. 'hours' is the interval size in flight hours (null = date-only). 'days' is the calendar interval in days (null = hours-only). 'track_by' controls display: 'hours', 'days', or 'both'. 'ata_patterns' are Python regexes matched against the ATA column.",
