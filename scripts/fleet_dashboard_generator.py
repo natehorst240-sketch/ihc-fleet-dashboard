@@ -233,6 +233,18 @@ def classify(hrs):
     return 'green'
 
 
+def classify_days(days):
+    if days is None:
+        return 'na'
+    if days < 0:
+        return 'overdue'
+    if days <= 7:
+        return 'red'
+    if days <= 30:
+        return 'amber'
+    return 'green'
+
+
 def classify_from_status(status_str):
     if not status_str:
         return 'na'
@@ -244,6 +256,43 @@ def classify_from_status(status_str):
     if 'WITHIN TOLERANCE' in s or '10+' in s:
         return 'green'
     return 'na'
+
+
+_SEVERITY_ORDER = {'overdue': 0, 'red': 1, 'amber': 2, 'green': 3, 'na': 4}
+
+
+def classify_component(rem_hrs, rem_days, status):
+    """Worst-case classification across the hours limit, the calendar limit and
+    the textual status — a component is only as healthy as its nearest limit."""
+    cands = []
+    if rem_hrs is not None:
+        cands.append(classify(rem_hrs))
+    if rem_days is not None:
+        cands.append(classify_days(rem_days))
+    if not cands:
+        cands.append(classify_from_status(status))
+    return min(cands, key=lambda c: _SEVERITY_ORDER.get(c, 4))
+
+
+def component_remaining_label(rem_hrs, rem_days, status):
+    def _seg(val, unit, fmt):
+        return f'{abs(val):{fmt}} {unit} past limit' if val < 0 else f'{val:{fmt}} {unit} remaining'
+    overdue = (rem_hrs is not None and rem_hrs < 0) or (rem_days is not None and rem_days < 0)
+    prefix = 'OVERDUE - ' if overdue else ''
+    if rem_hrs is not None and rem_days is not None:
+        if not overdue:
+            return f'{rem_hrs:.1f} hrs / {rem_days:.0f} days remaining'
+        # List the limit(s) already exceeded first.
+        ordered = sorted(
+            [(rem_days, 'days', '.0f'), (rem_hrs, 'hrs', '.1f')],
+            key=lambda x: 0 if x[0] < 0 else 1,
+        )
+        return prefix + ' / '.join(_seg(v, u, f) for v, u, f in ordered)
+    if rem_hrs is not None:
+        return prefix + _seg(rem_hrs, 'hrs', '.1f')
+    if rem_days is not None:
+        return prefix + _seg(rem_days, 'days', '.0f')
+    return status
 
 
 def has_retirement_keyword(desc):
@@ -724,7 +773,7 @@ def parse_due_list_parts(filepath, gcfg=None):
         is_retirement_insp = (item_type.upper() == "INSPECTION" and _has_ret_kw(desc))
         if is_part or is_retirement_insp:
             hrs_in_window  = rem_hrs is not None and rem_hrs <= _win_hrs
-            days_in_window = rem_hrs is None and rem_days is not None and rem_days <= _win_days
+            days_in_window = rem_days is not None and rem_days <= _win_days
             past_due       = status.strip().upper() == "PAST DUE"
             if hrs_in_window or days_in_window or past_due:
                 if reg not in components_raw:
@@ -734,12 +783,12 @@ def parse_due_list_parts(filepath, gcfg=None):
                 clean_desc = re.sub(r"\n.*", "", clean_desc).strip().title()
                 disposition = row[_col_dis] if row[_col_dis] else ""
                 rii_flag = ("RII" in str(disposition).upper()) or ("RII" in desc.upper())
+                sort_cands = []
                 if rem_hrs is not None:
-                    sort_key = rem_hrs
-                elif rem_days is not None:
-                    sort_key = rem_days * 0.5
-                else:
-                    sort_key = 9999
+                    sort_cands.append(rem_hrs)
+                if rem_days is not None:
+                    sort_cands.append(rem_days * 0.5)
+                sort_key = min(sort_cands) if sort_cands else 9999
                 components_raw[reg].append({
                     "name": clean_desc, "rem_hrs": rem_hrs, "rem_days": rem_days,
                     "status": status, "rii": rii_flag, "sort_key": sort_key,
@@ -2198,6 +2247,7 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
     _target   = (gcfg or {}).get('TARGET_INTERVALS', TARGET_INTERVALS)
     _interval_cfg = (gcfg or {}).get('INTERVAL_CFG', None)
     _win_hrs  = (gcfg or {}).get('COMPONENT_WINDOW_HRS', COMPONENT_WINDOW_HRS)
+    _win_days = (gcfg or {}).get('COMPONENT_WINDOW_DAYS', COMPONENT_WINDOW_DAYS)
     _org      = (gcfg or {}).get('ORGANIZATION', ORGANIZATION)
     _disp     = (gcfg or {}).get('DISPLAY_NAME', DISPLAY_NAME)
 
@@ -2243,9 +2293,7 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
                     coming_count += 1
     for reg, comps in components.items():
         for c in comps:
-            rem   = c['rem_hrs']
-            rem_d = c.get('rem_days')
-            if (rem is not None and rem < 0) or (rem is None and rem_d is not None and rem_d < 0):
+            if classify_component(c['rem_hrs'], c.get('rem_days'), c.get('status', '')) == 'overdue':
                 comp_overdue += 1
 
     airborne_count = sum(1 for t in aircraft_list if positions.get(t['tail'], {}).get('status') == 'AIRBORNE')
@@ -2285,21 +2333,11 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
             rem      = c['rem_hrs']
             rem_days = c.get('rem_days')
             status   = c.get('status', '')
-            if rem is not None:
-                cls = classify(rem)
-            elif rem_days is not None:
-                cls = 'overdue' if rem_days < 0 else ('red' if rem_days <= 7 else ('amber' if rem_days <= 30 else 'green'))
-            else:
-                cls = classify_from_status(status)
+            cls = classify_component(rem, rem_days, status)
             ind_cls   = {'overdue':'comp-overdue','red':'comp-red','amber':'comp-amber','green':'comp-green'}.get(cls,'comp-green')
             txt_color = {'overdue':'var(--overdue)','red':'var(--red)','amber':'var(--amber)','green':'var(--green)'}.get(cls,'var(--green)')
             rii_badge = ' <span class="rii-badge">RII</span>' if c.get('rii') else ''
-            if rem is not None:
-                rem_label = f'OVERDUE - {abs(rem):.1f} hrs past limit' if rem < 0 else f'{rem:.1f} hrs remaining'
-            elif rem_days is not None:
-                rem_label = f'OVERDUE - {abs(rem_days):.0f} days past limit' if rem_days < 0 else f'{rem_days:.0f} days remaining'
-            else:
-                rem_label = status
+            rem_label = component_remaining_label(rem, rem_days, status)
             rows_html += f'''<div class="component-row">
   <div class="comp-indicator {ind_cls}"></div>
   <div class="comp-info">
@@ -2315,7 +2353,7 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
   {rows_html}
 </div>'''
     if not comp_panels_html:
-        comp_panels_html = '<div style="font-family:var(--mono);font-size:12px;color:var(--muted);padding:20px;">No components within 200 hours across fleet.</div>'
+        comp_panels_html = f'<div style="font-family:var(--mono);font-size:12px;color:var(--muted);padding:20px;">No components within {_win_hrs} hours or {_win_days} days across fleet.</div>'
 
     # Flight hours tab — sorted most to least by avg daily utilization
     util_pairs = sorted(
@@ -2686,7 +2724,7 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
         </tbody>
       </table>
     </div>
-    <div class="section-label" style="margin-top:36px;">Component Retirement / Overhaul - Within {_win_hrs} Hours</div>
+    <div class="section-label" style="margin-top:36px;">Component Retirement / Overhaul - Within {_win_hrs} Hours or {_win_days} Days</div>
     <div class="components-grid">{comp_panels_html}</div>
   </div>
 
