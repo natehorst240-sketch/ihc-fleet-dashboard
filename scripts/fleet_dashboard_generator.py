@@ -12,19 +12,12 @@ import csv
 import re
 import json
 import base64
-import io
 import argparse
 import os
 import math
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta, date
 from pathlib import Path
-
-try:
-    from PIL import Image as _PILImage
-    _HAS_PIL = True
-except ImportError:
-    _HAS_PIL = False
 
 # -- CONFIGURATION -------------------------------------------------------------
 
@@ -321,34 +314,12 @@ def parse_report_date(val):
         return None
 
 
-def load_photo_b64(data_dir):
-    """Load and resize the fleet photo, return base64 string or empty string."""
-    # Search in data/ dir, repo root, and next to this script
-    candidates = [
-        data_dir / PHOTO_FILENAME,
-        Path(__file__).parent.parent / PHOTO_FILENAME,
-        Path(__file__).parent / PHOTO_FILENAME,
-        Path(PHOTO_FILENAME),
-    ]
-    photo_path = next((p for p in candidates if p.exists()), None)
-    if photo_path is None:
-        return ''
-    try:
-        if _HAS_PIL:
-            img = _PILImage.open(str(photo_path))
-            # Resize to 120px tall (displayed at 60px, 2x for retina)
-            ratio = 120 / img.height
-            new_w = int(img.width * ratio)
-            img = img.resize((new_w, 120), _PILImage.LANCZOS)
-            buf = io.BytesIO()
-            img.save(buf, 'JPEG', quality=85, optimize=True)
-            return base64.b64encode(buf.getvalue()).decode('ascii')
-        else:
-            with open(photo_path, 'rb') as f:
-                return base64.b64encode(f.read()).decode('ascii')
-    except Exception as e:
-        print(f"Warning: could not load photo: {e}")
-        return ''
+def resolve_photo_filename(data_dir, gcfg=None):
+    """Return the fleet-photo filename if it sits next to the generated page,
+    so the HTML can reference it as a normal cached asset instead of inlining
+    a multi-hundred-KB base64 data URI on every load. Empty string if missing."""
+    name = (gcfg or {}).get('PHOTO_FILENAME', PHOTO_FILENAME)
+    return name if (data_dir / name).exists() else ''
 
 
 # -- FLIGHT HOURS TRACKING -----------------------------------------------------
@@ -2242,7 +2213,7 @@ def _build_location_tab(aircraft_list, positions, maps_api_key='', base_locs=Non
 # -- BUILD HTML ----------------------------------------------------------------
 
 def build_html(report_date, aircraft_list, components, component_changes, flight_hours_stats, positions,
-               source_filename, photo_b64='', gcfg=None, base_locs=None):
+               source_filename, photo_src='', gcfg=None, base_locs=None):
 
     _target   = (gcfg or {}).get('TARGET_INTERVALS', TARGET_INTERVALS)
     _interval_cfg = (gcfg or {}).get('INTERVAL_CFG', None)
@@ -2299,10 +2270,10 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
     airborne_count = sum(1 for t in aircraft_list if positions.get(t['tail'], {}).get('status') == 'AIRBORNE')
     at_base_count  = sum(1 for t in aircraft_list if positions.get(t['tail'], {}).get('status') == 'AT_BASE')
 
-    # Photo tag
-    if photo_b64:
+    # Photo tag — referenced as an external (cacheable) asset, not inlined
+    if photo_src:
         photo_tag = (
-            f'<img src="data:image/jpeg;base64,{photo_b64}" '
+            f'<img src="{photo_src}" loading="lazy" '
             f'style="height:60px;margin-left:16px;border-radius:4px;opacity:0.88;'
             f'box-shadow:0 0 8px rgba(41,182,246,0.3);" alt="IHC Fleet">'
         )
@@ -3179,9 +3150,9 @@ def main():
         except Exception:
             pass
 
-        log("Loading fleet photo...")
-        photo_b64 = load_photo_b64(data_dir)
-        log(f"Photo: {'loaded' if photo_b64 else 'not found'}")
+        log("Locating fleet photo...")
+        photo_src = resolve_photo_filename(data_dir, gcfg)
+        log(f"Photo: {'found (' + photo_src + ')' if photo_src else 'not found'}")
 
         log("Loading component change report...")
         component_changes = parse_component_change_report(component_change_path)
@@ -3190,7 +3161,7 @@ def main():
         html = build_html(
             report_date, aircraft_list, components, component_changes,
             flight_hours_stats, positions,
-            input_path.name, photo_b64, gcfg, base_locs=base_locs,
+            input_path.name, photo_src, gcfg, base_locs=base_locs,
         )
 
         with open(output_path, 'w', encoding='utf-8') as f:

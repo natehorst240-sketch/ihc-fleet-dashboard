@@ -13,6 +13,7 @@ const PRECACHE_ASSETS = [
   './icon.svg',
   './icon-192.png',
   './icon-512.png',
+  './IMG_9250.jpeg',
 ];
 
 // External CDN assets to cache on first fetch
