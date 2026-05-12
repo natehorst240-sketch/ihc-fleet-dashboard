@@ -2025,7 +2025,7 @@ def _extract_inline_assets(html, version):
 
 
 def build_html(report_date, aircraft_list, components, component_changes, flight_hours_stats, positions,
-               source_filename, photo_src='', gcfg=None, base_locs=None):
+               source_filename, photo_src='', gcfg=None, base_locs=None, version=None):
 
     _target   = (gcfg or {}).get('TARGET_INTERVALS', TARGET_INTERVALS)
     _interval_cfg = (gcfg or {}).get('INTERVAL_CFG', None)
@@ -2218,7 +2218,8 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
     _org_rest   = ' ' + _org_parts[1] if len(_org_parts) > 1 else ''
 
     gen_time = datetime.today().strftime('%d %b %Y %H:%M').upper()
-    version  = datetime.today().strftime('%Y%m%d%H%M%S')
+    if version is None:
+        version = datetime.today().strftime('%Y%m%d%H%M%S')
 
     html = f"""<!DOCTYPE html>
 <html lang="en">
@@ -2972,10 +2973,12 @@ def main():
         component_changes = parse_component_change_report(component_change_path)
         log(f"Component change months loaded: {len(component_changes)}")
 
+        version = datetime.today().strftime('%Y%m%d%H%M%S')
+
         html, css_text, js_text = build_html(
             report_date, aircraft_list, components, component_changes,
             flight_hours_stats, positions,
-            input_path.name, photo_src, gcfg, base_locs=base_locs,
+            input_path.name, photo_src, gcfg, base_locs=base_locs, version=version,
         )
 
         with open(output_path, 'w', encoding='utf-8') as f:
@@ -2991,8 +2994,18 @@ def main():
                 f.write(js_text)
             log(f"Script written to {data_dir / 'app.js'}")
 
+        # Stamp the service worker with this build id so it pre-caches the
+        # query-versioned styles.css / app.js and rotates its cache name.
+        sw_path = data_dir / "sw.js"
+        if sw_path.exists():
+            sw_src = sw_path.read_text(encoding='utf-8')
+            new_sw = re.sub(r"const ASSET_VERSION = '[^']*';",
+                            f"const ASSET_VERSION = '{version}';", sw_src, count=1)
+            if new_sw != sw_src:
+                sw_path.write_text(new_sw, encoding='utf-8')
+                log(f"Service worker stamped: {version}")
+
         # Write version file for auto-reload detection
-        version = datetime.today().strftime('%Y%m%d%H%M%S')
         with open(version_path, 'w', encoding='utf-8') as f:
             json.dump({"version": version}, f)
         log(f"Version: {version}")

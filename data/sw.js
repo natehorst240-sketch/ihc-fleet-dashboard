@@ -4,7 +4,11 @@
  * dashboard state even without a network connection.
  */
 
-const CACHE_NAME = 'ihc-fleet-v1';
+// ASSET_VERSION is rewritten with the current build id by the dashboard
+// generator (scripts/fleet_dashboard_generator.py) so that a new build bumps
+// the cache name and the pre-cached, query-versioned styles.css / app.js URLs.
+const ASSET_VERSION = '20260512034505';
+const CACHE_NAME = 'ihc-fleet-v' + ASSET_VERSION;
 
 // Assets to pre-cache on install
 const PRECACHE_ASSETS = [
@@ -14,6 +18,8 @@ const PRECACHE_ASSETS = [
   './icon-192.png',
   './icon-512.png',
   './IMG_9250.jpeg',
+  './styles.css?v=' + ASSET_VERSION,
+  './app.js?v=' + ASSET_VERSION,
 ];
 
 // External CDN assets to cache on first fetch
