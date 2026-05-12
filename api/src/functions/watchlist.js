@@ -50,10 +50,12 @@ function ghRequest(method, path, token, body) {
 async function readAll(token, gistId) {
   const res = await ghRequest('GET', `/gists/${gistId}`, token);
   if (res.status !== 200) throw new Error(`Gist read failed: HTTP ${res.status}: ${res.body.slice(0, 300)}`);
-  const gist = JSON.parse(res.body);
+  let gist;
+  try { gist = JSON.parse(res.body); }
+  catch { throw new Error(`Gist response not JSON (HTTP ${res.status})`); }
   const file = gist.files[GIST_FILE];
   if (!file) return [];
-  try { return JSON.parse(file.content); } catch { return []; }
+  try { const d = JSON.parse(file.content); return Array.isArray(d) ? d : []; } catch { return []; }
 }
 
 async function writeAll(token, gistId, notes) {
