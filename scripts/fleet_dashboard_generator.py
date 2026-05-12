@@ -12,19 +12,12 @@ import csv
 import re
 import json
 import base64
-import io
 import argparse
 import os
 import math
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta, date
 from pathlib import Path
-
-try:
-    from PIL import Image as _PILImage
-    _HAS_PIL = True
-except ImportError:
-    _HAS_PIL = False
 
 # -- CONFIGURATION -------------------------------------------------------------
 
@@ -321,34 +314,12 @@ def parse_report_date(val):
         return None
 
 
-def load_photo_b64(data_dir):
-    """Load and resize the fleet photo, return base64 string or empty string."""
-    # Search in data/ dir, repo root, and next to this script
-    candidates = [
-        data_dir / PHOTO_FILENAME,
-        Path(__file__).parent.parent / PHOTO_FILENAME,
-        Path(__file__).parent / PHOTO_FILENAME,
-        Path(PHOTO_FILENAME),
-    ]
-    photo_path = next((p for p in candidates if p.exists()), None)
-    if photo_path is None:
-        return ''
-    try:
-        if _HAS_PIL:
-            img = _PILImage.open(str(photo_path))
-            # Resize to 120px tall (displayed at 60px, 2x for retina)
-            ratio = 120 / img.height
-            new_w = int(img.width * ratio)
-            img = img.resize((new_w, 120), _PILImage.LANCZOS)
-            buf = io.BytesIO()
-            img.save(buf, 'JPEG', quality=85, optimize=True)
-            return base64.b64encode(buf.getvalue()).decode('ascii')
-        else:
-            with open(photo_path, 'rb') as f:
-                return base64.b64encode(f.read()).decode('ascii')
-    except Exception as e:
-        print(f"Warning: could not load photo: {e}")
-        return ''
+def resolve_photo_filename(data_dir, gcfg=None):
+    """Return the fleet-photo filename if it sits next to the generated page,
+    so the HTML can reference it as a normal cached asset instead of inlining
+    a multi-hundred-KB base64 data URI on every load. Empty string if missing."""
+    name = (gcfg or {}).get('PHOTO_FILENAME', PHOTO_FILENAME)
+    return name if (data_dir / name).exists() else ''
 
 
 # -- FLIGHT HOURS TRACKING -----------------------------------------------------
@@ -2013,236 +1984,48 @@ def _build_calendar_tab(aircraft_list, flight_hours_stats, interval_cfg=None):
 """
 
 
-# -- AIRCRAFT LOCATION TAB -----------------------------------------------------
-
-def _build_location_tab(aircraft_list, positions, maps_api_key='', base_locs=None):
-    """Aircraft location tab: Leaflet/OpenStreetMap panel (left) + registry cards (right)."""
-
-    ac_hrs = {ac['tail']: ac['airframe_hrs'] for ac in aircraft_list}
-    ac_hrs_js = json.dumps({t: (f"{h:,.1f}" if h else 'N/A') for t, h in ac_hrs.items()})
-    base_locs_js = json.dumps(base_locs or [])
-
-    css = '''<style>
-.location-status{margin-top:8px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-family:var(--mono);font-size:11px;color:var(--muted);}
-.location-status.error{color:var(--amber);}
-.location-wrap{margin-top:10px;}
-.location-map-col{min-width:0;}
-#location-map{width:100%;height:520px;border-radius:6px;border:1px solid var(--border);background:var(--surface);display:block;}
-.location-map-note{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:4px;opacity:.7;}
-</style>'''
-
-    refresh_js = """
-(function() {
-  var AC_HRS = __AC_HRS_JSON__;
-  var TRACKED_TAILS = new Set(__TRACKED_TAILS_JSON__);
-
-  function esc(t) { return String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-  function ageFmt(utcStr) { if (!utcStr) return ''; var dt=new Date(utcStr),now=new Date(); var m=Math.round((now-dt)/60000); if (isNaN(m)||m<0) return ''; return m<60 ? m+'m ago' : (m/60).toFixed(1)+'h ago'; }
-  function toNum(v) { var n = Number(v); return isFinite(n) ? n : null; }
-
-  var _map = null, _markers = [], _pendingPoints = null, _resizeScheduled = false;
-
-  // Helicopter SVG path (svgrepo) baked into base64 data URI — always red
-  var HELI_PATH = 'M60.64,28.1a1.24,1.24,0,0,0-1.27-1.22l-14.89-.33c.61-.91,1.51-2.05,2.78-3.57,'
-    + '6.16-7.36,4.19-9.8,4.19-9.8s-2.28-2-9.91,3.84c-1.31,1-2.34,1.76-3.19,2.31l.3-14.09a1.19,'
-    + '1.19,0,1,0-2.38,0l-.34,15.33c-2,.44-3-1.25-7.33-3.31,0,0-2.34.91-2.86,2.77a39.41,39.41,'
-    + '0,0,1,3.39,6.24l-14.5-.31a1.2,1.2,0,1,0-.05,2.39l14.6.31a1.28,1.28,0,0,0,.35.59L19.84,'
-    + '41.61l-4.57-3.24.54-1.25S12,39.7,11.5,41.34l-.14,2,1.37-.48.41-1.31L16,45.91s-.79.9-.24,'
-    + '1.47,1.55-.1,1.55-.1l4.35,3.1-1.32.35-.54,1.35,2,0c1.65-.39,4.4-4.13,4.4-4.13l-1.28.49'
-    + '-3-4.71,12.81-9.15a1.31,1.31,0,0,0,1,.45l-.32,15a1.19,1.19,0,1,0,2.38,0L38,35.23a42.17,'
-    + '42.17,0,0,1,5.67,3.47c1.88-.44,2.87-2.75,2.87-2.75-1.71-4.1-3.24-5.34-3.09-7l15.87.34A1.25,'
-    + '1.25,0,0,0,60.64,28.1Z';
-  var HELI_B64 = btoa('<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 -8 72 72"><path fill="#dc2626" d="' + HELI_PATH + '"/></svg>');
-
-  function makeLeafletIcon(tail, heading) {
-    var html = '<div style="text-align:center;line-height:1;pointer-events:auto;">'
-      + '<div style="font-family:monospace;font-size:10px;font-weight:bold;color:#000;'
-      + 'white-space:nowrap;text-shadow:0 0 3px #fff,0 0 3px #fff;margin-bottom:2px;">' + esc(tail) + '</div>'
-      + '<img src="data:image/svg+xml;base64,' + HELI_B64 + '" width="40" height="40" '
-      + 'style="display:block;transform:rotate(' + (heading || 0) + 'deg);'
-      + 'box-shadow:0 1px 3px rgba(0,0,0,0.5);">'
-      + '</div>';
-    return L.divIcon({ html: html, className: '', iconSize: [60, 56], iconAnchor: [30, 56] });
-  }
-
-  function scheduleMapResize() {
-    if (!_map || _resizeScheduled) return;
-    _resizeScheduled = true;
-    requestAnimationFrame(function() {
-      requestAnimationFrame(function() {
-        _resizeScheduled = false;
-        _map.invalidateSize(false);
-      });
-    });
-  }
-
-  function initMap() {
-    if (_map) { scheduleMapResize(); return; }
-    // Fixed Utah view — sw/ne corners cover UT/ID/WY/NV/AZ corridor
-    var utahBounds = L.latLngBounds([36.9, -114.2], [42.1, -109.0]);
-    _map = L.map('location-map', {
-      center: [39.5, -111.5], zoom: 7,
-      minZoom: 6, maxZoom: 16,
-      maxBounds: utahBounds.pad(0.3)
-    });
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-      maxZoom: 16
-    }).addTo(_map);
-    if (_pendingPoints) { updateMarkers(_pendingPoints); _pendingPoints = null; }
-    scheduleMapResize();
-  }
-
-  function updateMarkers(points) {
-    if (!_map) { _pendingPoints = points; return; }
-    _markers.forEach(function(m) { _map.removeLayer(m); });
-    _markers = [];
-    points.forEach(function(p) {
-      var lat = p.position.lat, lng = p.position.lng;
-      if (!isFinite(lat) || !isFinite(lng)) return;
-      var icon = makeLeafletIcon(p.tail, p.heading || 0);
-      var marker = L.marker([lat, lng], { icon: icon });
-      marker.bindPopup(
-        '<div style="font-family:monospace;font-size:12px;line-height:1.7;color:#000;">'
-        + '<b style="font-size:14px;">' + esc(p.tail) + '</b><br>'
-        + 'State: ' + esc(p.state || 'UNKNOWN') + '<br>'
-        + 'Speed: ' + esc(String(p.speed_kts || 0)) + ' kts<br>'
-        + 'Heading: ' + esc(String(p.heading || 0)) + '&deg;<br>'
-        + 'Last ping: ' + esc(p.lastPing || 'N/A') + ' ' + esc(ageFmt(p.lastPing)) + '</div>'
-      );
-      marker.addTo(_map);
-      _markers.push(marker);
-    });
-  }
-
-  function loadLeaflet() {
-    if (window.L) { initMap(); return; }
-    var link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-    document.head.appendChild(link);
-    var s = document.createElement('script');
-    s.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-    s.onload = function() { initMap(); };
-    document.head.appendChild(s);
-  }
-
-  function setLocationStatus(msg, isError) {
-    var el = document.getElementById('location-status');
-    if (!el) return;
-    el.textContent = msg;
-    el.classList.toggle('error', !!isError);
-  }
-
-  function renderRegistry(points) {
-    var wrap = document.getElementById('location-grid');
-    if (!wrap) return;
-    if (!points.length) {
-      wrap.innerHTML = '<div class="location-card"><div class="location-card-row">No live aircraft position data found.</div></div>';
-      return;
-    }
-    points.sort(function(a,b){ return a.tail.localeCompare(b.tail); });
-    wrap.innerHTML = points.map(function(p) {
-      var dotColor = p.state==='AIRBORNE' ? '#dc2626' : p.state==='AT_BASE' ? '#16a34a' : '#94a3b8';
-      var dot = '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:'+dotColor+';margin-right:4px;vertical-align:middle;"></span>';
-      var stateLabel = p.state==='AT_BASE' ? 'AT '+esc(p.baseName||'BASE') : esc(p.state||'UNKNOWN');
-      return '<div class="location-card"><div class="location-card-head"><div class="location-card-tail">'+dot+esc(p.tail)+
-        '</div><div class="location-card-state">'+stateLabel+
-        '</div></div><div class="location-card-row">'+esc((p.position.lat||0).toFixed(4))+', '+esc((p.position.lng||0).toFixed(4))+
-        '</div><div class="location-card-row">Speed: '+esc(String(p.speed_kts||0))+' kts &middot; Hdg: '+esc(String(p.heading||0))+'&deg;'+
-        '</div><div class="location-card-row">Last ping: '+esc(p.lastPing||'No ping time')+' '+esc(ageFmt(p.lastPing))+
-        '</div><div class="location-card-row">Airframe: '+esc(AC_HRS[p.tail]||'N/A')+' TT</div></div>';
-    }).join('');
-  }
-
-  var BASE_LOCS = __BASE_LOCS_JSON__;
-  function distanceMiles(lat1, lon1, lat2, lon2) {
-    var R=3958.8, r=Math.PI/180, dLat=(lat2-lat1)*r, dLon=(lon2-lon1)*r;
-    var a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*r)*Math.cos(lat2*r)*Math.sin(dLon/2)*Math.sin(dLon/2);
-    return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
-  }
-  function deriveStatus(rawState, speedKts, lat, lon) {
-    var s = String(rawState||'').toUpperCase();
-    if (s.indexOf('AIRBORNE')>=0||s.indexOf('IN_FLIGHT')>=0||s.indexOf('INFLIGHT')>=0||(speedKts!==null&&speedKts>40))
-      return {status:'AIRBORNE', baseName:''};
-    if (lat!==null && lon!==null && BASE_LOCS.length) {
-      var best=null, bestDist=Infinity;
-      BASE_LOCS.forEach(function(b){ var d=distanceMiles(lat,lon,b.lat,b.lon); if(d<bestDist){bestDist=d;best=b;} });
-      if (best && bestDist<=10) return {status:'AT_BASE', baseName:best.name};
-    }
-    return {status:'AWAY', baseName:''};
-  }
-  function buildAircraftDetail(rows) {
-    var detail = {};
-    (Array.isArray(rows) ? rows : []).forEach(function(row) {
-      var tail = String((row&&(row.vin||row.tail||row.registration))||'').toUpperCase();
-      if (!tail || !TRACKED_TAILS.has(tail)) return;
-      var speed = toNum(row.speed_kts); if (speed===null) speed=toNum(row.speed);
-      var lat=toNum(row.latitude), lon=toNum(row.longitude);
-      var st = deriveStatus(row.state||row.status, speed, lat, lon);
-      detail[tail] = { lat: row.latitude, lon: row.longitude, heading: row.heading,
-        speed_kts: speed, utc: row.last_ping||row.utc||'',
-        status: st.status, baseName: st.baseName };
-    });
-    return detail;
-  }
-
-  function render(payload) {
-    if (!payload) return;
-    var detail = payload.aircraft_detail || {};
-    var points = Object.keys(detail).map(function(tail) {
-      var d = detail[tail]||{}, lat=toNum(d.lat), lng=toNum(d.lon);
-      if (lat===null||lng===null) return null;
-      return { tail: tail, position: {lat:lat,lng:lng}, heading: toNum(d.heading),
-               speed_kts: toNum(d.speed_kts), lastPing: d.utc||'', state: d.status||'UNKNOWN', baseName: d.baseName||'' };
-    }).filter(Boolean);
-    renderRegistry(points);
-    updateMarkers(points);
-    setLocationStatus(points.length ? ('Updated '+new Date().toLocaleTimeString()) : 'No current positions to draw.', !points.length);
-  }
-
-  function refresh() {
-    fetch('aircraft_locations.json?ts='+Date.now(), {cache:'no-store'})
-      .then(function(r) { if (!r.ok) throw new Error('failed'); return r.json(); })
-      .then(function(rows) { render({aircraft_detail: buildAircraftDetail(rows||[])}); })
-      .catch(function() { setLocationStatus('Could not refresh aircraft location feed.', true); render({aircraft_detail:{}}); });
-  }
-
-  window.addEventListener('fleet:location:shown', function() {
-    if (window.L) initMap();
-    scheduleMapResize();
-  });
-  window.addEventListener('resize', scheduleMapResize);
-
-  loadLeaflet();
-  setLocationStatus('Refreshing live positions...', false);
-  refresh();
-  setInterval(refresh, 60000);
-})();
-"""
-    refresh_js = refresh_js.replace('__AC_HRS_JSON__', ac_hrs_js)
-    refresh_js = refresh_js.replace('__TRACKED_TAILS_JSON__', TRACKED_AIRCRAFT_TAILS_JS)
-    refresh_js = refresh_js.replace('__BASE_LOCS_JSON__', base_locs_js)
-
-    return f'''{css}
-<div class="section-label">Aircraft Location</div>
-<div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:4px;">
-  Live positions via SkyRouter GPS &middot; refreshes every 60 seconds
-</div>
-<div id="location-status" class="location-status">Loading locations...</div>
-<div class="location-wrap">
-  <div class="location-map-col">
-    <div id="location-map"></div>
-    <div id="location-grid" class="location-grid" style="display:none;"></div>
-    <div class="location-map-note">&#x1F534; airborne &middot; icon rotates to heading &middot; OpenStreetMap</div>
-  </div>
-</div>
-<script>{refresh_js}</script>'''
-
 # -- BUILD HTML ----------------------------------------------------------------
 
+def _extract_inline_assets(html, version):
+    """Move inline <style> and inline <script> blocks out of the page into
+    sibling styles.css / app.js files so index.html stays small.
+
+    The tiny theme bootstrap (<script data-bootstrap>) stays inline because it
+    must run before first paint; it and CDN <script src=...> tags are left
+    untouched since this only matches attribute-less <style>/<script> tags.
+    Returns (html, css_text, js_text); css_text/js_text are '' when nothing
+    was found.
+    """
+    css_parts, js_parts = [], []
+    first_style = [True]
+
+    def _take_style(m):
+        css_parts.append(m.group(1).strip())
+        if first_style[0]:
+            first_style[0] = False
+            return f'<link rel="stylesheet" href="styles.css?v={version}">\n'
+        return ''
+
+    def _take_script(m):
+        js_parts.append(m.group(1).strip())
+        return ''
+
+    html = re.sub(r'<style>\n?(.*?)\n?</style>\n?', _take_style, html, flags=re.S)
+    html = re.sub(r'<script>\n?(.*?)\n?</script>\n?', _take_script, html, flags=re.S)
+
+    if js_parts:
+        html = html.replace('</body>', f'<script src="app.js?v={version}"></script>\n</body>', 1)
+
+    # Tidy up the blank lines left where blocks were removed.
+    html = re.sub(r'\n{3,}', '\n\n', html)
+
+    css_text = ('\n\n'.join(css_parts) + '\n') if css_parts else ''
+    js_text  = ('\n\n'.join(js_parts) + '\n') if js_parts else ''
+    return html, css_text, js_text
+
+
 def build_html(report_date, aircraft_list, components, component_changes, flight_hours_stats, positions,
-               source_filename, photo_b64='', gcfg=None, base_locs=None):
+               source_filename, photo_src='', gcfg=None, base_locs=None, version=None):
 
     _target   = (gcfg or {}).get('TARGET_INTERVALS', TARGET_INTERVALS)
     _interval_cfg = (gcfg or {}).get('INTERVAL_CFG', None)
@@ -2299,10 +2082,10 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
     airborne_count = sum(1 for t in aircraft_list if positions.get(t['tail'], {}).get('status') == 'AIRBORNE')
     at_base_count  = sum(1 for t in aircraft_list if positions.get(t['tail'], {}).get('status') == 'AT_BASE')
 
-    # Photo tag
-    if photo_b64:
+    # Photo tag — referenced as an external (cacheable) asset, not inlined
+    if photo_src:
         photo_tag = (
-            f'<img src="data:image/jpeg;base64,{photo_b64}" '
+            f'<img src="{photo_src}" loading="lazy" '
             f'style="height:60px;margin-left:16px;border-radius:4px;opacity:0.88;'
             f'box-shadow:0 0 8px rgba(41,182,246,0.3);" alt="IHC Fleet">'
         )
@@ -2435,9 +2218,10 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
     _org_rest   = ' ' + _org_parts[1] if len(_org_parts) > 1 else ''
 
     gen_time = datetime.today().strftime('%d %b %Y %H:%M').upper()
-    version  = datetime.today().strftime('%Y%m%d%H%M%S')
+    if version is None:
+        version = datetime.today().strftime('%Y%m%d%H%M%S')
 
-    return f"""<!DOCTYPE html>
+    html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -2642,7 +2426,7 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
   #theme-toggle{{font-size:14px;padding:4px 8px;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:2px;cursor:pointer;line-height:1;margin-top:6px;transition:border-color 0.15s,color 0.15s;}}
   #theme-toggle:hover{{border-color:var(--blue);color:var(--blue);}}
 </style>
-<script>
+<script data-bootstrap>
   (function(){{var t=localStorage.getItem('fleet-theme')||'dark';if(t==='light')document.documentElement.setAttribute('data-theme','light');}})();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
@@ -3083,6 +2867,8 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
 </body>
 </html>"""
 
+    return _extract_inline_assets(html, version)
+
 
 # -- MAIN ----------------------------------------------------------------------
 
@@ -3179,26 +2965,47 @@ def main():
         except Exception:
             pass
 
-        log("Loading fleet photo...")
-        photo_b64 = load_photo_b64(data_dir)
-        log(f"Photo: {'loaded' if photo_b64 else 'not found'}")
+        log("Locating fleet photo...")
+        photo_src = resolve_photo_filename(data_dir, gcfg)
+        log(f"Photo: {'found (' + photo_src + ')' if photo_src else 'not found'}")
 
         log("Loading component change report...")
         component_changes = parse_component_change_report(component_change_path)
         log(f"Component change months loaded: {len(component_changes)}")
 
-        html = build_html(
+        version = datetime.today().strftime('%Y%m%d%H%M%S')
+
+        html, css_text, js_text = build_html(
             report_date, aircraft_list, components, component_changes,
             flight_hours_stats, positions,
-            input_path.name, photo_b64, gcfg, base_locs=base_locs,
+            input_path.name, photo_src, gcfg, base_locs=base_locs, version=version,
         )
 
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(html)
         log(f"Dashboard written to {output_path}")
 
+        if css_text:
+            with open(data_dir / "styles.css", 'w', encoding='utf-8') as f:
+                f.write(css_text)
+            log(f"Stylesheet written to {data_dir / 'styles.css'}")
+        if js_text:
+            with open(data_dir / "app.js", 'w', encoding='utf-8') as f:
+                f.write(js_text)
+            log(f"Script written to {data_dir / 'app.js'}")
+
+        # Stamp the service worker with this build id so it pre-caches the
+        # query-versioned styles.css / app.js and rotates its cache name.
+        sw_path = data_dir / "sw.js"
+        if sw_path.exists():
+            sw_src = sw_path.read_text(encoding='utf-8')
+            new_sw = re.sub(r"const ASSET_VERSION = '[^']*';",
+                            f"const ASSET_VERSION = '{version}';", sw_src, count=1)
+            if new_sw != sw_src:
+                sw_path.write_text(new_sw, encoding='utf-8')
+                log(f"Service worker stamped: {version}")
+
         # Write version file for auto-reload detection
-        version = datetime.today().strftime('%Y%m%d%H%M%S')
         with open(version_path, 'w', encoding='utf-8') as f:
             json.dump({"version": version}, f)
         log(f"Version: {version}")
