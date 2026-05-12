@@ -1,5 +1,5 @@
 (function () {
-  var MAINT = [{"tail": "N251HC", "interval": 50, "intervalLabel": "50 HR", "dueDate": "2026-06-19", "durationDays": 1, "remLabel": "39.2 hrs remaining (~38.3 days) \u00b7 earlier than ~1 mo 24 days remaining", "color": "#00897b"}, {"tail": "N251HC", "interval": 100, "intervalLabel": "100 HR", "dueDate": "2026-08-07", "durationDays": 1, "remLabel": "89.2 hrs remaining (~87.2 days)", "color": "#1e88e5"}, {"tail": "N251HC", "interval": 200, "intervalLabel": "200 HR", "dueDate": "2026-11-12", "durationDays": 3, "remLabel": "189.2 hrs remaining (~184.9 days)", "color": "#8e24aa"}, {"tail": "N251HC", "interval": 400, "intervalLabel": "400 HR", "dueDate": "2026-11-23", "durationDays": 4, "remLabel": "199.8 hrs remaining (~195.2 days)", "color": "#e53935"}, {"tail": "N251HC", "interval": 800, "intervalLabel": "800 HR", "dueDate": "2026-12-03", "durationDays": 4, "remLabel": "210.5 hrs remaining (~205.7 days)", "color": "#fb8c00"}, {"tail": "N251HC", "interval": 2400, "intervalLabel": "2400 HR", "dueDate": "2029-01-25", "durationDays": 7, "remLabel": "1012.7 hrs remaining (~989.6 days)", "color": "#43a047"}, {"tail": "N251HC", "interval": 3200, "intervalLabel": "3200 HR", "dueDate": "2026-11-15", "durationDays": 21, "remLabel": "192.2 hrs remaining (~187.8 days)", "color": "#6d4c41"}, {"tail": "N261HC", "interval": 50, "intervalLabel": "50 HR", "dueDate": "2026-06-05", "durationDays": 1, "remLabel": "27.3 hrs remaining (~24.4 days) \u00b7 earlier than ~1 mo 10 days remaining", "color": "#00897b"}, {"tail": "N261HC", "interval": 100, "intervalLabel": "100 HR", "dueDate": "2026-07-20", "durationDays": 1, "remLabel": "77.3 hrs remaining (~69.2 days)", "color": "#1e88e5"}, {"tail": "N261HC", "interval": 200, "intervalLabel": "200 HR", "dueDate": "2026-10-17", "durationDays": 3, "remLabel": "177.3 hrs remaining (~158.8 days)", "color": "#8e24aa"}, {"tail": "N261HC", "interval": 400, "intervalLabel": "400 HR", "dueDate": "2026-10-16", "durationDays": 4, "remLabel": "176.4 hrs remaining (~158.0 days)", "color": "#e53935"}, {"tail": "N261HC", "interval": 800, "intervalLabel": "800 HR", "dueDate": "2026-10-12", "durationDays": 4, "remLabel": "171.7 hrs remaining (~153.8 days)", "color": "#fb8c00"}, {"tail": "N261HC", "interval": 2400, "intervalLabel": "2400 HR", "dueDate": "2028-10-06", "durationDays": 7, "remLabel": "980.7 hrs remaining (~878.2 days)", "color": "#43a047"}, {"tail": "N261HC", "interval": 3200, "intervalLabel": "3200 HR", "dueDate": "2026-11-20", "durationDays": 21, "remLabel": "214.8 hrs remaining (~192.4 days)", "color": "#6d4c41"}, {"tail": "N271HC", "interval": 50, "intervalLabel": "50 HR", "dueDate": "2026-05-27", "durationDays": 1, "remLabel": "17.6 hrs remaining (~15.9 days) \u00b7 earlier than ~1 mo 3 days remaining", "color": "#00897b"}, {"tail": "N271HC", "interval": 100, "intervalLabel": "100 HR", "dueDate": "2026-07-12", "durationDays": 1, "remLabel": "67.6 hrs remaining (~61.1 days)", "color": "#1e88e5"}, {"tail": "N271HC", "interval": 200, "intervalLabel": "200 HR", "dueDate": "2026-07-10", "durationDays": 3, "remLabel": "65.5 hrs remaining (~59.2 days)", "color": "#8e24aa"}, {"tail": "N271HC", "interval": 400, "intervalLabel": "400 HR", "dueDate": "2026-08-04", "durationDays": 4, "remLabel": "93.5 hrs remaining (~84.5 days)", "color": "#e53935"}, {"tail": "N271HC", "interval": 800, "intervalLabel": "800 HR", "dueDate": "2026-08-12", "durationDays": 4, "remLabel": "102.8 hrs remaining (~92.9 days)", "color": "#fb8c00"}, {"tail": "N271HC", "interval": 2400, "intervalLabel": "2400 HR", "dueDate": "2026-07-30", "durationDays": 7, "remLabel": "88.3 hrs remaining (~79.8 days)", "color": "#43a047"}, {"tail": "N271HC", "interval": 3200, "intervalLabel": "3200 HR", "dueDate": "2032-07-20", "durationDays": 21, "remLabel": "2502.8 hrs remaining (~2261.6 days)", "color": "#6d4c41"}, {"tail": "N281HC", "interval": 50, "intervalLabel": "50 HR", "dueDate": "2026-05-31", "durationDays": 1, "remLabel": "39.5 hrs remaining (~19.5 days) \u00b7 earlier than ~1 mo 26 days remaining", "color": "#00897b"}, {"tail": "N281HC", "interval": 100, "intervalLabel": "100 HR", "dueDate": "2026-06-25", "durationDays": 1, "remLabel": "89.5 hrs remaining (~44.1 days)", "color": "#1e88e5"}, {"tail": "N281HC", "interval": 200, "intervalLabel": "200 HR", "dueDate": "2026-06-25", "durationDays": 3, "remLabel": "90.3 hrs remaining (~44.5 days)", "color": "#8e24aa"}, {"tail": "N281HC", "interval": 400, "intervalLabel": "400 HR", "dueDate": "2026-06-25", "durationDays": 4, "remLabel": "90.7 hrs remaining (~44.7 days)", "color": "#e53935"}, {"tail": "N281HC", "interval": 800, "intervalLabel": "800 HR", "dueDate": "2027-01-08", "durationDays": 4, "remLabel": "490.7 hrs remaining (~241.7 days)", "color": "#fb8c00"}, {"tail": "N281HC", "interval": 2400, "intervalLabel": "2400 HR", "dueDate": "2026-06-27", "durationDays": 7, "remLabel": "94.2 hrs remaining (~46.4 days)", "color": "#43a047"}, {"tail": "N281HC", "interval": 3200, "intervalLabel": "3200 HR", "dueDate": "2030-04-04", "durationDays": 21, "remLabel": "2890.7 hrs remaining (~1424.0 days)", "color": "#6d4c41"}, {"tail": "N291HC", "interval": 50, "intervalLabel": "50 HR", "dueDate": "2026-05-25", "durationDays": 1, "remLabel": "16.0 hrs remaining (~14.0 days) \u00b7 earlier than ~1 mo 7 days remaining", "color": "#00897b"}, {"tail": "N291HC", "interval": 100, "intervalLabel": "100 HR", "dueDate": "2026-07-08", "durationDays": 1, "remLabel": "66.0 hrs remaining (~57.7 days)", "color": "#1e88e5"}, {"tail": "N291HC", "interval": 200, "intervalLabel": "200 HR", "dueDate": "2026-10-04", "durationDays": 3, "remLabel": "166.0 hrs remaining (~145.2 days)", "color": "#8e24aa"}, {"tail": "N291HC", "interval": 400, "intervalLabel": "400 HR", "dueDate": "2027-03-28", "durationDays": 4, "remLabel": "366.0 hrs remaining (~320.1 days)", "color": "#e53935"}, {"tail": "N291HC", "interval": 800, "intervalLabel": "800 HR", "dueDate": "2027-04-01", "durationDays": 4, "remLabel": "371.2 hrs remaining (~324.7 days)", "color": "#fb8c00"}, {"tail": "N291HC", "interval": 2400, "intervalLabel": "2400 HR", "dueDate": "2029-03-05", "durationDays": 7, "remLabel": "1175.7 hrs remaining (~1028.3 days)", "color": "#43a047"}, {"tail": "N291HC", "interval": 3200, "intervalLabel": "3200 HR", "dueDate": "2027-04-11", "durationDays": 21, "remLabel": "382.8 hrs remaining (~334.8 days)", "color": "#6d4c41"}, {"tail": "N431HC", "interval": 50, "intervalLabel": "50 HR", "dueDate": "2026-05-19", "durationDays": 1, "remLabel": "8.6 hrs remaining (~7.8 days) \u00b7 earlier than ~23 days remaining", "color": "#00897b"}, {"tail": "N431HC", "interval": 100, "intervalLabel": "100 HR", "dueDate": "2026-05-19", "durationDays": 1, "remLabel": "8.1 hrs remaining (~7.4 days)", "color": "#1e88e5"}, {"tail": "N431HC", "interval": 200, "intervalLabel": "200 HR", "dueDate": "2026-08-18", "durationDays": 3, "remLabel": "108.1 hrs remaining (~98.3 days)", "color": "#8e24aa"}, {"tail": "N431HC", "interval": 400, "intervalLabel": "400 HR", "dueDate": "2027-02-16", "durationDays": 4, "remLabel": "308.1 hrs remaining (~280.1 days)", "color": "#e53935"}, {"tail": "N431HC", "interval": 800, "intervalLabel": "800 HR", "dueDate": "2027-02-22", "durationDays": 4, "remLabel": "314.9 hrs remaining (~286.3 days)", "color": "#fb8c00"}, {"tail": "N431HC", "interval": 2400, "intervalLabel": "2400 HR", "dueDate": "2027-03-04", "durationDays": 7, "remLabel": "326.2 hrs remaining (~296.5 days)", "color": "#43a047"}, {"tail": "N431HC", "interval": 3200, "intervalLabel": "3200 HR", "dueDate": "2029-02-28", "durationDays": 21, "remLabel": "1126.2 hrs remaining (~1023.8 days)", "color": "#6d4c41"}, {"tail": "N531HC", "interval": 50, "intervalLabel": "50 HR", "dueDate": "2026-05-12", "durationDays": 1, "remLabel": "6.5 hrs PAST LIMIT", "color": "#00897b"}, {"tail": "N531HC", "interval": 100, "intervalLabel": "100 HR", "dueDate": "2026-05-12", "durationDays": 1, "remLabel": "1.2 hrs remaining (~0.9 days)", "color": "#1e88e5"}, {"tail": "N531HC", "interval": 200, "intervalLabel": "200 HR", "dueDate": "2026-05-14", "durationDays": 3, "remLabel": "3.6 hrs remaining (~2.6 days)", "color": "#8e24aa"}, {"tail": "N531HC", "interval": 400, "intervalLabel": "400 HR", "dueDate": "2026-05-16", "durationDays": 4, "remLabel": "6.0 hrs remaining (~4.3 days)", "color": "#e53935"}, {"tail": "N531HC", "interval": 800, "intervalLabel": "800 HR", "dueDate": "2027-02-23", "durationDays": 4, "remLabel": "406.0 hrs remaining (~287.9 days)", "color": "#fb8c00"}, {"tail": "N531HC", "interval": 2400, "intervalLabel": "2400 HR", "dueDate": "2028-11-17", "durationDays": 7, "remLabel": "1297.8 hrs remaining (~920.4 days)", "color": "#43a047"}, {"tail": "N531HC", "interval": 3200, "intervalLabel": "3200 HR", "dueDate": "2031-10-23", "durationDays": 21, "remLabel": "2806.0 hrs remaining (~1990.1 days)", "color": "#6d4c41"}];
+  var MAINT = [{"tail": "N251HC", "interval": 50, "intervalLabel": "50 HR", "dueDate": "2026-06-11", "durationDays": 1, "remLabel": "35.2 hrs remaining (~30.4 days) \u00b7 earlier than ~1 mo 22 days remaining", "color": "#00897b"}, {"tail": "N251HC", "interval": 100, "intervalLabel": "100 HR", "dueDate": "2026-07-24", "durationDays": 1, "remLabel": "85.2 hrs remaining (~73.7 days)", "color": "#1e88e5"}, {"tail": "N251HC", "interval": 200, "intervalLabel": "200 HR", "dueDate": "2026-10-19", "durationDays": 3, "remLabel": "185.2 hrs remaining (~160.1 days)", "color": "#8e24aa"}, {"tail": "N251HC", "interval": 400, "intervalLabel": "400 HR", "dueDate": "2026-10-28", "durationDays": 4, "remLabel": "195.8 hrs remaining (~169.3 days)", "color": "#e53935"}, {"tail": "N251HC", "interval": 800, "intervalLabel": "800 HR", "dueDate": "2026-11-06", "durationDays": 4, "remLabel": "206.5 hrs remaining (~178.5 days)", "color": "#fb8c00"}, {"tail": "N251HC", "interval": 2400, "intervalLabel": "2400 HR", "dueDate": "2028-09-30", "durationDays": 7, "remLabel": "1008.7 hrs remaining (~872.1 days)", "color": "#43a047"}, {"tail": "N251HC", "interval": 3200, "intervalLabel": "3200 HR", "dueDate": "2026-10-21", "durationDays": 21, "remLabel": "188.2 hrs remaining (~162.7 days)", "color": "#6d4c41"}, {"tail": "N261HC", "interval": 50, "intervalLabel": "50 HR", "dueDate": "2026-05-31", "durationDays": 1, "remLabel": "24.0 hrs remaining (~19.6 days) \u00b7 earlier than ~1 mo 8 days remaining", "color": "#00897b"}, {"tail": "N261HC", "interval": 100, "intervalLabel": "100 HR", "dueDate": "2026-07-11", "durationDays": 1, "remLabel": "74.0 hrs remaining (~60.3 days)", "color": "#1e88e5"}, {"tail": "N261HC", "interval": 200, "intervalLabel": "200 HR", "dueDate": "2026-09-30", "durationDays": 3, "remLabel": "174.0 hrs remaining (~141.8 days)", "color": "#8e24aa"}, {"tail": "N261HC", "interval": 400, "intervalLabel": "400 HR", "dueDate": "2026-09-30", "durationDays": 4, "remLabel": "173.1 hrs remaining (~141.1 days)", "color": "#e53935"}, {"tail": "N261HC", "interval": 800, "intervalLabel": "800 HR", "dueDate": "2026-09-26", "durationDays": 4, "remLabel": "168.4 hrs remaining (~137.3 days)", "color": "#fb8c00"}, {"tail": "N261HC", "interval": 2400, "intervalLabel": "2400 HR", "dueDate": "2028-07-16", "durationDays": 7, "remLabel": "977.4 hrs remaining (~796.8 days)", "color": "#43a047"}, {"tail": "N261HC", "interval": 3200, "intervalLabel": "3200 HR", "dueDate": "2026-10-31", "durationDays": 21, "remLabel": "211.5 hrs remaining (~172.4 days)", "color": "#6d4c41"}, {"tail": "N271HC", "interval": 50, "intervalLabel": "50 HR", "dueDate": "2026-05-23", "durationDays": 1, "remLabel": "14.2 hrs remaining (~11.6 days) \u00b7 earlier than ~1 mo 1 days remaining", "color": "#00897b"}, {"tail": "N271HC", "interval": 100, "intervalLabel": "100 HR", "dueDate": "2026-07-03", "durationDays": 1, "remLabel": "64.2 hrs remaining (~52.6 days)", "color": "#1e88e5"}, {"tail": "N271HC", "interval": 200, "intervalLabel": "200 HR", "dueDate": "2026-07-01", "durationDays": 3, "remLabel": "62.1 hrs remaining (~50.9 days)", "color": "#8e24aa"}, {"tail": "N271HC", "interval": 400, "intervalLabel": "400 HR", "dueDate": "2026-07-24", "durationDays": 4, "remLabel": "90.1 hrs remaining (~73.9 days)", "color": "#e53935"}, {"tail": "N271HC", "interval": 800, "intervalLabel": "800 HR", "dueDate": "2026-08-01", "durationDays": 4, "remLabel": "99.4 hrs remaining (~81.5 days)", "color": "#fb8c00"}, {"tail": "N271HC", "interval": 2400, "intervalLabel": "2400 HR", "dueDate": "2026-07-20", "durationDays": 7, "remLabel": "84.9 hrs remaining (~69.6 days)", "color": "#43a047"}, {"tail": "N271HC", "interval": 3200, "intervalLabel": "3200 HR", "dueDate": "2031-12-20", "durationDays": 21, "remLabel": "2499.4 hrs remaining (~2048.7 days)", "color": "#6d4c41"}, {"tail": "N281HC", "interval": 50, "intervalLabel": "50 HR", "dueDate": "2026-05-27", "durationDays": 1, "remLabel": "34.0 hrs remaining (~15.4 days) \u00b7 earlier than ~1 mo 24 days remaining", "color": "#00897b"}, {"tail": "N281HC", "interval": 100, "intervalLabel": "100 HR", "dueDate": "2026-06-18", "durationDays": 1, "remLabel": "84.0 hrs remaining (~38.0 days)", "color": "#1e88e5"}, {"tail": "N281HC", "interval": 200, "intervalLabel": "200 HR", "dueDate": "2026-06-19", "durationDays": 3, "remLabel": "84.8 hrs remaining (~38.3 days)", "color": "#8e24aa"}, {"tail": "N281HC", "interval": 400, "intervalLabel": "400 HR", "dueDate": "2026-06-19", "durationDays": 4, "remLabel": "85.2 hrs remaining (~38.5 days)", "color": "#e53935"}, {"tail": "N281HC", "interval": 800, "intervalLabel": "800 HR", "dueDate": "2026-12-17", "durationDays": 4, "remLabel": "485.2 hrs remaining (~219.2 days)", "color": "#fb8c00"}, {"tail": "N281HC", "interval": 2400, "intervalLabel": "2400 HR", "dueDate": "2026-06-21", "durationDays": 7, "remLabel": "88.7 hrs remaining (~40.1 days)", "color": "#43a047"}, {"tail": "N281HC", "interval": 3200, "intervalLabel": "3200 HR", "dueDate": "2029-12-05", "durationDays": 21, "remLabel": "2885.2 hrs remaining (~1303.6 days)", "color": "#6d4c41"}, {"tail": "N291HC", "interval": 50, "intervalLabel": "50 HR", "dueDate": "2026-05-22", "durationDays": 1, "remLabel": "13.0 hrs remaining (~10.5 days) \u00b7 earlier than ~1 mo 5 days remaining", "color": "#00897b"}, {"tail": "N291HC", "interval": 100, "intervalLabel": "100 HR", "dueDate": "2026-07-01", "durationDays": 1, "remLabel": "63.0 hrs remaining (~50.7 days)", "color": "#1e88e5"}, {"tail": "N291HC", "interval": 200, "intervalLabel": "200 HR", "dueDate": "2026-09-20", "durationDays": 3, "remLabel": "163.0 hrs remaining (~131.1 days)", "color": "#8e24aa"}, {"tail": "N291HC", "interval": 400, "intervalLabel": "400 HR", "dueDate": "2027-02-27", "durationDays": 4, "remLabel": "363.0 hrs remaining (~292.0 days)", "color": "#e53935"}, {"tail": "N291HC", "interval": 800, "intervalLabel": "800 HR", "dueDate": "2027-03-04", "durationDays": 4, "remLabel": "368.2 hrs remaining (~296.1 days)", "color": "#fb8c00"}, {"tail": "N291HC", "interval": 2400, "intervalLabel": "2400 HR", "dueDate": "2028-12-10", "durationDays": 7, "remLabel": "1172.7 hrs remaining (~943.2 days)", "color": "#43a047"}, {"tail": "N291HC", "interval": 3200, "intervalLabel": "3200 HR", "dueDate": "2027-03-13", "durationDays": 21, "remLabel": "379.8 hrs remaining (~305.5 days)", "color": "#6d4c41"}, {"tail": "N431HC", "interval": 50, "intervalLabel": "50 HR", "dueDate": "2026-05-15", "durationDays": 1, "remLabel": "3.8 hrs remaining (~3.0 days) \u00b7 earlier than ~21 days remaining", "color": "#00897b"}, {"tail": "N431HC", "interval": 100, "intervalLabel": "100 HR", "dueDate": "2026-05-14", "durationDays": 1, "remLabel": "3.3 hrs remaining (~2.6 days)", "color": "#1e88e5"}, {"tail": "N431HC", "interval": 200, "intervalLabel": "200 HR", "dueDate": "2026-08-01", "durationDays": 3, "remLabel": "103.3 hrs remaining (~82.0 days)", "color": "#8e24aa"}, {"tail": "N431HC", "interval": 400, "intervalLabel": "400 HR", "dueDate": "2027-01-07", "durationDays": 4, "remLabel": "303.3 hrs remaining (~240.7 days)", "color": "#e53935"}, {"tail": "N431HC", "interval": 800, "intervalLabel": "800 HR", "dueDate": "2027-01-13", "durationDays": 4, "remLabel": "310.1 hrs remaining (~246.1 days)", "color": "#fb8c00"}, {"tail": "N431HC", "interval": 2400, "intervalLabel": "2400 HR", "dueDate": "2027-01-22", "durationDays": 7, "remLabel": "321.4 hrs remaining (~255.1 days)", "color": "#43a047"}, {"tail": "N431HC", "interval": 3200, "intervalLabel": "3200 HR", "dueDate": "2028-10-18", "durationDays": 21, "remLabel": "1121.4 hrs remaining (~890.0 days)", "color": "#6d4c41"}, {"tail": "N531HC", "interval": 50, "intervalLabel": "50 HR", "dueDate": "2026-06-13", "durationDays": 1, "remLabel": "48.1 hrs remaining (~32.6 days) \u00b7 earlier than ~1 mo 27 days remaining", "color": "#00897b"}, {"tail": "N531HC", "interval": 100, "intervalLabel": "100 HR", "dueDate": "2026-05-12", "durationDays": 1, "remLabel": "0.7 hrs PAST LIMIT", "color": "#1e88e5"}, {"tail": "N531HC", "interval": 200, "intervalLabel": "200 HR", "dueDate": "2026-05-13", "durationDays": 3, "remLabel": "1.7 hrs remaining (~1.2 days)", "color": "#8e24aa"}, {"tail": "N531HC", "interval": 400, "intervalLabel": "400 HR", "dueDate": "2026-05-14", "durationDays": 4, "remLabel": "4.1 hrs remaining (~2.8 days)", "color": "#e53935"}, {"tail": "N531HC", "interval": 800, "intervalLabel": "800 HR", "dueDate": "2027-02-10", "durationDays": 4, "remLabel": "404.1 hrs remaining (~274.3 days)", "color": "#fb8c00"}, {"tail": "N531HC", "interval": 2400, "intervalLabel": "2400 HR", "dueDate": "2028-10-07", "durationDays": 7, "remLabel": "1295.9 hrs remaining (~879.6 days)", "color": "#43a047"}, {"tail": "N531HC", "interval": 3200, "intervalLabel": "3200 HR", "dueDate": "2031-07-28", "durationDays": 21, "remLabel": "2804.1 hrs remaining (~1903.2 days)", "color": "#6d4c41"}];
   var calEl = document.getElementById('maint-calendar');
   var listEl = document.getElementById('estimated-inspection-list');
   var hoverEl = null;
@@ -123,8 +123,8 @@
   var _calMFooter = document.getElementById('cal-modal-footer');
 
   function calModalClose() {
-    if (_calOverlay) _calOverlay.style.display = 'none';
-    if (_calModal)   _calModal.style.display   = 'none';
+    _calOverlay.style.display = 'none';
+    _calModal.style.display   = 'none';
   }
 
   function calModalOpen(title, bodyHtml, buttons) {
@@ -189,9 +189,7 @@
       return r.text().then(function(txt) {
         calDebugLog(method || 'GET', url, r.status, txt.slice(0, 200));
         if (!r.ok) throw new Error('HTTP ' + r.status + ': ' + txt.slice(0, 300));
-        if (!txt) return null;
-        try { return JSON.parse(txt); }
-        catch (e) { throw new Error('Response parse error (HTTP ' + r.status + '): ' + txt.slice(0, 100)); }
+        return txt ? JSON.parse(txt) : null;
       });
     });
   }
@@ -247,7 +245,6 @@
         var startVal = startEl ? startEl.value : dateStr;
         if (!startVal) return;
         var d = new Date(startVal + 'T00:00:00');
-        if (isNaN(d.getTime())) return;
         d.setDate(d.getDate() + days - 1);
         if (endEl) endEl.value = d.toISOString().slice(0, 10);
       }
@@ -312,10 +309,6 @@
     return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
-  function jsStr(s) {
-    return String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-  }
-
   function wlFetchNotes(tail) {
     return supaFetch('watchlist_notes?tail=eq.' + encodeURIComponent(tail) + '&order=timestamp.asc&select=*')
       .then(function(rows) {
@@ -348,7 +341,7 @@
       return '<div style="border:1px solid var(--border);border-radius:4px;padding:8px 32px 8px 10px;margin-bottom:6px;position:relative;">' +
         '<div style="color:var(--text);font-size:12px;line-height:1.5;white-space:pre-wrap;">' + wlEsc(n.note) + '</div>' +
         '<div style="color:var(--muted);font-size:10px;margin-top:4px;">' + new Date(n.timestamp).toLocaleString() + '</div>' +
-        '<button onclick="wlDeleteNote(\'' + jsStr(n.id) + '\',\'' + jsStr(tail) + '\')" ' +
+        '<button onclick="wlDeleteNote(\'' + n.id + '\',\'' + wlEsc(tail) + '\')" ' +
           'style="position:absolute;top:5px;right:8px;background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;line-height:1;" ' +
           'title="Delete note">×</button>' +
         '</div>';
@@ -362,7 +355,7 @@
 
     document.getElementById('wl-modal-footer').innerHTML =
       '<button class="cal-modal-btn" onclick="wlModalClose()">Close</button>' +
-      '<button class="cal-modal-btn cal-modal-btn-primary" onclick="wlSaveNote(\'' + jsStr(tail) + '\')">Add Note</button>';
+      '<button class="cal-modal-btn cal-modal-btn-primary" onclick="wlSaveNote(\'' + wlEsc(tail) + '\')">Add Note</button>';
   }
 
   function wlSaveNote(tail) {
@@ -412,10 +405,8 @@
   }
 
   function wlModalClose() {
-    var o = document.getElementById('wl-modal-overlay');
-    var m = document.getElementById('wl-modal');
-    if (o) o.style.display = 'none';
-    if (m) m.style.display = 'none';
+    document.getElementById('wl-modal-overlay').style.display = 'none';
+    document.getElementById('wl-modal').style.display = 'none';
   }
 
   // Expose watch list functions to global scope (onclick handlers need them)
@@ -457,7 +448,6 @@
       };
     });
 
-    try {
     calendar = new FullCalendar.Calendar(calEl, {
       initialView: 'dayGridMonth',
       height: 'auto',
@@ -473,23 +463,21 @@
             supaFetch('scheduled_inspections?select=*&order=start_date.asc')
               .then(function(rows) {
                 if (!Array.isArray(rows)) { successCb([]); return; }
-                var evs = rows.reduce(function(acc, r) {
-                  if (!r.id || !r.start_date) return acc;
-                  acc.push({
+                var evs = rows.map(function(r) {
+                  return {
                     id: r.id,
-                    title: (r.tail || '') + ' — ' + (r.inspection_type || ''),
+                    title: r.tail + ' — ' + r.inspection_type,
                     start: r.start_date,
                     end: toExclusiveEndDate(r.end_date),
                     allDay: true,
                     editable: false,
-                    backgroundColor: r.color || '#29b6f6',
-                    borderColor: r.color || '#29b6f6',
-                    extendedProps: { _scheduled: true, tail: r.tail || '', inspType: r.inspection_type || '',
-                                     color: r.color || '#29b6f6', startDate: r.start_date,
-                                     endDate: r.end_date || null, note: r.note || '' }
-                  });
-                  return acc;
-                }, []);
+                    backgroundColor: r.color,
+                    borderColor: r.color,
+                    extendedProps: { _scheduled: true, tail: r.tail, inspType: r.inspection_type,
+                                     color: r.color, startDate: r.start_date,
+                                     endDate: r.end_date, note: r.note }
+                  };
+                });
                 successCb(evs);
               })
               .catch(function(err) { console.warn('Supabase load:', err); successCb([]); });
@@ -580,17 +568,13 @@
     calendar.render();
     window.addEventListener('fleet:calendar:shown', function() { calendar.updateSize(); });
     document.addEventListener('mousemove', moveHover);
-    } catch (err) {
-      console.error('[renderCalendar] FullCalendar init failed:', err);
-      if (calEl) calEl.innerHTML = '<div style="color:var(--red);padding:10px;font-size:12px;font-family:var(--mono);">Calendar failed to initialize.</div>';
-    }
   }
 
   renderInspectionList();
   renderCalendar();
 })();
 
-const DASHBOARD_VERSION = "20260512084548";
+const DASHBOARD_VERSION = "20260512110710";
 
   // Auto-reload when a newer build is deployed — polls every 3 minutes
   (function() {
@@ -616,8 +600,7 @@ const DASHBOARD_VERSION = "20260512084548";
     document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
     if (activeBtn) activeBtn.classList.add('active');
     document.querySelectorAll('.tab-content').forEach(function(t){ t.classList.remove('active'); });
-    var tabEl = document.getElementById('tab-' + tabName);
-    if (tabEl) tabEl.classList.add('active');
+    document.getElementById('tab-' + tabName).classList.add('active');
     var mobileSelect = document.getElementById('mobile-tab-select');
     if (mobileSelect && mobileSelect.value !== tabName) mobileSelect.value = tabName;
     if (tabName === 'calendar') {
@@ -713,7 +696,7 @@ const DASHBOARD_VERSION = "20260512084548";
 
   // 200hr bar chart
   var labels200 = ['N531HC','N271HC','N281HC','N431HC','N631HC','N291HC','N261HC','N731HC','N251HC'];
-  var values200 = [3.60,65.50,90.30,108.10,147.60,166.00,177.30,179.40,189.20];
+  var values200 = [1.70,62.10,84.80,103.30,147.60,163.00,174.00,179.40,185.20];
   if (labels200.length === 0) {
     document.getElementById('bar200').parentElement.innerHTML =
       "<div style='font-family:var(--mono);font-size:12px;color:var(--muted);padding:10px;'>No numeric 200-hr data found.</div>";
@@ -747,10 +730,10 @@ const DASHBOARD_VERSION = "20260512084548";
     new Chart(ctx, {
       type: 'bar',
       data: {
-        labels: ["N281HC","N531HC","N291HC","N261HC","N271HC","N431HC","N251HC","N631HC","N731HC"],
+        labels: ["N281HC","N531HC","N431HC","N291HC","N261HC","N271HC","N251HC","N631HC","N731HC"],
         datasets: [
-          { label: 'Avg Daily (hrs)', data: [2.03,1.41,1.14,1.12,1.11,1.1,1.02,0,0], backgroundColor: 'rgba(41,182,246,0.8)', borderColor: '#29b6f6', borderWidth: 1, yAxisID: 'yDaily' },
-          { label: 'Avg Weekly (hrs)', data: [14.21,9.87,8.0,7.82,7.75,7.7,7.16,0,0], backgroundColor: 'rgba(246,173,85,0.8)', borderColor: '#f6ad55', borderWidth: 1, yAxisID: 'yWeekly' }
+          { label: 'Avg Daily (hrs)', data: [2.21,1.47,1.26,1.24,1.23,1.22,1.16,0,0], backgroundColor: 'rgba(41,182,246,0.8)', borderColor: '#29b6f6', borderWidth: 1, yAxisID: 'yDaily' },
+          { label: 'Avg Weekly (hrs)', data: [15.49,10.31,8.82,8.7,8.59,8.54,8.1,0,0], backgroundColor: 'rgba(246,173,85,0.8)', borderColor: '#f6ad55', borderWidth: 1, yAxisID: 'yWeekly' }
         ]
       },
       options: {
