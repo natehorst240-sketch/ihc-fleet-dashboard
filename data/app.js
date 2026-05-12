@@ -123,8 +123,8 @@
   var _calMFooter = document.getElementById('cal-modal-footer');
 
   function calModalClose() {
-    _calOverlay.style.display = 'none';
-    _calModal.style.display   = 'none';
+    if (_calOverlay) _calOverlay.style.display = 'none';
+    if (_calModal)   _calModal.style.display   = 'none';
   }
 
   function calModalOpen(title, bodyHtml, buttons) {
@@ -189,7 +189,9 @@
       return r.text().then(function(txt) {
         calDebugLog(method || 'GET', url, r.status, txt.slice(0, 200));
         if (!r.ok) throw new Error('HTTP ' + r.status + ': ' + txt.slice(0, 300));
-        return txt ? JSON.parse(txt) : null;
+        if (!txt) return null;
+        try { return JSON.parse(txt); }
+        catch (e) { throw new Error('Response parse error (HTTP ' + r.status + '): ' + txt.slice(0, 100)); }
       });
     });
   }
@@ -245,6 +247,7 @@
         var startVal = startEl ? startEl.value : dateStr;
         if (!startVal) return;
         var d = new Date(startVal + 'T00:00:00');
+        if (isNaN(d.getTime())) return;
         d.setDate(d.getDate() + days - 1);
         if (endEl) endEl.value = d.toISOString().slice(0, 10);
       }
@@ -309,6 +312,10 @@
     return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
+  function jsStr(s) {
+    return String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  }
+
   function wlFetchNotes(tail) {
     return supaFetch('watchlist_notes?tail=eq.' + encodeURIComponent(tail) + '&order=timestamp.asc&select=*')
       .then(function(rows) {
@@ -341,7 +348,7 @@
       return '<div style="border:1px solid var(--border);border-radius:4px;padding:8px 32px 8px 10px;margin-bottom:6px;position:relative;">' +
         '<div style="color:var(--text);font-size:12px;line-height:1.5;white-space:pre-wrap;">' + wlEsc(n.note) + '</div>' +
         '<div style="color:var(--muted);font-size:10px;margin-top:4px;">' + new Date(n.timestamp).toLocaleString() + '</div>' +
-        '<button onclick="wlDeleteNote(\'' + n.id + '\',\'' + wlEsc(tail) + '\')" ' +
+        '<button onclick="wlDeleteNote(\'' + jsStr(n.id) + '\',\'' + jsStr(tail) + '\')" ' +
           'style="position:absolute;top:5px;right:8px;background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;line-height:1;" ' +
           'title="Delete note">×</button>' +
         '</div>';
@@ -355,7 +362,7 @@
 
     document.getElementById('wl-modal-footer').innerHTML =
       '<button class="cal-modal-btn" onclick="wlModalClose()">Close</button>' +
-      '<button class="cal-modal-btn cal-modal-btn-primary" onclick="wlSaveNote(\'' + wlEsc(tail) + '\')">Add Note</button>';
+      '<button class="cal-modal-btn cal-modal-btn-primary" onclick="wlSaveNote(\'' + jsStr(tail) + '\')">Add Note</button>';
   }
 
   function wlSaveNote(tail) {
@@ -405,8 +412,10 @@
   }
 
   function wlModalClose() {
-    document.getElementById('wl-modal-overlay').style.display = 'none';
-    document.getElementById('wl-modal').style.display = 'none';
+    var o = document.getElementById('wl-modal-overlay');
+    var m = document.getElementById('wl-modal');
+    if (o) o.style.display = 'none';
+    if (m) m.style.display = 'none';
   }
 
   // Expose watch list functions to global scope (onclick handlers need them)
@@ -448,6 +457,7 @@
       };
     });
 
+    try {
     calendar = new FullCalendar.Calendar(calEl, {
       initialView: 'dayGridMonth',
       height: 'auto',
@@ -463,21 +473,23 @@
             supaFetch('scheduled_inspections?select=*&order=start_date.asc')
               .then(function(rows) {
                 if (!Array.isArray(rows)) { successCb([]); return; }
-                var evs = rows.map(function(r) {
-                  return {
+                var evs = rows.reduce(function(acc, r) {
+                  if (!r.id || !r.start_date) return acc;
+                  acc.push({
                     id: r.id,
-                    title: r.tail + ' — ' + r.inspection_type,
+                    title: (r.tail || '') + ' — ' + (r.inspection_type || ''),
                     start: r.start_date,
                     end: toExclusiveEndDate(r.end_date),
                     allDay: true,
                     editable: false,
-                    backgroundColor: r.color,
-                    borderColor: r.color,
-                    extendedProps: { _scheduled: true, tail: r.tail, inspType: r.inspection_type,
-                                     color: r.color, startDate: r.start_date,
-                                     endDate: r.end_date, note: r.note }
-                  };
-                });
+                    backgroundColor: r.color || '#29b6f6',
+                    borderColor: r.color || '#29b6f6',
+                    extendedProps: { _scheduled: true, tail: r.tail || '', inspType: r.inspection_type || '',
+                                     color: r.color || '#29b6f6', startDate: r.start_date,
+                                     endDate: r.end_date || null, note: r.note || '' }
+                  });
+                  return acc;
+                }, []);
                 successCb(evs);
               })
               .catch(function(err) { console.warn('Supabase load:', err); successCb([]); });
@@ -568,6 +580,10 @@
     calendar.render();
     window.addEventListener('fleet:calendar:shown', function() { calendar.updateSize(); });
     document.addEventListener('mousemove', moveHover);
+    } catch (err) {
+      console.error('[renderCalendar] FullCalendar init failed:', err);
+      if (calEl) calEl.innerHTML = '<div style="color:var(--red);padding:10px;font-size:12px;font-family:var(--mono);">Calendar failed to initialize.</div>';
+    }
   }
 
   renderInspectionList();
@@ -600,7 +616,8 @@ const DASHBOARD_VERSION = "20260512042620";
     document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
     if (activeBtn) activeBtn.classList.add('active');
     document.querySelectorAll('.tab-content').forEach(function(t){ t.classList.remove('active'); });
-    document.getElementById('tab-' + tabName).classList.add('active');
+    var tabEl = document.getElementById('tab-' + tabName);
+    if (tabEl) tabEl.classList.add('active');
     var mobileSelect = document.getElementById('mobile-tab-select');
     if (mobileSelect && mobileSelect.value !== tabName) mobileSelect.value = tabName;
     if (tabName === 'calendar') {

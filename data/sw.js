@@ -142,7 +142,8 @@ async function networkFirstWithCache(request, cacheName) {
 // ── Push Notifications (placeholder for future 2-way comms) ──────────────────
 self.addEventListener('push', (event) => {
   if (!event.data) return;
-  const data = event.data.json();
+  let data;
+  try { data = event.data.json(); } catch { return; }
   event.waitUntil(
     self.registration.showNotification(data.title || 'IHC Fleet Alert', {
       body: data.body || '',
