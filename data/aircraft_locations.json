@@ -1,15 +1,27 @@
 [
   {
-    "vin": "N281HC",
-    "asset_id": 31576,
+    "vin": "N291HC",
+    "asset_id": 31585,
     "state": "Stationary",
     "speed": 0,
-    "latitude": 40.6595,
-    "longitude": -111.889333,
+    "latitude": 40.245667,
+    "longitude": -111.664833,
     "heading": 359,
-    "altitude": 4278.0,
-    "odometer": 79652.0,
-    "last_ping": "2026-05-12T09:08:00Z"
+    "altitude": 4583.0,
+    "odometer": 75853.8,
+    "last_ping": "2026-05-12T14:32:14Z"
+  },
+  {
+    "vin": "N251HC",
+    "asset_id": 31608,
+    "state": "Stationary",
+    "speed": 0,
+    "latitude": 37.098667,
+    "longitude": -113.551667,
+    "heading": 359,
+    "altitude": 2516.0,
+    "odometer": 69343.2,
+    "last_ping": "2026-05-12T14:32:02Z"
   },
   {
     "vin": "N431HC",
@@ -21,7 +33,19 @@
     "heading": 0,
     "altitude": 4606.0,
     "odometer": 89095.8,
-    "last_ping": "2026-05-12T05:27:23Z"
+    "last_ping": "2026-05-12T13:27:13Z"
+  },
+  {
+    "vin": "N281HC",
+    "asset_id": 31576,
+    "state": "Stationary",
+    "speed": 0,
+    "latitude": 40.6595,
+    "longitude": -111.889333,
+    "heading": 359,
+    "altitude": 0,
+    "odometer": 79652.0,
+    "last_ping": "2026-05-12T12:57:06Z"
   },
   {
     "vin": "N271HC",
@@ -36,18 +60,6 @@
     "last_ping": "2026-05-12T02:47:59Z"
   },
   {
-    "vin": "N291HC",
-    "asset_id": 31585,
-    "state": "Stationary",
-    "speed": 0,
-    "latitude": 40.245667,
-    "longitude": -111.664833,
-    "heading": 359,
-    "altitude": 4573.0,
-    "odometer": 75853.8,
-    "last_ping": "2026-05-12T02:25:30Z"
-  },
-  {
     "vin": "N261HC",
     "asset_id": 31755,
     "state": "N/A",
@@ -58,18 +70,6 @@
     "altitude": 5659.0,
     "odometer": 77634.9,
     "last_ping": "2026-05-12T02:19:27Z"
-  },
-  {
-    "vin": "N251HC",
-    "asset_id": 31608,
-    "state": "Stationary",
-    "speed": 0,
-    "latitude": 37.098667,
-    "longitude": -113.5515,
-    "heading": 359,
-    "altitude": 2657.0,
-    "odometer": 69343.2,
-    "last_ping": "2026-05-12T01:36:05Z"
   },
   {
     "vin": "N681HC",
