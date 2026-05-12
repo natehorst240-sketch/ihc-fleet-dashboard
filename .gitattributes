@@ -1,5 +1,7 @@
 *.csv text eol=lf
 
 data/index.html merge=ours
+data/styles.css merge=ours
+data/app.js merge=ours
 data/dashboard_version.json merge=ours
 data/flight_hours_history.json merge=ours

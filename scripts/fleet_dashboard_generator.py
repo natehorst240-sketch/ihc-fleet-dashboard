@@ -2212,6 +2212,44 @@ def _build_location_tab(aircraft_list, positions, maps_api_key='', base_locs=Non
 
 # -- BUILD HTML ----------------------------------------------------------------
 
+def _extract_inline_assets(html, version):
+    """Move inline <style> and inline <script> blocks out of the page into
+    sibling styles.css / app.js files so index.html stays small.
+
+    The tiny theme bootstrap (<script data-bootstrap>) stays inline because it
+    must run before first paint; it and CDN <script src=...> tags are left
+    untouched since this only matches attribute-less <style>/<script> tags.
+    Returns (html, css_text, js_text); css_text/js_text are '' when nothing
+    was found.
+    """
+    css_parts, js_parts = [], []
+    first_style = [True]
+
+    def _take_style(m):
+        css_parts.append(m.group(1).strip())
+        if first_style[0]:
+            first_style[0] = False
+            return f'<link rel="stylesheet" href="styles.css?v={version}">\n'
+        return ''
+
+    def _take_script(m):
+        js_parts.append(m.group(1).strip())
+        return ''
+
+    html = re.sub(r'<style>\n?(.*?)\n?</style>\n?', _take_style, html, flags=re.S)
+    html = re.sub(r'<script>\n?(.*?)\n?</script>\n?', _take_script, html, flags=re.S)
+
+    if js_parts:
+        html = html.replace('</body>', f'<script src="app.js?v={version}"></script>\n</body>', 1)
+
+    # Tidy up the blank lines left where blocks were removed.
+    html = re.sub(r'\n{3,}', '\n\n', html)
+
+    css_text = ('\n\n'.join(css_parts) + '\n') if css_parts else ''
+    js_text  = ('\n\n'.join(js_parts) + '\n') if js_parts else ''
+    return html, css_text, js_text
+
+
 def build_html(report_date, aircraft_list, components, component_changes, flight_hours_stats, positions,
                source_filename, photo_src='', gcfg=None, base_locs=None):
 
@@ -2408,7 +2446,7 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
     gen_time = datetime.today().strftime('%d %b %Y %H:%M').upper()
     version  = datetime.today().strftime('%Y%m%d%H%M%S')
 
-    return f"""<!DOCTYPE html>
+    html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -2613,7 +2651,7 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
   #theme-toggle{{font-size:14px;padding:4px 8px;background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:2px;cursor:pointer;line-height:1;margin-top:6px;transition:border-color 0.15s,color 0.15s;}}
   #theme-toggle:hover{{border-color:var(--blue);color:var(--blue);}}
 </style>
-<script>
+<script data-bootstrap>
   (function(){{var t=localStorage.getItem('fleet-theme')||'dark';if(t==='light')document.documentElement.setAttribute('data-theme','light');}})();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
@@ -3054,6 +3092,8 @@ def build_html(report_date, aircraft_list, components, component_changes, flight
 </body>
 </html>"""
 
+    return _extract_inline_assets(html, version)
+
 
 # -- MAIN ----------------------------------------------------------------------
 
@@ -3158,7 +3198,7 @@ def main():
         component_changes = parse_component_change_report(component_change_path)
         log(f"Component change months loaded: {len(component_changes)}")
 
-        html = build_html(
+        html, css_text, js_text = build_html(
             report_date, aircraft_list, components, component_changes,
             flight_hours_stats, positions,
             input_path.name, photo_src, gcfg, base_locs=base_locs,
@@ -3167,6 +3207,15 @@ def main():
         with open(output_path, 'w', encoding='utf-8') as f:
             f.write(html)
         log(f"Dashboard written to {output_path}")
+
+        if css_text:
+            with open(data_dir / "styles.css", 'w', encoding='utf-8') as f:
+                f.write(css_text)
+            log(f"Stylesheet written to {data_dir / 'styles.css'}")
+        if js_text:
+            with open(data_dir / "app.js", 'w', encoding='utf-8') as f:
+                f.write(js_text)
+            log(f"Script written to {data_dir / 'app.js'}")
 
         # Write version file for auto-reload detection
         version = datetime.today().strftime('%Y%m%d%H%M%S')
