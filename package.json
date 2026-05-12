@@ -1,0 +1,12 @@
+{
+  "name": "ihc-fleet-dashboard-scrapers",
+  "private": true,
+  "description": "Headless-browser data scrapers for the IHC fleet dashboard (run via GitHub Actions).",
+  "scripts": {
+    "fetch:component-changes": "node scripts/fetch_component_changes.mjs"
+  },
+  "dependencies": {
+    "playwright": "^1.49.1",
+    "xlsx": "^0.18.5"
+  }
+}
