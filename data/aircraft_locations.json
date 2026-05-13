@@ -1,29 +1,5 @@
 [
   {
-    "vin": "N431HC",
-    "asset_id": 31570,
-    "state": "Stationary",
-    "speed": 0,
-    "latitude": 42.909667,
-    "longitude": -112.584833,
-    "heading": 0,
-    "altitude": 4469.0,
-    "odometer": 89205.3,
-    "last_ping": "2026-05-13T05:01:32Z"
-  },
-  {
-    "vin": "N251HC",
-    "asset_id": 31608,
-    "state": "Inflight",
-    "speed": 134.0,
-    "latitude": 39.981667,
-    "longitude": -111.963167,
-    "heading": 182,
-    "altitude": 7493.0,
-    "odometer": 69819.2,
-    "last_ping": "2026-05-13T05:00:30Z"
-  },
-  {
     "vin": "N681HC",
     "asset_id": 31621,
     "state": "Stationary",
@@ -33,7 +9,43 @@
     "heading": 0,
     "altitude": 72.0,
     "odometer": 326708.5,
-    "last_ping": "2026-05-13T04:11:25Z"
+    "last_ping": "2026-05-13T08:07:11Z"
+  },
+  {
+    "vin": "N291HC",
+    "asset_id": 31585,
+    "state": "Stationary",
+    "speed": 0,
+    "latitude": 40.245667,
+    "longitude": -111.664833,
+    "heading": 359,
+    "altitude": 4570.0,
+    "odometer": 76005.6,
+    "last_ping": "2026-05-13T08:01:50Z"
+  },
+  {
+    "vin": "N251HC",
+    "asset_id": 31608,
+    "state": "Stationary",
+    "speed": 0,
+    "latitude": 37.098667,
+    "longitude": -113.5515,
+    "heading": 359,
+    "altitude": 2615.0,
+    "odometer": 70022.5,
+    "last_ping": "2026-05-13T06:53:12Z"
+  },
+  {
+    "vin": "N431HC",
+    "asset_id": 31570,
+    "state": "Stationary",
+    "speed": 0,
+    "latitude": 41.755167,
+    "longitude": -111.8205,
+    "heading": 0,
+    "altitude": 4596.0,
+    "odometer": 89285.7,
+    "last_ping": "2026-05-13T05:45:43Z"
   },
   {
     "vin": "N281HC",
@@ -46,18 +58,6 @@
     "altitude": 0,
     "odometer": 79851.1,
     "last_ping": "2026-05-13T02:38:40Z"
-  },
-  {
-    "vin": "N291HC",
-    "asset_id": 31585,
-    "state": "Stationary",
-    "speed": 0,
-    "latitude": 40.245667,
-    "longitude": -111.664833,
-    "heading": 359,
-    "altitude": 4606.0,
-    "odometer": 75975.5,
-    "last_ping": "2026-05-13T01:08:37Z"
   },
   {
     "vin": "N261HC",
