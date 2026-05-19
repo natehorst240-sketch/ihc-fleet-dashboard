@@ -7,7 +7,7 @@
 // ASSET_VERSION is rewritten with the current build id by the dashboard
 // generator (scripts/fleet_dashboard_generator.py) so that a new build bumps
 // the cache name and the pre-cached, query-versioned styles.css / app.js URLs.
-const ASSET_VERSION = '20260519095323';
+const ASSET_VERSION = '20260519110714';
 const CACHE_NAME = 'ihc-fleet-v' + ASSET_VERSION;
 
 // Assets to pre-cache on install
