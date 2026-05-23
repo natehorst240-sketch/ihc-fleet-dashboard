@@ -1,39 +1,51 @@
 [
   {
-    "vin": "N291HC",
-    "asset_id": 31585,
-    "state": "Inflight",
-    "speed": 145.0,
-    "latitude": 41.475667,
-    "longitude": -112.187833,
-    "heading": 130,
-    "altitude": 5968.0,
-    "odometer": 77865.7,
-    "last_ping": "2026-05-23T04:07:37Z"
+    "vin": "N281HC",
+    "asset_id": 31576,
+    "state": "Stationary",
+    "speed": 0,
+    "latitude": 40.6595,
+    "longitude": -111.889333,
+    "heading": 359,
+    "altitude": 4321.0,
+    "odometer": 82256.9,
+    "last_ping": "2026-05-23T06:39:04Z"
   },
   {
     "vin": "N431HC",
     "asset_id": 31570,
     "state": "Stationary",
     "speed": 0,
-    "latitude": 40.660167,
-    "longitude": -111.889667,
+    "latitude": 41.755167,
+    "longitude": -111.8205,
     "heading": 0,
-    "altitude": 4327.0,
-    "odometer": 90342.6,
-    "last_ping": "2026-05-23T03:50:32Z"
+    "altitude": 4603.0,
+    "odometer": 90409.5,
+    "last_ping": "2026-05-23T05:50:43Z"
   },
   {
     "vin": "N271HC",
     "asset_id": 31622,
     "state": "Stationary",
     "speed": 0,
-    "latitude": 40.756,
-    "longitude": -111.841667,
+    "latitude": 40.3045,
+    "longitude": -109.995833,
     "heading": 359,
-    "altitude": 4744.0,
-    "odometer": 75028.7,
-    "last_ping": "2026-05-23T03:42:15Z"
+    "altitude": 5069.0,
+    "odometer": 75127.5,
+    "last_ping": "2026-05-23T05:36:02Z"
+  },
+  {
+    "vin": "N291HC",
+    "asset_id": 31585,
+    "state": "Stationary",
+    "speed": 0,
+    "latitude": 41.1825,
+    "longitude": -111.954167,
+    "heading": 359,
+    "altitude": 4639.0,
+    "odometer": 77886.9,
+    "last_ping": "2026-05-23T04:19:07Z"
   },
   {
     "vin": "N261HC",
@@ -58,18 +70,6 @@
     "altitude": 2812.0,
     "odometer": 70766.3,
     "last_ping": "2026-05-23T02:27:47Z"
-  },
-  {
-    "vin": "N281HC",
-    "asset_id": 31576,
-    "state": "Stationary",
-    "speed": 0,
-    "latitude": 40.6595,
-    "longitude": -111.889333,
-    "heading": 359,
-    "altitude": 4334.0,
-    "odometer": 82212.8,
-    "last_ping": "2026-05-22T22:21:54Z"
   },
   {
     "vin": "N681HC",
