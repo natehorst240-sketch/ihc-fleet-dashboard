@@ -4,12 +4,12 @@
     "asset_id": 31608,
     "state": "Stationary",
     "speed": 0,
-    "latitude": 37.104,
-    "longitude": -113.426167,
+    "latitude": 37.102,
+    "longitude": -113.402667,
     "heading": 359,
-    "altitude": 2913.0,
-    "odometer": 70844.6,
-    "last_ping": "2026-05-24T18:45:39Z"
+    "altitude": 3212.0,
+    "odometer": 70845.7,
+    "last_ping": "2026-05-24T19:19:56Z"
   },
   {
     "vin": "N291HC",
