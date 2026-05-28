@@ -19,7 +19,7 @@
 <meta name="apple-mobile-web-app-title" content="IHC Fleet">
 <meta name="description" content="IHC Health Services – Helicopter Fleet Maintenance &amp; Status Dashboard">
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=20260528102737">
+<link rel="stylesheet" href="styles.css?v=20260528110708">
 <script data-bootstrap>
   (function(){var t=localStorage.getItem('fleet-theme')||'dark';if(t==='light')document.documentElement.setAttribute('data-theme','light');})();
 </script>
@@ -36,7 +36,7 @@
   </div>
   <div class="header-meta">
     <div class="date">REPORT DATE: 16 APR 2026</div>
-    <div>FLEET: 9 AIRCRAFT &nbsp;|&nbsp; 1 AIRBORNE &nbsp;|&nbsp; 5 AT BASE &nbsp;|&nbsp; GENERATED: 28 MAY 2026 10:27</div>
+    <div>FLEET: 9 AIRCRAFT &nbsp;|&nbsp; 0 AIRBORNE &nbsp;|&nbsp; 6 AT BASE &nbsp;|&nbsp; GENERATED: 28 MAY 2026 11:07</div>
     <button id="pwa-install-btn" style="display:none;margin-top:6px;font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;padding:5px 12px;background:transparent;border:1px solid var(--blue);color:var(--blue);border-radius:2px;cursor:pointer;align-items:center;gap:6px;" title="Install as app on your device">
       &#x2B07; ADD TO HOME SCREEN
     </button>
@@ -71,8 +71,8 @@
   <div id="tab-maintenance" class="tab-content active">
     <div class="summary-bar">
       <div class="summary-stat"><div class="stat-value" style="color:var(--blue)">9</div><div class="divider-line" style="background:var(--blue)"></div><div class="stat-label">Aircraft</div></div>
-      <div class="summary-stat"><div class="stat-value" style="color:var(--blue)">1</div><div class="divider-line" style="background:var(--blue)"></div><div class="stat-label">Airborne</div></div>
-      <div class="summary-stat"><div class="stat-value" style="color:var(--green)">5</div><div class="divider-line" style="background:var(--green)"></div><div class="stat-label">At Base</div></div>
+      <div class="summary-stat"><div class="stat-value" style="color:var(--blue)">0</div><div class="divider-line" style="background:var(--blue)"></div><div class="stat-label">Airborne</div></div>
+      <div class="summary-stat"><div class="stat-value" style="color:var(--green)">6</div><div class="divider-line" style="background:var(--green)"></div><div class="stat-label">At Base</div></div>
       <div class="summary-stat stat-clickable" title="Click to filter Critical &amp; Overdue" onclick="applyFilterCriticalOD()"><div class="stat-value" style="color:var(--red)">3</div><div class="divider-line" style="background:var(--red)"></div><div class="stat-label">Insp. Critical / OD</div></div>
       <div class="summary-stat stat-clickable" title="Click to filter Coming Due" onclick="applyFilter('coming')"><div class="stat-value" style="color:var(--amber)">23</div><div class="divider-line" style="background:var(--amber)"></div><div class="stat-label">Insp. Coming Due</div></div>
       <div class="summary-stat"><div class="stat-value" style="color:var(--overdue)">16</div><div class="divider-line" style="background:var(--overdue)"></div><div class="stat-label">Components Overdue</div></div>
@@ -98,13 +98,13 @@
           </tr>
         </thead>
         <tbody id="insp-tbody">
-<tr data-tail="N251HC"><td onclick="wlOpenModal('N251HC')" style="cursor:pointer;" title="Open watch list for N251HC"><div class="tail-number">N251HC<span class="location-badge location-at-base">At St. George base</span></div><div class="airframe-hrs">6,160.9 TT</div></td><td class="hr-cell"><span class="hr-badge hr-red">21.7</span></td><td class="hr-cell"><span class="hr-badge hr-amber">71.7</span></td><td class="hr-cell"><span class="hr-badge hr-green">171.7</span></td><td class="hr-cell"><span class="hr-badge hr-green">182.3</span></td><td class="hr-cell"><span class="hr-badge hr-green">193.0</span></td><td class="hr-cell"><span class="hr-badge hr-green">995.2</span></td><td class="hr-cell"><span class="hr-badge hr-green">174.7</span></td></tr>
-<tr data-tail="N261HC"><td onclick="wlOpenModal('N261HC')" style="cursor:pointer;" title="Open watch list for N261HC"><div class="tail-number">N261HC<span class="location-badge location-active">airborne 7359.0ft</span></div><div class="airframe-hrs">6,177.8 TT</div></td><td class="hr-cell"><span class="hr-badge hr-red">9.0</span></td><td class="hr-cell"><span class="hr-badge hr-amber">59.0</span></td><td class="hr-cell"><span class="hr-badge hr-green">159.0</span></td><td class="hr-cell"><span class="hr-badge hr-green">158.1</span></td><td class="hr-cell"><span class="hr-badge hr-green">153.4</span></td><td class="hr-cell"><span class="hr-badge hr-green">962.4</span></td><td class="hr-cell"><span class="hr-badge hr-green">196.5</span></td></tr>
-<tr data-tail="N271HC"><td onclick="wlOpenModal('N271HC')" style="cursor:pointer;" title="Open watch list for N271HC"><div class="tail-number">N271HC<span class="location-badge location-at-base">At Roosevelt base</span></div><div class="airframe-hrs">7,071.8 TT</div></td><td class="hr-cell"><span class="hr-badge hr-amber">47.7</span></td><td class="hr-cell"><span class="hr-badge hr-amber">45.2</span></td><td class="hr-cell"><span class="hr-badge hr-amber">43.1</span></td><td class="hr-cell"><span class="hr-badge hr-amber">71.1</span></td><td class="hr-cell"><span class="hr-badge hr-amber">80.4</span></td><td class="hr-cell"><span class="hr-badge hr-amber">65.9</span></td><td class="hr-cell"><span class="hr-badge hr-green">2480.4</span></td></tr>
-<tr data-tail="N281HC"><td onclick="wlOpenModal('N281HC')" style="cursor:pointer;" title="Open watch list for N281HC"><div class="tail-number">N281HC<span class="location-badge location-at-base">At IMED base</span></div><div class="airframe-hrs">6,666.5 TT</div></td><td class="hr-cell"><span class="hr-badge hr-red">2.6</span></td><td class="hr-cell"><span class="hr-badge hr-amber">52.6</span></td><td class="hr-cell"><span class="hr-badge hr-amber">53.4</span></td><td class="hr-cell"><span class="hr-badge hr-amber">53.8</span></td><td class="hr-cell"><span class="hr-badge hr-green">453.8</span></td><td class="hr-cell"><span class="hr-badge hr-amber">57.3</span></td><td class="hr-cell"><span class="hr-badge hr-green">2853.8</span></td></tr>
-<tr data-tail="N291HC"><td onclick="wlOpenModal('N291HC')" style="cursor:pointer;" title="Open watch list for N291HC"><div class="tail-number">N291HC<span class="location-badge location-at-base">At Mckay base</span></div><div class="airframe-hrs">6,025.0 TT</div></td><td class="hr-cell"><span class="hr-badge hr-amber">28.9</span></td><td class="hr-cell"><span class="hr-badge hr-amber">30.4</span></td><td class="hr-cell"><span class="hr-badge hr-green">130.4</span></td><td class="hr-cell"><span class="hr-badge hr-green">330.4</span></td><td class="hr-cell"><span class="hr-badge hr-green">335.6</span></td><td class="hr-cell"><span class="hr-badge hr-green">1140.1</span></td><td class="hr-cell"><span class="hr-badge hr-green">347.2</span></td></tr>
-<tr data-tail="N431HC"><td onclick="wlOpenModal('N431HC')" style="cursor:pointer;" title="Open watch list for N431HC"><div class="tail-number">N431HC<span class="location-badge location-at-base">At Logan base</span></div><div class="airframe-hrs">2,098.5 TT</div></td><td class="hr-cell"><span class="hr-badge hr-amber">37.4</span></td><td class="hr-cell"><span class="hr-badge hr-amber">87.4</span></td><td class="hr-cell"><span class="hr-badge hr-amber">83.4</span></td><td class="hr-cell"><span class="hr-badge hr-green">283.4</span></td><td class="hr-cell"><span class="hr-badge hr-green">290.2</span></td><td class="hr-cell"><span class="hr-badge hr-green">301.5</span></td><td class="hr-cell"><span class="hr-badge hr-green">1101.5</span></td></tr>
-<tr data-tail="N531HC"><td onclick="wlOpenModal('N531HC')" style="cursor:pointer;" title="Open watch list for N531HC"><div class="tail-number">N531HC</div><div class="airframe-hrs">3,435.5 TT</div></td><td class="hr-cell"><span class="hr-badge hr-amber">41.3</span></td><td class="hr-cell"><span class="hr-badge hr-amber">91.3</span></td><td class="hr-cell"><span class="hr-badge hr-green">191.3</span></td><td class="hr-cell"><span class="hr-badge hr-green">391.3</span></td><td class="hr-cell"><span class="hr-badge hr-green">395.4</span></td><td class="hr-cell"><span class="hr-badge hr-green">1287.2</span></td><td class="hr-cell"><span class="hr-badge hr-green">2795.4</span></td></tr>
+<tr data-tail="N251HC"><td onclick="wlOpenModal('N251HC')" style="cursor:pointer;" title="Open watch list for N251HC"><div class="tail-number">N251HC<span class="location-badge location-at-base">At St. George base</span></div><div class="airframe-hrs">6,161.3 TT</div></td><td class="hr-cell"><span class="hr-badge hr-red">21.3</span></td><td class="hr-cell"><span class="hr-badge hr-amber">71.3</span></td><td class="hr-cell"><span class="hr-badge hr-green">171.3</span></td><td class="hr-cell"><span class="hr-badge hr-green">181.9</span></td><td class="hr-cell"><span class="hr-badge hr-green">192.6</span></td><td class="hr-cell"><span class="hr-badge hr-green">994.8</span></td><td class="hr-cell"><span class="hr-badge hr-green">174.3</span></td></tr>
+<tr data-tail="N261HC"><td onclick="wlOpenModal('N261HC')" style="cursor:pointer;" title="Open watch list for N261HC"><div class="tail-number">N261HC<span class="location-badge location-at-base">At St. George base</span></div><div class="airframe-hrs">6,179.3 TT</div></td><td class="hr-cell"><span class="hr-badge hr-red">7.5</span></td><td class="hr-cell"><span class="hr-badge hr-amber">57.5</span></td><td class="hr-cell"><span class="hr-badge hr-green">157.5</span></td><td class="hr-cell"><span class="hr-badge hr-green">156.6</span></td><td class="hr-cell"><span class="hr-badge hr-green">151.9</span></td><td class="hr-cell"><span class="hr-badge hr-green">960.9</span></td><td class="hr-cell"><span class="hr-badge hr-green">195.0</span></td></tr>
+<tr data-tail="N271HC"><td onclick="wlOpenModal('N271HC')" style="cursor:pointer;" title="Open watch list for N271HC"><div class="tail-number">N271HC<span class="location-badge location-at-base">At Roosevelt base</span></div><div class="airframe-hrs">7,072.9 TT</div></td><td class="hr-cell"><span class="hr-badge hr-amber">46.6</span></td><td class="hr-cell"><span class="hr-badge hr-amber">44.1</span></td><td class="hr-cell"><span class="hr-badge hr-amber">42.0</span></td><td class="hr-cell"><span class="hr-badge hr-amber">70.0</span></td><td class="hr-cell"><span class="hr-badge hr-amber">79.3</span></td><td class="hr-cell"><span class="hr-badge hr-amber">64.8</span></td><td class="hr-cell"><span class="hr-badge hr-green">2479.3</span></td></tr>
+<tr data-tail="N281HC"><td onclick="wlOpenModal('N281HC')" style="cursor:pointer;" title="Open watch list for N281HC"><div class="tail-number">N281HC<span class="location-badge location-at-base">At IMED base</span></div><div class="airframe-hrs">6,668.3 TT</div></td><td class="hr-cell"><span class="hr-badge hr-red">0.8</span></td><td class="hr-cell"><span class="hr-badge hr-amber">50.8</span></td><td class="hr-cell"><span class="hr-badge hr-amber">51.6</span></td><td class="hr-cell"><span class="hr-badge hr-amber">52.0</span></td><td class="hr-cell"><span class="hr-badge hr-green">452.0</span></td><td class="hr-cell"><span class="hr-badge hr-amber">55.5</span></td><td class="hr-cell"><span class="hr-badge hr-green">2852.0</span></td></tr>
+<tr data-tail="N291HC"><td onclick="wlOpenModal('N291HC')" style="cursor:pointer;" title="Open watch list for N291HC"><div class="tail-number">N291HC<span class="location-badge location-at-base">At Mckay base</span></div><div class="airframe-hrs">6,026.6 TT</div></td><td class="hr-cell"><span class="hr-badge hr-amber">27.3</span></td><td class="hr-cell"><span class="hr-badge hr-amber">28.8</span></td><td class="hr-cell"><span class="hr-badge hr-green">128.8</span></td><td class="hr-cell"><span class="hr-badge hr-green">328.8</span></td><td class="hr-cell"><span class="hr-badge hr-green">334.0</span></td><td class="hr-cell"><span class="hr-badge hr-green">1138.5</span></td><td class="hr-cell"><span class="hr-badge hr-green">345.6</span></td></tr>
+<tr data-tail="N431HC"><td onclick="wlOpenModal('N431HC')" style="cursor:pointer;" title="Open watch list for N431HC"><div class="tail-number">N431HC<span class="location-badge location-at-base">At Logan base</span></div><div class="airframe-hrs">2,100.7 TT</div></td><td class="hr-cell"><span class="hr-badge hr-amber">35.2</span></td><td class="hr-cell"><span class="hr-badge hr-amber">85.2</span></td><td class="hr-cell"><span class="hr-badge hr-amber">81.2</span></td><td class="hr-cell"><span class="hr-badge hr-green">281.2</span></td><td class="hr-cell"><span class="hr-badge hr-green">288.0</span></td><td class="hr-cell"><span class="hr-badge hr-green">299.3</span></td><td class="hr-cell"><span class="hr-badge hr-green">1099.3</span></td></tr>
+<tr data-tail="N531HC"><td onclick="wlOpenModal('N531HC')" style="cursor:pointer;" title="Open watch list for N531HC"><div class="tail-number">N531HC</div><div class="airframe-hrs">3,436.1 TT</div></td><td class="hr-cell"><span class="hr-badge hr-amber">40.7</span></td><td class="hr-cell"><span class="hr-badge hr-amber">90.7</span></td><td class="hr-cell"><span class="hr-badge hr-green">190.7</span></td><td class="hr-cell"><span class="hr-badge hr-green">390.7</span></td><td class="hr-cell"><span class="hr-badge hr-green">394.8</span></td><td class="hr-cell"><span class="hr-badge hr-green">1286.6</span></td><td class="hr-cell"><span class="hr-badge hr-green">2794.8</span></td></tr>
 <tr data-tail="N631HC"><td onclick="wlOpenModal('N631HC')" style="cursor:pointer;" title="Open watch list for N631HC"><div class="tail-number">N631HC</div><div class="airframe-hrs">1,850.8 TT</div></td><td class="hr-cell"><span class="hr-badge hr-amber">46.3</span></td><td class="hr-cell"><span class="hr-badge hr-amber">79.1</span></td><td class="hr-cell"><span class="hr-badge hr-green">147.6</span></td><td class="hr-cell"><span class="hr-badge hr-green">148.2</span></td><td class="hr-cell"><span class="hr-badge hr-green">548.2</span></td><td class="hr-cell"><span class="hr-badge hr-green">549.2</span></td><td class="hr-cell"><span class="hr-badge hr-green">1349.2</span></td></tr>
 <tr data-tail="N731HC"><td onclick="wlOpenModal('N731HC')" style="cursor:pointer;" title="Open watch list for N731HC"><div class="tail-number">N731HC</div><div class="airframe-hrs">20.6 TT</div></td><td class="hr-cell"><span class="hr-badge hr-amber">29.4</span></td><td class="hr-cell"><span class="hr-badge hr-amber">79.4</span></td><td class="hr-cell"><span class="hr-badge hr-green">179.4</span></td><td class="hr-cell"><span class="hr-badge hr-green">379.4</span></td><td class="hr-cell"><span class="hr-badge hr-green">779.4</span></td><td class="hr-cell"><span class="hr-badge hr-green">2379.4</span></td><td class="hr-cell"><span class="hr-badge hr-green">3179.4</span></td></tr>
 
@@ -115,283 +115,283 @@
     <div class="components-grid"><div class="aircraft-panel">
   <div class="panel-header">
     <div class="panel-tail">N251HC</div>
-    <div class="panel-hours">6160.9 TT</div>
+    <div class="panel-hours">6161.3 TT</div>
   </div>
   <div class="component-row">
   <div class="comp-indicator comp-red"></div>
   <div class="comp-info">
     <div class="comp-name" title="Battery (Removal Necessary) - Do Reconditioning Service - Special Inspection [24-01]">Battery (Removal Necessary) - Do Reconditioning Service - Special Inspection [24-01] <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--red)">682.3 hrs / 3 days remaining</div>
+    <div class="comp-hrs" style="color:var(--red)">681.9 hrs / 2 days remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-red"></div>
   <div class="comp-info">
     <div class="comp-name" title="Fuel Filter Element - Discard [28-01] - #1">Fuel Filter Element - Discard [28-01] - #1 <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--red)">182.3 hrs / 4 days remaining</div>
+    <div class="comp-hrs" style="color:var(--red)">181.9 hrs / 3 days remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-red"></div>
   <div class="comp-info">
     <div class="comp-name" title="Toothed Belt - Discard [63-01] - #1">Toothed Belt - Discard [63-01] - #1 <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--red)">582.3 hrs / 4 days remaining</div>
+    <div class="comp-hrs" style="color:var(--red)">581.9 hrs / 3 days remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-red"></div>
   <div class="comp-info">
     <div class="comp-name" title="Toothed Belt - Discard [63-01] - #2">Toothed Belt - Discard [63-01] - #2 <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--red)">582.3 hrs / 4 days remaining</div>
+    <div class="comp-hrs" style="color:var(--red)">581.9 hrs / 3 days remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-green"></div>
   <div class="comp-info">
     <div class="comp-name" title="Yellow Main Rotor Servo Actuator Attachment - Retirement -  #2">Yellow Main Rotor Servo Actuator Attachment - Retirement -  #2 <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--green)">183.0 hrs remaining</div>
+    <div class="comp-hrs" style="color:var(--green)">182.6 hrs remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-green"></div>
   <div class="comp-info">
     <div class="comp-name" title="Main Rotor Dampers Overhaul - #1">Main Rotor Dampers Overhaul - #1 <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--green)">189.8 hrs remaining</div>
+    <div class="comp-hrs" style="color:var(--green)">189.4 hrs remaining</div>
   </div>
 </div>
 </div><div class="aircraft-panel">
   <div class="panel-header">
     <div class="panel-tail">N261HC</div>
-    <div class="panel-hours">6177.8 TT</div>
+    <div class="panel-hours">6179.3 TT</div>
   </div>
   <div class="component-row">
   <div class="comp-indicator comp-red"></div>
   <div class="comp-info">
     <div class="comp-name" title="Fuel Filter Element - Discard [28-01] - #1">Fuel Filter Element - Discard [28-01] - #1 <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--red)">158.1 hrs / 4 days remaining</div>
+    <div class="comp-hrs" style="color:var(--red)">156.6 hrs / 3 days remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-red"></div>
   <div class="comp-info">
     <div class="comp-name" title="Battery (Removal Necessary) - Do Reconditioning Service - Special Inspection [24-01]">Battery (Removal Necessary) - Do Reconditioning Service - Special Inspection [24-01] <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--red)">739.4 hrs / 4 days remaining</div>
+    <div class="comp-hrs" style="color:var(--red)">737.9 hrs / 3 days remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-amber"></div>
   <div class="comp-info">
     <div class="comp-name" title="Toothed Belt - Discard [63-01] - #1">Toothed Belt - Discard [63-01] - #1 <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--amber)">558.1 hrs / 11 days remaining</div>
+    <div class="comp-hrs" style="color:var(--amber)">556.6 hrs / 10 days remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-amber"></div>
   <div class="comp-info">
     <div class="comp-name" title="Toothed Belt - Discard [63-01] - #2">Toothed Belt - Discard [63-01] - #2 <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--amber)">558.1 hrs / 11 days remaining</div>
+    <div class="comp-hrs" style="color:var(--amber)">556.6 hrs / 10 days remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-green"></div>
   <div class="comp-info">
     <div class="comp-name" title="Main Rotor Dampers Overhaul - #4">Main Rotor Dampers Overhaul - #4 <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--green)">162.0 hrs remaining</div>
+    <div class="comp-hrs" style="color:var(--green)">160.5 hrs remaining</div>
   </div>
 </div>
 </div><div class="aircraft-panel">
   <div class="panel-header">
     <div class="panel-tail">N271HC</div>
-    <div class="panel-hours">7071.8 TT</div>
+    <div class="panel-hours">7072.9 TT</div>
   </div>
   <div class="component-row">
   <div class="comp-indicator comp-red"></div>
   <div class="comp-info">
     <div class="comp-name" title="Toothed Belt - Discard [63-01] #2">Toothed Belt - Discard [63-01] #2 <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--red)">471.1 hrs / 3 days remaining</div>
+    <div class="comp-hrs" style="color:var(--red)">470.0 hrs / 2 days remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-red"></div>
   <div class="comp-info">
     <div class="comp-name" title="Fuel Filter Element - Discard [28-01] - #1">Fuel Filter Element - Discard [28-01] - #1 <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--red)">71.1 hrs / 4 days remaining</div>
+    <div class="comp-hrs" style="color:var(--red)">70.0 hrs / 3 days remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-red"></div>
   <div class="comp-info">
     <div class="comp-name" title="Battery (Removal Necessary) - Do Reconditioning Service - Special Inspection [24-01]">Battery (Removal Necessary) - Do Reconditioning Service - Special Inspection [24-01] <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--red)">571.1 hrs / 4 days remaining</div>
+    <div class="comp-hrs" style="color:var(--red)">570.0 hrs / 3 days remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-red"></div>
   <div class="comp-info">
     <div class="comp-name" title="Toothed Belt - Discard [63-01] - #1">Toothed Belt - Discard [63-01] - #1 <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--red)">471.1 hrs / 4 days remaining</div>
+    <div class="comp-hrs" style="color:var(--red)">470.0 hrs / 3 days remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-amber"></div>
   <div class="comp-info">
     <div class="comp-name" title="Main Rotor Dampers Overhaul - #4">Main Rotor Dampers Overhaul - #4 <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--amber)">41.9 hrs remaining</div>
+    <div class="comp-hrs" style="color:var(--amber)">40.8 hrs remaining</div>
   </div>
 </div>
 </div><div class="aircraft-panel">
   <div class="panel-header">
     <div class="panel-tail">N281HC</div>
-    <div class="panel-hours">6666.5 TT</div>
+    <div class="panel-hours">6668.3 TT</div>
   </div>
   <div class="component-row">
   <div class="comp-indicator comp-red"></div>
   <div class="comp-info">
     <div class="comp-name" title="Fuel Filter Element - Discard [28-01] - #1">Fuel Filter Element - Discard [28-01] - #1 <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--red)">53.8 hrs / 3 days remaining</div>
+    <div class="comp-hrs" style="color:var(--red)">52.0 hrs / 2 days remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-red"></div>
   <div class="comp-info">
     <div class="comp-name" title="Toothed Belt - Discard [63-01] - #1">Toothed Belt - Discard [63-01] - #1 <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--red)">453.8 hrs / 3 days remaining</div>
+    <div class="comp-hrs" style="color:var(--red)">452.0 hrs / 2 days remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-red"></div>
   <div class="comp-info">
     <div class="comp-name" title="Toothed Belt - Discard [63-01] - #2">Toothed Belt - Discard [63-01] - #2 <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--red)">453.8 hrs / 3 days remaining</div>
+    <div class="comp-hrs" style="color:var(--red)">452.0 hrs / 2 days remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-red"></div>
   <div class="comp-info">
     <div class="comp-name" title="Battery (Removal Necessary) - Do Reconditioning Service - Special Inspection [24-01]">Battery (Removal Necessary) - Do Reconditioning Service - Special Inspection [24-01] <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--red)">753.4 hrs / 4 days remaining</div>
+    <div class="comp-hrs" style="color:var(--red)">751.6 hrs / 3 days remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-red"></div>
   <div class="comp-info">
     <div class="comp-name" title="Efis Cooling Fan - Overhaul [21-03] - #3">Efis Cooling Fan - Overhaul [21-03] - #3</div>
-    <div class="comp-hrs" style="color:var(--red)">14.4 hrs remaining</div>
+    <div class="comp-hrs" style="color:var(--red)">12.6 hrs remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-amber"></div>
   <div class="comp-info">
     <div class="comp-name" title="Torque Tube Clamp Assembly Left - Retirement">Torque Tube Clamp Assembly Left - Retirement <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--amber)">72.2 hrs remaining</div>
+    <div class="comp-hrs" style="color:var(--amber)">70.4 hrs remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-green"></div>
   <div class="comp-info">
     <div class="comp-name" title="Upper Fixed Half-Scissor Attachment Fitting - Retirement">Upper Fixed Half-Scissor Attachment Fitting - Retirement <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--green)">118.9 hrs remaining</div>
+    <div class="comp-hrs" style="color:var(--green)">117.1 hrs remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-green"></div>
   <div class="comp-info">
     <div class="comp-name" title="Main Transmission Assembly - Overhaul [63-01]">Main Transmission Assembly - Overhaul [63-01] <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--green)">161.2 hrs remaining</div>
+    <div class="comp-hrs" style="color:var(--green)">159.4 hrs remaining</div>
   </div>
 </div>
 </div><div class="aircraft-panel">
   <div class="panel-header">
     <div class="panel-tail">N291HC</div>
-    <div class="panel-hours">6025.0 TT</div>
+    <div class="panel-hours">6026.6 TT</div>
   </div>
   <div class="component-row">
   <div class="comp-indicator comp-red"></div>
   <div class="comp-info">
     <div class="comp-name" title="Overhaul Of Rescue Hoist S/N 40336">Overhaul Of Rescue Hoist S/N 40336 <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--red)">71.0 hrs / 3 days remaining</div>
+    <div class="comp-hrs" style="color:var(--red)">71.0 hrs / 2 days remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-red"></div>
   <div class="comp-info">
     <div class="comp-name" title="Fuel Filter Element - Discard [28-01] - #1">Fuel Filter Element - Discard [28-01] - #1 <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--red)">330.4 hrs / 3 days remaining</div>
+    <div class="comp-hrs" style="color:var(--red)">328.8 hrs / 2 days remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-red"></div>
   <div class="comp-info">
     <div class="comp-name" title="Battery (Removal Necessary) - Do Reconditioning Service - Special Inspection [24-01]">Battery (Removal Necessary) - Do Reconditioning Service - Special Inspection [24-01] <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--red)">435.6 hrs / 4 days remaining</div>
+    <div class="comp-hrs" style="color:var(--red)">434.0 hrs / 3 days remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-red"></div>
   <div class="comp-info">
     <div class="comp-name" title="Toothed Belt - Discard [63-01] - #2">Toothed Belt - Discard [63-01] - #2 <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--red)">730.4 hrs / 4 days remaining</div>
+    <div class="comp-hrs" style="color:var(--red)">728.8 hrs / 3 days remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-amber"></div>
   <div class="comp-info">
     <div class="comp-name" title="Toothed Belt - Discard [63-01] - #1">Toothed Belt - Discard [63-01] - #1 <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--amber)">730.4 hrs / 24 days remaining</div>
+    <div class="comp-hrs" style="color:var(--amber)">728.8 hrs / 23 days remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-amber"></div>
   <div class="comp-info">
     <div class="comp-name" title="Main Rotor Dampers Overhaul - #4">Main Rotor Dampers Overhaul - #4 <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--amber)">34.9 hrs remaining</div>
+    <div class="comp-hrs" style="color:var(--amber)">33.3 hrs remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-green"></div>
   <div class="comp-info">
     <div class="comp-name" title="Sleeve Mounting - Retirement">Sleeve Mounting - Retirement <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--green)">131.4 hrs remaining</div>
+    <div class="comp-hrs" style="color:var(--green)">129.8 hrs remaining</div>
   </div>
 </div>
 </div><div class="aircraft-panel">
   <div class="panel-header">
     <div class="panel-tail">N431HC</div>
-    <div class="panel-hours">2098.5 TT</div>
+    <div class="panel-hours">2100.7 TT</div>
   </div>
   <div class="component-row">
   <div class="comp-indicator comp-red"></div>
   <div class="comp-info">
     <div class="comp-name" title="Fuel Filter Element - Discard [28-01]- #1">Fuel Filter Element - Discard [28-01]- #1 <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--red)">95.6 hrs / 3 days remaining</div>
+    <div class="comp-hrs" style="color:var(--red)">93.4 hrs / 2 days remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-red"></div>
   <div class="comp-info">
     <div class="comp-name" title="Fuel Filter Element - Discard [28-01] #2">Fuel Filter Element - Discard [28-01] #2 <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--red)">95.6 hrs / 3 days remaining</div>
+    <div class="comp-hrs" style="color:var(--red)">93.4 hrs / 2 days remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-red"></div>
   <div class="comp-info">
     <div class="comp-name" title="Battery (Removal Necessary) - Do Reconditioning Service - Special Inspection [24-01]">Battery (Removal Necessary) - Do Reconditioning Service - Special Inspection [24-01] <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--red)">545.7 hrs / 3 days remaining</div>
+    <div class="comp-hrs" style="color:var(--red)">543.5 hrs / 2 days remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-amber"></div>
   <div class="comp-info">
     <div class="comp-name" title="Toothed Belt -  Discard [63-01] - #1">Toothed Belt -  Discard [63-01] - #1 <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--amber)">683.4 hrs / 14 days remaining</div>
+    <div class="comp-hrs" style="color:var(--amber)">681.2 hrs / 13 days remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-amber"></div>
   <div class="comp-info">
     <div class="comp-name" title="Toothed Belt - Discard [63-01] - #2">Toothed Belt - Discard [63-01] - #2 <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--amber)">683.4 hrs / 14 days remaining</div>
+    <div class="comp-hrs" style="color:var(--amber)">681.2 hrs / 13 days remaining</div>
   </div>
 </div>
 </div><div class="aircraft-panel">
   <div class="panel-header">
     <div class="panel-tail">N531HC</div>
-    <div class="panel-hours">3435.5 TT</div>
+    <div class="panel-hours">3436.1 TT</div>
   </div>
   <div class="component-row">
   <div class="comp-indicator comp-red"></div>
   <div class="comp-info">
     <div class="comp-name" title="Toothed Belt - Discard [63-01] - #1">Toothed Belt - Discard [63-01] - #1 <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--red)">747.1 hrs / 3 days remaining</div>
+    <div class="comp-hrs" style="color:var(--red)">746.5 hrs / 2 days remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-red"></div>
   <div class="comp-info">
     <div class="comp-name" title="Battery (Removal Necessary) - Do Reconditioning Service - Special Inspection [24-01]">Battery (Removal Necessary) - Do Reconditioning Service - Special Inspection [24-01] <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--red)">495.4 hrs / 4 days remaining</div>
+    <div class="comp-hrs" style="color:var(--red)">494.8 hrs / 3 days remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-red"></div>
   <div class="comp-info">
     <div class="comp-name" title="Fuel Filter Element - Discard [28-01] - #1">Fuel Filter Element - Discard [28-01] - #1 <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--red)">193.0 hrs / 4 days remaining</div>
+    <div class="comp-hrs" style="color:var(--red)">192.4 hrs / 3 days remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-red"></div>
   <div class="comp-info">
     <div class="comp-name" title="Toothed Belt - Discard [63-01] - #2">Toothed Belt - Discard [63-01] - #2 <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--red)">395.4 hrs / 4 days remaining</div>
+    <div class="comp-hrs" style="color:var(--red)">394.8 hrs / 3 days remaining</div>
   </div>
 </div>
 </div><div class="aircraft-panel">
@@ -403,31 +403,31 @@
   <div class="comp-indicator comp-red"></div>
   <div class="comp-info">
     <div class="comp-name" title="24 Month Replacement Of Digital Pilot/Co-Pilot Clock Battery "Aaa" Size Akaline Battery Commercial Available">24 Month Replacement Of Digital Pilot/Co-Pilot Clock Battery "Aaa" Size Akaline Battery Commercial Available</div>
-    <div class="comp-hrs" style="color:var(--red)">3 days remaining</div>
+    <div class="comp-hrs" style="color:var(--red)">2 days remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-red"></div>
   <div class="comp-info">
     <div class="comp-name" title="Battery (Removal Necessary) - Do Reconditioning Service - Special Inspection [24-01]">Battery (Removal Necessary) - Do Reconditioning Service - Special Inspection [24-01] <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--red)">879.1 hrs / 7 days remaining</div>
+    <div class="comp-hrs" style="color:var(--red)">879.1 hrs / 6 days remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-amber"></div>
   <div class="comp-info">
     <div class="comp-name" title="Fuel Filter Element - Discard [28-01] - #1">Fuel Filter Element - Discard [28-01] - #1 <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--amber)">396.3 hrs / 21 days remaining</div>
+    <div class="comp-hrs" style="color:var(--amber)">396.3 hrs / 20 days remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-amber"></div>
   <div class="comp-info">
     <div class="comp-name" title="Toothed Belt - Discard [63-01] - #1">Toothed Belt - Discard [63-01] - #1 <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--amber)">500.4 hrs / 30 days remaining</div>
+    <div class="comp-hrs" style="color:var(--amber)">500.4 hrs / 29 days remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-amber"></div>
   <div class="comp-info">
     <div class="comp-name" title="Toothed Belt - Discard [63-01] - #2">Toothed Belt - Discard [63-01] - #2 <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--amber)">500.4 hrs / 30 days remaining</div>
+    <div class="comp-hrs" style="color:var(--amber)">500.4 hrs / 29 days remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-red"></div>
@@ -547,25 +547,25 @@
   <div class="comp-indicator comp-overdue"></div>
   <div class="comp-info">
     <div class="comp-name" title="Fuel Filter Element - Discard [28-01] - #2">Fuel Filter Element - Discard [28-01] - #2 <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--overdue)">OVERDUE - 7 days past limit / 379.4 hrs remaining</div>
-  </div>
-</div><div class="component-row">
-  <div class="comp-indicator comp-red"></div>
-  <div class="comp-info">
-    <div class="comp-name" title="Toothed Belt - Discard [63-01] - #2">Toothed Belt - Discard [63-01] - #2 <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--red)">779.4 hrs / 0 days remaining</div>
+    <div class="comp-hrs" style="color:var(--overdue)">OVERDUE - 8 days past limit / 379.4 hrs remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-red"></div>
   <div class="comp-info">
     <div class="comp-name" title="Toothed Belt - Discard [63-01] - #1">Toothed Belt - Discard [63-01] - #1 <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--red)">779.4 hrs / 5 days remaining</div>
+    <div class="comp-hrs" style="color:var(--red)">779.4 hrs / 4 days remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-amber"></div>
   <div class="comp-info">
     <div class="comp-name" title="Battery (Removal Necessary) - Do Reconditioning Service - Special Inspection [24-01]">Battery (Removal Necessary) - Do Reconditioning Service - Special Inspection [24-01] <span class="rii-badge">RII</span></div>
-    <div class="comp-hrs" style="color:var(--amber)">879.4 hrs / 20 days remaining</div>
+    <div class="comp-hrs" style="color:var(--amber)">879.4 hrs / 19 days remaining</div>
+  </div>
+</div><div class="component-row">
+  <div class="comp-indicator comp-amber"></div>
+  <div class="comp-info">
+    <div class="comp-name" title="Toothed Belt - Discard [63-01] - #2">Toothed Belt - Discard [63-01] - #2 <span class="rii-badge">RII</span></div>
+    <div class="comp-hrs" style="color:var(--amber)">779.4 hrs / 27 days remaining</div>
   </div>
 </div><div class="component-row">
   <div class="comp-indicator comp-overdue"></div>
@@ -587,72 +587,72 @@
     <div class="hours-grid"><div class="hours-card">
   <div class="hours-card-header">
     <div class="hours-card-tail">N251HC</div>
-    <div class="hours-card-current">6,160.9 TT</div>
+    <div class="hours-card-current">6,161.3 TT</div>
   </div>
   <div class="hours-card-body">
-    <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div><div class="hours-stat-value">1.08 hrs</div></div>
-    <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div><div class="hours-stat-value">7.6 hrs</div></div>
-    <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div><div class="hours-stat-value">32.5 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div><div class="hours-stat-value">1.10 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div><div class="hours-stat-value">7.7 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div><div class="hours-stat-value">32.9 hrs</div></div>
   </div>
 </div><div class="hours-card">
   <div class="hours-card-header">
     <div class="hours-card-tail">N261HC</div>
-    <div class="hours-card-current">6,177.8 TT</div>
+    <div class="hours-card-current">6,179.3 TT</div>
   </div>
   <div class="hours-card-body">
-    <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div><div class="hours-stat-value">1.19 hrs</div></div>
-    <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div><div class="hours-stat-value">8.3 hrs</div></div>
-    <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div><div class="hours-stat-value">35.6 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div><div class="hours-stat-value">1.24 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div><div class="hours-stat-value">8.7 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div><div class="hours-stat-value">37.1 hrs</div></div>
   </div>
 </div><div class="hours-card">
   <div class="hours-card-header">
     <div class="hours-card-tail">N271HC</div>
-    <div class="hours-card-current">7,071.8 TT</div>
+    <div class="hours-card-current">7,072.9 TT</div>
   </div>
   <div class="hours-card-body">
-    <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div><div class="hours-stat-value">1.32 hrs</div></div>
-    <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div><div class="hours-stat-value">9.3 hrs</div></div>
-    <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div><div class="hours-stat-value">39.7 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div><div class="hours-stat-value">1.36 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div><div class="hours-stat-value">9.5 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div><div class="hours-stat-value">40.8 hrs</div></div>
   </div>
 </div><div class="hours-card">
   <div class="hours-card-header">
     <div class="hours-card-tail">N281HC</div>
-    <div class="hours-card-current">6,666.5 TT</div>
+    <div class="hours-card-current">6,668.3 TT</div>
   </div>
   <div class="hours-card-body">
-    <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div><div class="hours-stat-value">2.08 hrs</div></div>
-    <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div><div class="hours-stat-value">14.5 hrs</div></div>
-    <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div><div class="hours-stat-value">62.3 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div><div class="hours-stat-value">2.14 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div><div class="hours-stat-value">15.0 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div><div class="hours-stat-value">64.1 hrs</div></div>
   </div>
 </div><div class="hours-card">
   <div class="hours-card-header">
     <div class="hours-card-tail">N291HC</div>
-    <div class="hours-card-current">6,025.0 TT</div>
+    <div class="hours-card-current">6,026.6 TT</div>
   </div>
   <div class="hours-card-body">
-    <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div><div class="hours-stat-value">1.84 hrs</div></div>
-    <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div><div class="hours-stat-value">12.9 hrs</div></div>
-    <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div><div class="hours-stat-value">55.2 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div><div class="hours-stat-value">1.89 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div><div class="hours-stat-value">13.3 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div><div class="hours-stat-value">56.8 hrs</div></div>
   </div>
 </div><div class="hours-card">
   <div class="hours-card-header">
     <div class="hours-card-tail">N431HC</div>
-    <div class="hours-card-current">2,098.5 TT</div>
+    <div class="hours-card-current">2,100.7 TT</div>
   </div>
   <div class="hours-card-body">
-    <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div><div class="hours-stat-value">1.45 hrs</div></div>
-    <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div><div class="hours-stat-value">10.1 hrs</div></div>
-    <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div><div class="hours-stat-value">43.4 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div><div class="hours-stat-value">1.52 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div><div class="hours-stat-value">10.6 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div><div class="hours-stat-value">45.6 hrs</div></div>
   </div>
 </div><div class="hours-card">
   <div class="hours-card-header">
     <div class="hours-card-tail">N531HC</div>
-    <div class="hours-card-current">3,435.5 TT</div>
+    <div class="hours-card-current">3,436.1 TT</div>
   </div>
   <div class="hours-card-body">
-    <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div><div class="hours-stat-value">1.06 hrs</div></div>
-    <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div><div class="hours-stat-value">7.4 hrs</div></div>
-    <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div><div class="hours-stat-value">31.7 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Daily</div><div class="hours-stat-value">1.08 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Weekly</div><div class="hours-stat-value">7.5 hrs</div></div>
+    <div class="hours-stat-row"><div class="hours-stat-label">Avg Monthly</div><div class="hours-stat-value">32.3 hrs</div></div>
   </div>
 </div><div class="hours-card">
   <div class="hours-card-header">
@@ -735,6 +735,6 @@
 </footer>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
-<script src="app.js?v=20260528102737"></script>
+<script src="app.js?v=20260528110708"></script>
 </body>
 </html>
