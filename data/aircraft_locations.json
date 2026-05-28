@@ -2,14 +2,14 @@
   {
     "vin": "N681HC",
     "asset_id": 31621,
-    "state": "Stationary",
-    "speed": 0,
-    "latitude": 32.7335,
-    "longitude": -117.178833,
-    "heading": 0,
-    "altitude": 7.0,
-    "odometer": 330865.6,
-    "last_ping": "2026-05-28T00:03:35Z"
+    "state": "Inflight",
+    "speed": 538.0,
+    "latitude": 33.6095,
+    "longitude": -116.024,
+    "heading": 33,
+    "altitude": 34813.0,
+    "odometer": 330977.2,
+    "last_ping": "2026-05-28T00:55:13Z"
   },
   {
     "vin": "N291HC",
