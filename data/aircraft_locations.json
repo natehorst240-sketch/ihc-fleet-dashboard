@@ -2,14 +2,26 @@
   {
     "vin": "N291HC",
     "asset_id": 31585,
-    "state": "Stationary",
+    "state": "Inflight",
+    "speed": 137.0,
+    "latitude": 41.7625,
+    "longitude": -111.871,
+    "heading": 184,
+    "altitude": 5203.0,
+    "odometer": 79111.8,
+    "last_ping": "2026-06-05T01:28:56Z"
+  },
+  {
+    "vin": "N281HC",
+    "asset_id": 31576,
+    "state": "Inflight",
     "speed": 0,
-    "latitude": 41.728,
-    "longitude": -111.6855,
+    "latitude": 41.163833,
+    "longitude": -111.971167,
     "heading": 359,
-    "altitude": 8579.0,
-    "odometer": 79101.3,
-    "last_ping": "2026-06-05T00:51:30Z"
+    "altitude": 4698.0,
+    "odometer": 86029.8,
+    "last_ping": "2026-06-05T01:28:56Z"
   },
   {
     "vin": "N261HC",
@@ -46,18 +58,6 @@
     "altitude": 4600.0,
     "odometer": 92977.9,
     "last_ping": "2026-06-04T18:36:17Z"
-  },
-  {
-    "vin": "N281HC",
-    "asset_id": 31576,
-    "state": "Stationary",
-    "speed": 0,
-    "latitude": 40.6595,
-    "longitude": -111.889333,
-    "heading": 359,
-    "altitude": 4298.0,
-    "odometer": 85995.7,
-    "last_ping": "2026-06-04T16:59:01Z"
   },
   {
     "vin": "N271HC",
