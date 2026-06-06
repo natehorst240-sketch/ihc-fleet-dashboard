@@ -11,6 +11,8 @@ on:
 jobs:
   upload:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
     steps:
       - uses: actions/checkout@v4
@@ -21,9 +23,6 @@ jobs:
           TENANT_ID: ${{ secrets.SHAREPOINT_TENANT_ID }}
           CLIENT_ID: ${{ secrets.SHAREPOINT_CLIENT_ID }}
           CLIENT_SECRET: ${{ secrets.SHAREPOINT_CLIENT_SECRET }}
-          SITE_URL: "workscalendar.sharepoint.com/sites/MXConnectApp"
-          LIBRARY: "MX DUE LIST"
-          
         with:
           script: |
             const fs = require('fs');
@@ -42,58 +41,10 @@ jobs:
                 })
               }
             );
-            const { access_token } = await tokenRes.json();
-
-            // Read CSV from repo
-            const csv = fs.readFileSync('data/Due-List_BIG_WEEKLY_aw109sp.csv');
-
-            // Get SharePoint site ID
-            const siteRes = await fetch(
-              'https://graph.microsoft.com/v1.0/sites/workscalendar.sharepoint.com:/sites/MXConnectApp',
-              { headers: { Authorization: `Bearer ${access_token}` } }
-            );
-            const { id: siteId } = await siteRes.json();
-
-            // Get drive (document library) ID — finds "MX DUE LIST" library
-            const drivesRes = await fetch(
-              `https://graph.microsoft.com/v1.0/sites/${siteId}/drives`,
-              { headers: { Authorization: `Bearer ${access_token}` } }
-            );
-            const { value: drives } = await drivesRes.json();
-            const drive = drives.find(d => d.name === 'MX DUE LIST');
-            if (!drive) throw new Error(`Library "MX DUE LIST" not found. Available: ${drives.map(d => d.name).join(', ')}`);
-
-            // Upload — overwrites same filename every time so Power Automate trigger is consistent
-            const uploadRes = await fetch(
-              `https://graph.microsoft.com/v1.0/drives/${drive.id}/root:/Due-List_BIG_WEEKLY_aw109sp.csv:/content`,
-              {
-                method: 'PUT',
-                headers: {
-                  Authorization: `Bearer ${access_token}`,
-                  'Content-Type': 'text/csv'
-                },
-                body: csv
-              }
-            );
-
-            // Get access token
-            const tokenRes = await fetch(
-              `https://login.microsoftonline.com/${process.env.TENANT_ID}/oauth2/v2.0/token`,
-              {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: new URLSearchParams({
-                  grant_type: 'client_credentials',
-                  client_id: process.env.CLIENT_ID,
-                  client_secret: process.env.CLIENT_SECRET,
-                  scope: 'https://graph.microsoft.com/.default'
-                })
-              }
-            );
             const tokenData = await tokenRes.json();
             console.log('Token response keys:', Object.keys(tokenData));
             if (!tokenData.access_token) throw new Error(`Token failed: ${JSON.stringify(tokenData)}`);
-            const { access_token } = tokenData;
+            const access_token = tokenData.access_token;
 
             // Get SharePoint site ID
             const siteRes = await fetch(
@@ -103,11 +54,10 @@ jobs:
             const siteData = await siteRes.json();
             console.log('Site response:', JSON.stringify(siteData));
             if (!siteData.id) throw new Error(`Site lookup failed: ${JSON.stringify(siteData)}`);
-            const { id: siteId } = siteData;
 
             // Get drives
             const drivesRes = await fetch(
-              `https://graph.microsoft.com/v1.0/sites/${siteId}/drives`,
+              `https://graph.microsoft.com/v1.0/sites/${siteData.id}/drives`,
               { headers: { Authorization: `Bearer ${access_token}` } }
             );
             const drivesData = await drivesRes.json();
@@ -117,10 +67,8 @@ jobs:
             const drive = drivesData.value.find(d => d.name === 'MX DUE LIST');
             if (!drive) throw new Error(`Library not found. Available: ${drivesData.value.map(d => d.name).join(', ')}`);
 
-            // Read CSV
-            const csv = fs.readFileSync('data/Due-List_BIG_WEEKLY_aw109sp.csv');
-
             // Upload
+            const csv = fs.readFileSync('data/Due-List_BIG_WEEKLY_aw109sp.csv');
             const uploadRes = await fetch(
               `https://graph.microsoft.com/v1.0/drives/${drive.id}/root:/Due-List_BIG_WEEKLY_aw109sp.csv:/content`,
               {
@@ -132,9 +80,6 @@ jobs:
                 body: csv
               }
             );
-
-            if (!uploadRes.ok) throw new Error(`Upload failed: ${uploadRes.status} ${await uploadRes.text()}`);
-            console.log('Successfully uploaded to SharePoint');
 
             if (!uploadRes.ok) throw new Error(`Upload failed: ${uploadRes.status} ${await uploadRes.text()}`);
             console.log('Successfully uploaded to SharePoint');
