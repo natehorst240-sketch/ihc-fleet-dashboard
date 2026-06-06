@@ -76,10 +76,6 @@ jobs:
               }
             );
 
-            with:
-          script: |
-            const fs = require('fs');
-
             // Get access token
             const tokenRes = await fetch(
               `https://login.microsoftonline.com/${process.env.TENANT_ID}/oauth2/v2.0/token`,
