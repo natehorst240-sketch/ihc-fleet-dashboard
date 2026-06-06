@@ -48,7 +48,7 @@ jobs:
 
             // Get SharePoint site ID
             const siteRes = await fetch(
-              'https://graph.microsoft.com/v1.0/sites/workscalendar.sharepoint.com/sites/MXConnectApp',
+              'https://graph.microsoft.com/v1.0/sites/workscalendar.sharepoint.com:/sites/MXConnectApp:',
               { headers: { Authorization: `Bearer ${access_token}` } }
             );
             const siteData = await siteRes.json();
