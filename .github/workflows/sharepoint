@@ -1,0 +1,80 @@
+# .github/workflows/upload-to-sharepoint.yml
+name: Upload Due List to SharePoint
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "data/Due-List_BIG_WEEKLY_aw109sp.csv"
+  workflow_dispatch:
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Upload CSV to SharePoint
+        uses: actions/github-script@v7
+        env:
+          TENANT_ID: ${{ secrets.SHAREPOINT_TENANT_ID }}
+          CLIENT_ID: ${{ secrets.SHAREPOINT_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.SHAREPOINT_CLIENT_SECRET }}
+          SITE_URL: "workscalendar.sharepoint.com/sites/MXConnectApp"
+          LIBRARY: "MX DUE LIST"
+          
+        with:
+          script: |
+            const fs = require('fs');
+
+            // Get access token
+            const tokenRes = await fetch(
+              `https://login.microsoftonline.com/${process.env.TENANT_ID}/oauth2/v2.0/token`,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({
+                  grant_type: 'client_credentials',
+                  client_id: process.env.CLIENT_ID,
+                  client_secret: process.env.CLIENT_SECRET,
+                  scope: 'https://graph.microsoft.com/.default'
+                })
+              }
+            );
+            const { access_token } = await tokenRes.json();
+
+            // Read CSV from repo
+            const csv = fs.readFileSync('data/Due-List_BIG_WEEKLY_aw109sp.csv');
+
+            // Get SharePoint site ID
+            const siteRes = await fetch(
+              'https://graph.microsoft.com/v1.0/sites/workscalendar.sharepoint.com:/sites/MXConnectApp',
+              { headers: { Authorization: `Bearer ${access_token}` } }
+            );
+            const { id: siteId } = await siteRes.json();
+
+            // Get drive (document library) ID — finds "MX DUE LIST" library
+            const drivesRes = await fetch(
+              `https://graph.microsoft.com/v1.0/sites/${siteId}/drives`,
+              { headers: { Authorization: `Bearer ${access_token}` } }
+            );
+            const { value: drives } = await drivesRes.json();
+            const drive = drives.find(d => d.name === 'MX DUE LIST');
+            if (!drive) throw new Error(`Library "MX DUE LIST" not found. Available: ${drives.map(d => d.name).join(', ')}`);
+
+            // Upload — overwrites same filename every time so Power Automate trigger is consistent
+            const uploadRes = await fetch(
+              `https://graph.microsoft.com/v1.0/drives/${drive.id}/root:/Due-List_BIG_WEEKLY_aw109sp.csv:/content`,
+              {
+                method: 'PUT',
+                headers: {
+                  Authorization: `Bearer ${access_token}`,
+                  'Content-Type': 'text/csv'
+                },
+                body: csv
+              }
+            );
+
+            if (!uploadRes.ok) throw new Error(`Upload failed: ${uploadRes.status} ${await uploadRes.text()}`);
+            console.log('Successfully uploaded to SharePoint');
