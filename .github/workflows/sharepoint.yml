@@ -21,19 +21,40 @@ jobs:
         run: |
           node -e "
           const fs = require('fs');
-          const csv = fs.readFileSync('data/Due-List_BIG_WEEKLY_aw109sp.csv', 'utf8');
+          const csv = fs.readFileSync('data/Due-List_BIG_WEEKLY_aw109sp.csv', 'utf8').replace(/\r/g, '');
+          
+          function parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+            for (let i = 0; i < line.length; i++) {
+              if (line[i] === '\"') {
+                inQuotes = !inQuotes;
+              } else if (line[i] === ',' && !inQuotes) {
+                result.push(current.trim());
+                current = '';
+              } else {
+                current += line[i];
+              }
+            }
+            result.push(current.trim());
+            return result;
+          }
+          
           const lines = csv.split('\n').filter(l => l.trim());
-          const headers = lines[0].split(',').map(h => h.trim().replace(/\"/g, ''));
+          const headers = parseCSVLine(lines[0]);
           const rows = [];
           for (let i = 1; i < lines.length; i++) {
-            const values = lines[i].match(/(\\".*?\\"|[^,]+|(?<=,)(?=,)|^(?=,)|(?<=,)$)/g) || [];
+            const values = parseCSVLine(lines[i]);
             const row = {};
             headers.forEach((h, idx) => {
-              row[h] = (values[idx] || '').replace(/^\"|\"$/g, '').trim();
+              row[h] = values[idx] || '';
             });
             rows.push(row);
           }
           fs.writeFileSync('data/due_list.json', JSON.stringify(rows));
+          console.log('Rows converted:', rows.length);
+          console.log('Sample row:', JSON.stringify(rows[0]));
           "
 
       - name: Email JSON to IHC
