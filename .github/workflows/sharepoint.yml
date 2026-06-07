@@ -46,6 +46,25 @@ jobs:
             if (!tokenData.access_token) throw new Error(`Token failed: ${JSON.stringify(tokenData)}`);
             const access_token = tokenData.access_token;
 
+            - name: Convert CSV to JSON
+               run: |
+                node -e "
+                 const fs = require('fs');
+                const csv = fs.readFileSync('data/Due-List_BIG_WEEKLY_aw109sp.csv', 'utf8');
+                const lines = csv.split('\n').filter(l => l.trim());
+                const headers = lines[0].split(',').map(h => h.trim().replace(/\"/g, ''));
+                const rows = [];
+                for (let i = 1; i < lines.length; i++) {
+                  const values = lines[i].match(/(\\".*?\\"|[^,]+|(?<=,)(?=,)|^(?=,)|(?<=,)$)/g) || [];
+                  const row = {};
+                  headers.forEach((h, idx) => {
+                    row[h] = (values[idx] || '').replace(/^\"|\"$/g, '').trim();
+                  });
+                  rows.push(row);
+                }
+                fs.writeFileSync('data/due_list.json', JSON.stringify(rows));
+                "
+
             - name: Email CSV to IHC
             uses: dawidd6/action-send-mail@v3
             with:
@@ -57,7 +76,7 @@ jobs:
               from: ${{ secrets.GMAIL_USER }}
               subject: "Due List Update"
               body: "Automated due list attached."
-              attachments: data/Due-List_BIG_WEEKLY_aw109sp.csv
+              attachments: attachments: data/due_list.json
   
             // Get SharePoint site ID
             const siteRes = await fetch(
