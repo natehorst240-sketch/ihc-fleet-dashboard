@@ -46,6 +46,19 @@ jobs:
             if (!tokenData.access_token) throw new Error(`Token failed: ${JSON.stringify(tokenData)}`);
             const access_token = tokenData.access_token;
 
+            - name: Email CSV to IHC
+            uses: dawidd6/action-send-mail@v3
+            with:
+              server_address: smtp.gmail.com
+              server_port: 465
+              username: ${{ secrets.GMAIL_USER }}
+              password: ${{ secrets.GMAIL_APP_PASSWORD }}
+              to: nathan.horstmeier@imail.org
+              from: ${{ secrets.GMAIL_USER }}
+              subject: "Due List Update"
+              body: "Automated due list attached."
+              attachments: data/Due-List_BIG_WEEKLY_aw109sp.csv
+  
             // Get SharePoint site ID
             const siteRes = await fetch(
               'https://graph.microsoft.com/v1.0/sites/workscalendar.sharepoint.com:/sites/MXConnectApp:',
