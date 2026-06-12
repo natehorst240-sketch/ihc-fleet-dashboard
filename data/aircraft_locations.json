@@ -1,51 +1,51 @@
 [
   {
-    "vin": "N271HC",
-    "asset_id": 31622,
+    "vin": "N251HC",
+    "asset_id": 31608,
     "state": "Inflight",
-    "speed": 84.0,
-    "latitude": 40.6565,
-    "longitude": -111.8745,
-    "heading": 297,
-    "altitude": 4754.0,
-    "odometer": 78956.0,
-    "last_ping": "2026-06-12T13:47:02Z"
+    "speed": 130.0,
+    "latitude": 37.580333,
+    "longitude": -113.176333,
+    "heading": 211,
+    "altitude": 6775.0,
+    "odometer": 73188.3,
+    "last_ping": "2026-06-12T14:58:28Z"
   },
   {
     "vin": "N681HC",
     "asset_id": 31621,
     "state": "Stationary",
     "speed": 0,
-    "latitude": 40.773833,
-    "longitude": -111.957,
+    "latitude": 39.121,
+    "longitude": -108.5225,
     "heading": 0,
-    "altitude": 4242.0,
-    "odometer": 335949.6,
-    "last_ping": "2026-06-12T13:43:53Z"
+    "altitude": 4852.0,
+    "odometer": 336163.2,
+    "last_ping": "2026-06-12T14:58:03Z"
   },
   {
-    "vin": "N251HC",
-    "asset_id": 31608,
+    "vin": "N271HC",
+    "asset_id": 31622,
     "state": "Stationary",
     "speed": 0,
-    "latitude": 37.098667,
-    "longitude": -113.5515,
+    "latitude": 40.6595,
+    "longitude": -111.889333,
     "heading": 359,
-    "altitude": 2671.0,
-    "odometer": 73147.6,
-    "last_ping": "2026-06-12T12:16:27Z"
+    "altitude": 4304.0,
+    "odometer": 78956.8,
+    "last_ping": "2026-06-12T14:39:54Z"
   },
   {
     "vin": "N281HC",
     "asset_id": 31576,
     "state": "Stationary",
     "speed": 0,
-    "latitude": 40.6595,
-    "longitude": -111.889333,
+    "latitude": 40.773833,
+    "longitude": -111.955333,
     "heading": 359,
-    "altitude": 4288.0,
-    "odometer": 88874.4,
-    "last_ping": "2026-06-12T11:49:32Z"
+    "altitude": 4206.0,
+    "odometer": 88882.9,
+    "last_ping": "2026-06-12T14:20:20Z"
   },
   {
     "vin": "N431HC",
@@ -55,9 +55,9 @@
     "latitude": 41.755167,
     "longitude": -111.8205,
     "heading": 0,
-    "altitude": 4600.0,
+    "altitude": 4603.0,
     "odometer": 94411.7,
-    "last_ping": "2026-06-11T21:24:16Z"
+    "last_ping": "2026-06-12T13:51:16Z"
   },
   {
     "vin": "N291HC",
