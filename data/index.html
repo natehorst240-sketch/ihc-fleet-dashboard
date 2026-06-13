@@ -19,7 +19,7 @@
 <meta name="apple-mobile-web-app-title" content="IHC Fleet">
 <meta name="description" content="IHC Health Services – Helicopter Fleet Maintenance &amp; Status Dashboard">
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=20260613164518">
+<link rel="stylesheet" href="styles.css?v=20260613172918">
 <script data-bootstrap>
   (function(){var t=localStorage.getItem('fleet-theme')||'dark';if(t==='light')document.documentElement.setAttribute('data-theme','light');})();
 </script>
@@ -36,7 +36,7 @@
   </div>
   <div class="header-meta">
     <div class="date">REPORT DATE: 11 JUN 2026</div>
-    <div>FLEET: 9 AIRCRAFT &nbsp;|&nbsp; 0 AIRBORNE &nbsp;|&nbsp; 5 AT BASE &nbsp;|&nbsp; GENERATED: 13 JUN 2026 16:45</div>
+    <div>FLEET: 9 AIRCRAFT &nbsp;|&nbsp; 1 AIRBORNE &nbsp;|&nbsp; 4 AT BASE &nbsp;|&nbsp; GENERATED: 13 JUN 2026 17:29</div>
     <button id="pwa-install-btn" style="display:none;margin-top:6px;font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;padding:5px 12px;background:transparent;border:1px solid var(--blue);color:var(--blue);border-radius:2px;cursor:pointer;align-items:center;gap:6px;" title="Install as app on your device">
       &#x2B07; ADD TO HOME SCREEN
     </button>
@@ -71,8 +71,8 @@
   <div id="tab-maintenance" class="tab-content active">
     <div class="summary-bar">
       <div class="summary-stat"><div class="stat-value" style="color:var(--blue)">9</div><div class="divider-line" style="background:var(--blue)"></div><div class="stat-label">Aircraft</div></div>
-      <div class="summary-stat"><div class="stat-value" style="color:var(--blue)">0</div><div class="divider-line" style="background:var(--blue)"></div><div class="stat-label">Airborne</div></div>
-      <div class="summary-stat"><div class="stat-value" style="color:var(--green)">5</div><div class="divider-line" style="background:var(--green)"></div><div class="stat-label">At Base</div></div>
+      <div class="summary-stat"><div class="stat-value" style="color:var(--blue)">1</div><div class="divider-line" style="background:var(--blue)"></div><div class="stat-label">Airborne</div></div>
+      <div class="summary-stat"><div class="stat-value" style="color:var(--green)">4</div><div class="divider-line" style="background:var(--green)"></div><div class="stat-label">At Base</div></div>
       <div class="summary-stat stat-clickable" title="Click to filter Critical &amp; Overdue" onclick="applyFilterCriticalOD()"><div class="stat-value" style="color:var(--red)">13</div><div class="divider-line" style="background:var(--red)"></div><div class="stat-label">Insp. Critical / OD</div></div>
       <div class="summary-stat stat-clickable" title="Click to filter Coming Due" onclick="applyFilter('coming')"><div class="stat-value" style="color:var(--amber)">13</div><div class="divider-line" style="background:var(--amber)"></div><div class="stat-label">Insp. Coming Due</div></div>
       <div class="summary-stat"><div class="stat-value" style="color:var(--overdue)">1</div><div class="divider-line" style="background:var(--overdue)"></div><div class="stat-label">Components Overdue</div></div>
@@ -98,9 +98,9 @@
           </tr>
         </thead>
         <tbody id="insp-tbody">
-<tr data-tail="N251HC"><td onclick="wlOpenModal('N251HC')" style="cursor:pointer;" title="Open watch list for N251HC"><div class="tail-number">N251HC<span class="location-badge location-at-base">At St. George base</span></div><div class="airframe-hrs">6,184.9 TT</div></td><td class="hr-cell"><span class="hr-badge hr-overdue">OVRD 2</span></td><td class="hr-cell"><span class="hr-badge hr-amber">47.7</span></td><td class="hr-cell"><span class="hr-badge hr-green">147.7</span></td><td class="hr-cell"><span class="hr-badge hr-green">158.3</span></td><td class="hr-cell"><span class="hr-badge hr-green">169.0</span></td><td class="hr-cell"><span class="hr-badge hr-green">971.2</span></td><td class="hr-cell"><span class="hr-badge hr-green">150.7</span></td></tr>
+<tr data-tail="N251HC"><td onclick="wlOpenModal('N251HC')" style="cursor:pointer;" title="Open watch list for N251HC"><div class="tail-number">N251HC<span class="location-badge location-active">airborne 3596.0ft</span></div><div class="airframe-hrs">6,184.9 TT</div></td><td class="hr-cell"><span class="hr-badge hr-overdue">OVRD 2</span></td><td class="hr-cell"><span class="hr-badge hr-amber">47.7</span></td><td class="hr-cell"><span class="hr-badge hr-green">147.7</span></td><td class="hr-cell"><span class="hr-badge hr-green">158.3</span></td><td class="hr-cell"><span class="hr-badge hr-green">169.0</span></td><td class="hr-cell"><span class="hr-badge hr-green">971.2</span></td><td class="hr-cell"><span class="hr-badge hr-green">150.7</span></td></tr>
 <tr data-tail="N261HC"><td onclick="wlOpenModal('N261HC')" style="cursor:pointer;" title="Open watch list for N261HC"><div class="tail-number">N261HC<span class="location-badge location-at-base">At Cedar City base</span></div><div class="airframe-hrs">6,200.6 TT</div></td><td class="hr-cell"><span class="hr-badge hr-amber">37.2</span></td><td class="hr-cell"><span class="hr-badge hr-amber">36.2</span></td><td class="hr-cell"><span class="hr-badge hr-green">136.2</span></td><td class="hr-cell"><span class="hr-badge hr-green">135.3</span></td><td class="hr-cell"><span class="hr-badge hr-green">130.6</span></td><td class="hr-cell"><span class="hr-badge hr-green">939.6</span></td><td class="hr-cell"><span class="hr-badge hr-green">173.7</span></td></tr>
-<tr data-tail="N271HC"><td onclick="wlOpenModal('N271HC')" style="cursor:pointer;" title="Open watch list for N271HC"><div class="tail-number">N271HC<span class="location-badge location-at-base">At IMED base</span></div><div class="airframe-hrs">7,095.9 TT</div></td><td class="hr-cell"><span class="hr-badge hr-red">23.6</span></td><td class="hr-cell"><span class="hr-badge hr-red">21.1</span></td><td class="hr-cell"><span class="hr-badge hr-red">19.0</span></td><td class="hr-cell"><span class="hr-badge hr-amber">47.0</span></td><td class="hr-cell"><span class="hr-badge hr-amber">56.3</span></td><td class="hr-cell"><span class="hr-badge hr-amber">41.8</span></td><td class="hr-cell"><span class="hr-badge hr-green">2456.3</span></td></tr>
+<tr data-tail="N271HC"><td onclick="wlOpenModal('N271HC')" style="cursor:pointer;" title="Open watch list for N271HC"><div class="tail-number">N271HC<span class="location-badge location-at-base">At KSLC base</span></div><div class="airframe-hrs">7,095.9 TT</div></td><td class="hr-cell"><span class="hr-badge hr-red">23.6</span></td><td class="hr-cell"><span class="hr-badge hr-red">21.1</span></td><td class="hr-cell"><span class="hr-badge hr-red">19.0</span></td><td class="hr-cell"><span class="hr-badge hr-amber">47.0</span></td><td class="hr-cell"><span class="hr-badge hr-amber">56.3</span></td><td class="hr-cell"><span class="hr-badge hr-amber">41.8</span></td><td class="hr-cell"><span class="hr-badge hr-green">2456.3</span></td></tr>
 <tr data-tail="N281HC"><td onclick="wlOpenModal('N281HC')" style="cursor:pointer;" title="Open watch list for N281HC"><div class="tail-number">N281HC<span class="location-badge location-away">away from base Â· 191.6nm from St. George</span></div><div class="airframe-hrs">6,714.0 TT</div></td><td class="hr-cell"><span class="hr-badge hr-red">4.8</span></td><td class="hr-cell"><span class="hr-badge hr-red">5.1</span></td><td class="hr-cell"><span class="hr-badge hr-red">5.9</span></td><td class="hr-cell"><span class="hr-badge hr-red">6.3</span></td><td class="hr-cell"><span class="hr-badge hr-green">406.3</span></td><td class="hr-cell"><span class="hr-badge hr-red">9.8</span></td><td class="hr-cell"><span class="hr-badge hr-green">2806.3</span></td></tr>
 <tr data-tail="N291HC"><td onclick="wlOpenModal('N291HC')" style="cursor:pointer;" title="Open watch list for N291HC"><div class="tail-number">N291HC<span class="location-badge location-at-base">At Mckay base</span></div><div class="airframe-hrs">6,042.4 TT</div></td><td class="hr-cell"><span class="hr-badge hr-red">11.5</span></td><td class="hr-cell"><span class="hr-badge hr-red">13.0</span></td><td class="hr-cell"><span class="hr-badge hr-green">113.0</span></td><td class="hr-cell"><span class="hr-badge hr-green">313.0</span></td><td class="hr-cell"><span class="hr-badge hr-green">318.2</span></td><td class="hr-cell"><span class="hr-badge hr-green">1122.7</span></td><td class="hr-cell"><span class="hr-badge hr-green">329.8</span></td></tr>
 <tr data-tail="N431HC"><td onclick="wlOpenModal('N431HC')" style="cursor:pointer;" title="Open watch list for N431HC"><div class="tail-number">N431HC<span class="location-badge location-at-base">At Logan base</span></div><div class="airframe-hrs">2,126.4 TT</div></td><td class="hr-cell"><span class="hr-badge hr-red">9.5</span></td><td class="hr-cell"><span class="hr-badge hr-amber">59.5</span></td><td class="hr-cell"><span class="hr-badge hr-amber">55.5</span></td><td class="hr-cell"><span class="hr-badge hr-green">255.5</span></td><td class="hr-cell"><span class="hr-badge hr-green">262.3</span></td><td class="hr-cell"><span class="hr-badge hr-green">273.6</span></td><td class="hr-cell"><span class="hr-badge hr-green">1073.6</span></td></tr>
@@ -645,6 +645,6 @@
 </footer>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
-<script src="app.js?v=20260613164518"></script>
+<script src="app.js?v=20260613172918"></script>
 </body>
 </html>
