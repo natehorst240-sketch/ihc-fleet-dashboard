@@ -574,7 +574,7 @@
   renderCalendar();
 })();
 
-const DASHBOARD_VERSION = "20260619131938";
+const DASHBOARD_VERSION = "20260619184417";
 
   // Auto-reload when a newer build is deployed — polls every 3 minutes
   (function() {
