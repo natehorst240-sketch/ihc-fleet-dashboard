@@ -1,39 +1,39 @@
 [
   {
-    "vin": "N261HC",
-    "asset_id": 31755,
-    "state": "Inflight",
-    "speed": 133.0,
-    "latitude": 40.6665,
-    "longitude": -111.861333,
-    "heading": 352,
-    "altitude": 5410.0,
-    "odometer": 86463.9,
-    "last_ping": "2026-06-27T23:05:35Z"
-  },
-  {
     "vin": "N681HC",
     "asset_id": 31621,
     "state": "Inflight",
-    "speed": 469.0,
-    "latitude": 40.603833,
-    "longitude": -92.810833,
-    "heading": 131,
-    "altitude": 41079.0,
-    "odometer": 343896.3,
-    "last_ping": "2026-06-27T23:05:02Z"
+    "speed": 479.0,
+    "latitude": 37.8265,
+    "longitude": -90.092167,
+    "heading": 126,
+    "altitude": 39134.0,
+    "odometer": 344118.1,
+    "last_ping": "2026-06-27T23:33:59Z"
   },
   {
     "vin": "N431HC",
     "asset_id": 31570,
+    "state": "Inflight",
+    "speed": 149.0,
+    "latitude": 41.724167,
+    "longitude": -112.093167,
+    "heading": 184,
+    "altitude": 6345.0,
+    "odometer": 96295.1,
+    "last_ping": "2026-06-27T23:33:48Z"
+  },
+  {
+    "vin": "N261HC",
+    "asset_id": 31755,
     "state": "Stationary",
     "speed": 0,
-    "latitude": 42.098167,
-    "longitude": -111.8725,
-    "heading": 0,
-    "altitude": 4747.0,
-    "odometer": 96270.5,
-    "last_ping": "2026-06-27T22:35:58Z"
+    "latitude": 41.182333,
+    "longitude": -111.954167,
+    "heading": 359,
+    "altitude": 4652.0,
+    "odometer": 86495.5,
+    "last_ping": "2026-06-27T23:22:30Z"
   },
   {
     "vin": "N251HC",
