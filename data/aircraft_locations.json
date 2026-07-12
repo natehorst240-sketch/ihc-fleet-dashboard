@@ -4,12 +4,12 @@
     "asset_id": 31585,
     "state": "Stationary",
     "speed": 0,
-    "latitude": 41.1825,
-    "longitude": -111.954,
+    "latitude": 41.188,
+    "longitude": -112.0105,
     "heading": 359,
-    "altitude": 4675.0,
-    "odometer": 87547.5,
-    "last_ping": "2026-07-12T20:59:46Z"
+    "altitude": 4439.0,
+    "odometer": 87550.7,
+    "last_ping": "2026-07-12T21:22:08Z"
   },
   {
     "vin": "N431HC",
