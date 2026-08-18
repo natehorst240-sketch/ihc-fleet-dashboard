@@ -7,9 +7,9 @@
     "latitude": 41.1825,
     "longitude": -111.954167,
     "heading": 359,
-    "altitude": 4665.0,
+    "altitude": 4662.0,
     "odometer": 93554.5,
-    "last_ping": "2026-08-18T15:08:36Z"
+    "last_ping": "2026-08-18T15:22:30Z"
   },
   {
     "vin": "N681HC",
@@ -21,7 +21,7 @@
     "heading": 0,
     "altitude": 2575.0,
     "odometer": 387318.4,
-    "last_ping": "2026-08-18T15:07:39Z"
+    "last_ping": "2026-08-18T15:17:36Z"
   },
   {
     "vin": "N431HC",
