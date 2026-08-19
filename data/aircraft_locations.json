@@ -2,14 +2,14 @@
   {
     "vin": "N431HC",
     "asset_id": 31570,
-    "state": "Inflight",
-    "speed": 2.0,
-    "latitude": 40.772667,
-    "longitude": -111.8375,
-    "heading": 233,
-    "altitude": 5049.0,
-    "odometer": 105042.2,
-    "last_ping": "2026-08-19T08:13:37Z"
+    "state": "Stationary",
+    "speed": 1.0,
+    "latitude": 40.660167,
+    "longitude": -111.889667,
+    "heading": 95,
+    "altitude": 4334.0,
+    "odometer": 105049.7,
+    "last_ping": "2026-08-19T08:19:46Z"
   },
   {
     "vin": "N261HC",
